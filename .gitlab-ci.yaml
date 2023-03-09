@@ -1,0 +1,53 @@
+image: python:3.11
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+stages:
+  - lint
+  - test
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: "Jobs/Secret-Detection.latest.gitlab-ci.yml"
+  - template: "Security/Dependency-Scanning.gitlab-ci.yml"
+  - template: "Security/License-Scanning.gitlab-ci.yml"
+
+flake8:
+  stage: lint
+  before_script:
+    - python --version
+    - pip install flake8 flake8_formatter_junit_xml
+    - flake8 --version
+  script:
+    - pip install -r requirements.txt
+    - flake8 --format junit-xml graph_api_bridge > flake8.xml
+  artifacts:
+    when: always
+    expire_in: 7 days
+    reports:
+      junit: flake8.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+pylint:
+  image: registry.gitlab.com/smartdcs1/internal/gitlab-runner-images/pylint:v2.16.1
+  stage: lint
+  before_script:
+    - python --version
+    - pylint --version
+  script:
+    - pip install -r requirements.txt
+    - pylint --exit-zero --output-format=pylint_gitlab.GitlabCodeClimateReporter graph_api_bridge > codeclimate.json
+  artifacts:
+    when: always
+    expire_in: 7 days
+    reports:
+      codequality: codeclimate.json
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
