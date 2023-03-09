@@ -1,0 +1,21 @@
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  GITLAB_PYTHON_VERSION: python:3.11
+
+stages:
+  - lint
+  - test
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: "Jobs/Secret-Detection.latest.gitlab-ci.yml"
+  - template: "Security/Dependency-Scanning.gitlab-ci.yml"
+  - template: "Security/License-Scanning.gitlab-ci.yml"
+  - project: 'smartdcs1/internal/gitlab-ci-templates/python-linting-ci'
+    ref: main
+    file: '.python-linting-ci-template.yml'  
