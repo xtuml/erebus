@@ -2,17 +2,18 @@
 Creates the test harness app
 """
 import os
+from typing import Mapping, Optional
 
 from flask import Flask
 
 
-def create_app(test_config=None) -> Flask:
+def create_app(test_config: Optional[Mapping] = None) -> Flask:
     """Create flask app
 
     :param test_config: Configuration test config, defaults to None
-    :type test_config: , optional
+    :type test_config: :class:`Mapping`, optional
     :return: Returns a Flask instance
-    :rtype: Flask
+    :rtype: :class:`Flask`
     """
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
