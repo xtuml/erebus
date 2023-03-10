@@ -5,6 +5,7 @@ import os
 from typing import Mapping, Optional, Callable
 
 from flask import Flask, request, make_response, Response
+from werkzeug.datastructures import FileStorage
 
 
 def create_app(test_config: Optional[Mapping] = None) -> Flask:
@@ -58,7 +59,7 @@ def upload_uml_files() -> Response:
         )
 
     for uploaded_file_identifier in request.files:
-        uploaded_file = request.files[uploaded_file_identifier]
+        uploaded_file: FileStorage = request.files[uploaded_file_identifier]
         if uploaded_file.filename != '':
             # TODO: Replace with file handling function
             print(uploaded_file.filename)
@@ -68,6 +69,19 @@ def upload_uml_files() -> Response:
                 400
             )
     return make_response("Files uploaded successfully\n", 200)
+
+
+def handle_uploaded_file(file: FileStorage, save_file_dir_path: str) -> None:
+    """Helper function to create output path and save uploaded file
+
+    :param file: FileStroage class containing the uploaded file
+    and metadata
+    :type file: class:`FileStorage`
+    :param save_file_dir_path: Path of folder to save the file in
+    :type save_file_dir_path: str
+    """
+    out_file_path = os.path.join(save_file_dir_path, file.filename)
+    file.save(out_file_path)
 
 
 def wrap_function_app(
