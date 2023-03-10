@@ -2,9 +2,9 @@
 Creates the test harness app
 """
 import os
-from typing import Mapping, Optional
+from typing import Mapping, Optional, Callable
 
-from flask import Flask
+from flask import Flask, request, make_response, Response
 
 
 def create_app(test_config: Optional[Mapping] = None) -> Flask:
@@ -32,7 +32,64 @@ def create_app(test_config: Optional[Mapping] = None) -> Flask:
     except OSError:
         pass
 
+    # route to upload uml
+    wrap_function_app(
+        upload_uml_files,
+        "/uploadUML",
+        ["POST"],
+        app
+    )
+
     return app
+
+
+def upload_uml_files() -> Response:
+    """Function to handle the upload of UML files
+
+    :return: 200 response if files uploaded successfully and
+    400 if unsuccessful
+    :rtype: :class:`Response`
+    """
+    # requests must be of type multipart/form-data
+    if request.mimetype != "multipart/form-data":
+        return make_response(
+            "mime-type must be multipart/form-data\n",
+            400
+        )
+
+    for uploaded_file_identifier in request.files:
+        uploaded_file = request.files[uploaded_file_identifier]
+        if uploaded_file.filename != '':
+            # TODO: Replace with file handling function
+            print(uploaded_file.filename)
+        else:
+            return make_response(
+                "One of the uploaded files has no filename\n",
+                400
+            )
+    return make_response("Files uploaded successfully\n", 200)
+
+
+def wrap_function_app(
+        func_to_wrap: Callable, route: str, methods: list[str], app: Flask
+) -> Callable[[], Response]:
+    """Wraps a function in a Flask app route
+
+    :param func_to_wrap: The function to wrap
+    :type func_to_wrap: `Callable`
+    :param route: The endpoint of the route
+    :type route: `str`
+    :param methods: The method/s of the endpoint
+    :type methods: `list`[`str`]
+    :param app: The Flask app
+    :type app: :class:`Flask`
+    :return: The app.route decorated function
+    :rtype: `Callable`[[], :class:`Response`]
+    """
+    @app.route(route, methods=methods)
+    def wrapped_function() -> Response:
+        return func_to_wrap()
+    return wrapped_function
 
 
 if __name__ == "__main__":
