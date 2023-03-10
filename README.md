@@ -1,5 +1,5 @@
 # Test Harness
-
+Package that runs a test harness for the Munin Protocol Verifier.
 
 
 ## Getting started
