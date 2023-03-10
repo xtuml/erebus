@@ -57,17 +57,34 @@ def upload_uml_files() -> Response:
             "mime-type must be multipart/form-data\n",
             400
         )
+    # get files
+    uploaded_files: list[FileStorage] = [
+        request.files[uploaded_file_identifier]
+        for uploaded_file_identifier in request.files
+    ]
+    # get filenames
+    uploaded_files_names = list(map(lambda x: x.filename, uploaded_files))
 
-    for uploaded_file_identifier in request.files:
-        uploaded_file: FileStorage = request.files[uploaded_file_identifier]
-        if uploaded_file.filename != '':
-            # TODO: Replace with file handling function
-            print(uploaded_file.filename)
-        else:
-            return make_response(
-                "One of the uploaded files has no filename\n",
-                400
-            )
+    # check for files without file name
+    if any(
+        uploaded_file_name == ''
+        for uploaded_file_name in uploaded_files_names
+    ):
+        return make_response(
+            "One of the uploaded files has no filename\n",
+            400
+        )
+
+    # check if some of the files have the same name
+    if len(set(uploaded_files_names)) < len(uploaded_files_names):
+        return make_response(
+            "At least two of the uploaded files share the same filename\n",
+            400
+        )
+
+    for uploaded_file in uploaded_files:
+        handle_uploaded_file(uploaded_file, "test_harness/uml_file_store/")
+
     return make_response("Files uploaded successfully\n", 200)
 
 
