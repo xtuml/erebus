@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 """
 Fixtures for Test Harness
 """
