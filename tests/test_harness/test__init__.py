@@ -1,4 +1,4 @@
-# pylint: disable=Consider using 'with' for resource-allocating operations
+# pylint: disable=R1732
 """Testing __init__.py
 """
 import os
