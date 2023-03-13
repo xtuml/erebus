@@ -2,9 +2,16 @@
 Fixtures for Test Harness
 """
 
+import sys
+from os.path import abspath
+from pathlib import Path
+
 import pytest
 from flask import Flask
-from test_harness.__init__ import create_app
+# insert root directory into path
+package_path = abspath(Path(__file__).parent.parent.parent)
+sys.path.insert(0, package_path)
+from test_harness.__init__ import create_app # noqa
 
 
 @pytest.fixture()

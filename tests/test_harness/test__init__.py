@@ -8,7 +8,9 @@ from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
 # get resources folder in tests folder
-resources = Path(__file__).parent / "test_files"
+input_resources = Path(__file__).parent / "test_files"
+# get uml_file_store in tests folder
+output_resources = Path(__file__).parent / "uml_file_store"
 
 
 def get_file_data(
@@ -27,7 +29,7 @@ def get_file_data(
     :return: Returns a dictionary of {file_id: (file_data, file_name)}
     :rtype: `dict`
     """
-    proper_file_path = os.path.join(resources, file_name)
+    proper_file_path = os.path.join(input_resources, file_name)
     file_data = open(proper_file_path, "rb")
     data = {
         file_id: (
@@ -83,6 +85,23 @@ def post_multi_form_data(
     return response
 
 
+def file_content_compare(file_path_1: str, file_path_2: str) -> bool:
+    """Confirm if files are exactly the same in terms of content
+
+    :param file_path_1: Path of first file to compare
+    :type file_path_1: `str`
+    :param file_path_2: Path of second file to compare
+    :type file_path_2: str
+    :return: _description_
+    :rtype: bool
+    """
+    with open(file_path_1, "r") as file:
+        file_1_data = file.read()
+    with open(file_path_2, "r") as file:
+        file_2_data = file.read()
+    return file_1_data == file_2_data
+
+
 def test_bad_mime_type(client: FlaskClient) -> None:
     """Test bad mime-type given
 
@@ -135,3 +154,36 @@ def test_shared_file_name(client: FlaskClient) -> None:
     assert response.data == b"At least two of the uploaded"\
         b" files share the same filename\n"
     assert response.status_code == 400
+
+
+def test_successful_upload(client: FlaskClient) -> None:
+    """Test a successful upload of multiple files
+
+    :param client: _description_
+    :type client: FlaskClient
+    """
+    data = get_multi_file_data(
+        [
+            ("file1", "test_uml_1.puml", None),
+            ("file2", "test_uml_2.puml", None)
+        ]
+    )
+
+    response = post_multi_form_data(
+        client,
+        data,
+        "/uploadUML"
+    )
+    assert response.data == b"Files uploaded successfully\n"
+    assert response.status_code == 200
+
+    assert file_content_compare(
+       os.path.join(input_resources, "test_uml_1.puml"),
+       os.path.join(output_resources, "test_uml_1.puml"),
+    )
+    os.remove(os.path.join(output_resources, "test_uml_1.puml"))
+    assert file_content_compare(
+       os.path.join(input_resources, "test_uml_2.puml"),
+       os.path.join(output_resources, "test_uml_2.puml"),
+    )
+    os.remove(os.path.join(output_resources, "test_uml_2.puml"))
