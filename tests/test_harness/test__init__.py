@@ -30,7 +30,8 @@ def get_file_data(
     :rtype: `dict`
     """
     proper_file_path = os.path.join(input_resources, file_name)
-    file_data = open(proper_file_path, "rb")
+    with open(proper_file_path, "rb") as file:
+        file_data = file
     data = {
         file_id: (
             file_data,
@@ -95,9 +96,9 @@ def file_content_compare(file_path_1: str, file_path_2: str) -> bool:
     :return: _description_
     :rtype: bool
     """
-    with open(file_path_1, "r") as file:
+    with open(file_path_1, "r", encoding="utf-8") as file:
         file_1_data = file.read()
-    with open(file_path_2, "r") as file:
+    with open(file_path_2, "r", encoding="utf-8") as file:
         file_2_data = file.read()
     return file_1_data == file_2_data
 
