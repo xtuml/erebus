@@ -34,7 +34,7 @@ def test_app() -> Generator[Flask, None, None]:
 
 
 @pytest.fixture()
-def client(test_app: Flask) -> FlaskClient:
+def client(app: Flask) -> FlaskClient:
     """Fixture to create the Flask test client
 
     :param test_app: The flask app to be tested
@@ -42,11 +42,11 @@ def client(test_app: Flask) -> FlaskClient:
     :return: Flask test client
     :rtype: :class:`FlaskClient`
     """
-    return test_app.test_client()
+    return app.test_client()
 
 
 @pytest.fixture()
-def runner(test_app: Flask) -> FlaskCliRunner:
+def runner(app: Flask) -> FlaskCliRunner:
     """Fixture to create the runner for the test client
 
     :param test_app: The flask app to be tested
@@ -54,4 +54,4 @@ def runner(test_app: Flask) -> FlaskCliRunner:
     :return: Flask test client runner
     :rtype: :class:`FlaskCliRunner`
     """
-    return test_app.test_cli_runner()
+    return app.test_cli_runner()
