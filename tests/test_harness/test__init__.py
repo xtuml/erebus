@@ -1,6 +1,8 @@
+# pylint: disable=Consider using 'with' for resource-allocating operations
 """Testing __init__.py
 """
 import os
+from io import BufferedReader
 from pathlib import Path
 from typing import Optional
 
@@ -31,7 +33,7 @@ def get_file_data(
     """
     proper_file_path = os.path.join(input_resources, file_name)
     file_data = open(proper_file_path, "rb")
-    data = {
+    data: dict[str, tuple[BufferedReader, str]] = {
         file_id: (
             file_data,
             alt_file_name if isinstance(alt_file_name, str) else file_name
@@ -42,7 +44,7 @@ def get_file_data(
 
 def get_multi_file_data(
     file_name_tuples: list[tuple[str, str, Optional[str]]]
-) -> dict:
+) -> dict[str, tuple[BufferedReader, str]]:
     """Get mutlple file data for a request
 
     :param file_name_tuples: Tuple with file_id, file_name and
@@ -82,7 +84,19 @@ def post_multi_form_data(
         buffered=True,
         content_type="multipart/form-data"
     )
+    # clean up open files
+    close_all_files(data)
     return response
+
+
+def close_all_files(data: dict[str, tuple[BufferedReader, str]]) -> None:
+    """Close all open files in a data dictionary
+
+    :param data: Dictionary of data passed to client request
+    :type data: `dict`
+    """
+    for file_data_tuple in data.values():
+        file_data_tuple[0].close()
 
 
 def file_content_compare(file_path_1: str, file_path_2: str) -> bool:
