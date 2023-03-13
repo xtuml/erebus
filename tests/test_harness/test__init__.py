@@ -30,8 +30,7 @@ def get_file_data(
     :rtype: `dict`
     """
     proper_file_path = os.path.join(input_resources, file_name)
-    with open(proper_file_path, "rb") as file:
-        file_data = file
+    file_data = open(proper_file_path, "rb")
     data = {
         file_id: (
             file_data,
