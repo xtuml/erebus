@@ -10,22 +10,27 @@ from pathlib import Path
 from typing import Generator
 
 import pytest
-from flask import Flask
 from flask.testing import FlaskClient, FlaskCliRunner
 # insert root directory into path
 package_path = abspath(Path(__file__).parent.parent.parent)
 sys.path.insert(0, package_path)
-from test_harness.__init__ import create_app # noqa
+from test_harness.__init__ import create_app, HarnessApp # noqa
 
 
 @pytest.fixture()
-def test_app() -> Generator[Flask, None, None]:
+def test_app() -> Generator[HarnessApp, None, None]:
     """Fixture to create app for testing
 
-    :yield: Yields the Flask app
-    :rtype: :class:`Generator`[:class:`Flask`, None, None]
+    :yield: Yields the Harness app
+    :rtype: :class:`Generator`[:class:`HarnessApp`, None, None]
     """
-    app = create_app()
+    app = create_app(
+        harness_config_path=str(
+            Path(
+                __file__
+            ).parent / "config/test_config.config"
+        )
+    )
     app.config.update(
         {
             "TESTING": True
@@ -36,11 +41,11 @@ def test_app() -> Generator[Flask, None, None]:
 
 
 @pytest.fixture()
-def client(test_app: Flask) -> FlaskClient:
+def client(test_app: HarnessApp) -> FlaskClient:
     """Fixture to create the Flask test client
 
-    :param test_app: The flask app to be tested
-    :type test_app: :class:`Flask`
+    :param test_app: The Harness app to be tested
+    :type test_app: :class:`HarnessApp`
     :return: Flask test client
     :rtype: :class:`FlaskClient`
     """
@@ -48,11 +53,11 @@ def client(test_app: Flask) -> FlaskClient:
 
 
 @pytest.fixture()
-def runner(test_app: Flask) -> FlaskCliRunner:
+def runner(test_app: HarnessApp) -> FlaskCliRunner:
     """Fixture to create the runner for the test client
 
     :param test_app: The flask app to be tested
-    :type test_app: :class:`Flask`
+    :type test_app: :class:`HarnessApp`
     :return: Flask test client runner
     :rtype: :class:`FlaskCliRunner`
     """
