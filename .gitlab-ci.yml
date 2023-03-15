@@ -19,3 +19,4 @@ include:
   - project: 'smartdcs1/internal/gitlab-ci-templates/python-linting-ci'
     ref: main
     file: '.python-linting-ci-template.yml'  
+  - '/ci/.terraform-ci.yml'
