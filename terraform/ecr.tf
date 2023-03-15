@@ -1,3 +1,4 @@
+#tfsec:ignore:aws-ecr-repository-customer-key
 resource "aws_ecr_repository" "test_harness" {
   name                 = local.application_name
   image_tag_mutability = "IMMUTABLE"
@@ -7,7 +8,7 @@ resource "aws_ecr_repository" "test_harness" {
   }
 
   encryption_configuration {
-    encryption_type = "KMS" #tfsec:ignore:aws-ecr-repository-customer-key
+    encryption_type = "KMS" 
   }
 }
 
