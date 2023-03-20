@@ -18,5 +18,22 @@ include:
   - template: "Security/License-Scanning.gitlab-ci.yml"
   - project: 'smartdcs1/internal/gitlab-ci-templates/python-linting-ci'
     ref: main
-    file: '.python-linting-ci-template.yml'  
+    file: '.python-linting-ci-template.yml'
   - '/ci/.terraform-ci.yml'
+
+pytest:
+  image: $GITLAB_PYTHON_VERSION
+  stage: test
+  before_script:
+    - pip install pytest
+    - pytest --version
+    - pip install -r requirements.txt
+  script:
+    - export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
+    - pytest --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
