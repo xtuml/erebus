@@ -1,3 +1,4 @@
+# pylint: disable=R0913
 """
 Creates the test harness app
 """
