@@ -19,6 +19,7 @@ include:
   - project: 'smartdcs1/internal/gitlab-ci-templates/python-linting-ci'
     ref: main
     file: '.python-linting-ci-template.yml'
+  - '/ci/.terraform-ci.yml'
 
 pytest:
   image: $GITLAB_PYTHON_VERSION
@@ -35,4 +36,4 @@ pytest:
     reports:
       junit: report.xml
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"' 
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
