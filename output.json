@@ -1,0 +1,59 @@
+[
+    {
+        "jobName": "ANDFork_ANDFork_a",
+        "jobId": "f47bb461-5187-d261-cbaa-fb9da9c42aa1",
+        "eventType": "A",
+        "eventId": "2a70dc53-3e1f-9b67-1cdd-1ff3852bc6d9",
+        "timestamp": "2023-04-27T08:13:55Z",
+        "applicationName": "default_application_name"
+    },
+    {
+        "jobName": "ANDFork_ANDFork_a",
+        "jobId": "f47bb461-5187-d261-cbaa-fb9da9c42aa1",
+        "eventType": "B",
+        "eventId": "ca012b3f-3093-f166-8fdb-d9babdaf1b59",
+        "timestamp": "2023-04-27T08:13:56Z",
+        "applicationName": "default_application_name",
+        "previousEventIds": "2a70dc53-3e1f-9b67-1cdd-1ff3852bc6d9"
+    },
+    {
+        "jobName": "ANDFork_ANDFork_a",
+        "jobId": "f47bb461-5187-d261-cbaa-fb9da9c42aa1",
+        "eventType": "C",
+        "eventId": "1673b055-9e80-e39c-15b9-bb614fa626bb",
+        "timestamp": "2023-04-27T08:13:57Z",
+        "applicationName": "default_application_name",
+        "previousEventIds": "2a70dc53-3e1f-9b67-1cdd-1ff3852bc6d9"
+    },
+    {
+        "jobName": "ANDFork_ANDFork_a",
+        "jobId": "f47bb461-5187-d261-cbaa-fb9da9c42aa1",
+        "eventType": "D",
+        "eventId": "b5bbb03d-4b92-b909-e2c7-dad50d330efa",
+        "timestamp": "2023-04-27T08:13:58Z",
+        "applicationName": "default_application_name",
+        "previousEventIds": "ca012b3f-3093-f166-8fdb-d9babdaf1b59"
+    },
+    {
+        "jobName": "ANDFork_ANDFork_a",
+        "jobId": "f47bb461-5187-d261-cbaa-fb9da9c42aa1",
+        "eventType": "E",
+        "eventId": "970ff2ff-7c29-4c60-29b8-e47d7a5cfeb5",
+        "timestamp": "2023-04-27T08:13:59Z",
+        "applicationName": "default_application_name",
+        "previousEventIds": "ca012b3f-3093-f166-8fdb-d9babdaf1b59"
+    },
+    {
+        "jobName": "ANDFork_ANDFork_a",
+        "jobId": "f47bb461-5187-d261-cbaa-fb9da9c42aa1",
+        "eventType": "F",
+        "eventId": "cccfe897-b148-0d5c-fdff-e9bc6a044e4c",
+        "timestamp": "2023-04-27T08:14:00Z",
+        "applicationName": "default_application_name",
+        "previousEventIds": [
+            "1673b055-9e80-e39c-15b9-bb614fa626bb",
+            "b5bbb03d-4b92-b909-e2c7-dad50d330efa",
+            "970ff2ff-7c29-4c60-29b8-e47d7a5cfeb5"
+        ]
+    }
+]
