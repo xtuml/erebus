@@ -1,6 +1,7 @@
 import json
 import secrets
 import copy
+from datetime import datetime, timedelta
 
 class Event: 
     def __init__(self): 
@@ -101,7 +102,7 @@ class Job:
 
 # Load template json file from same directory
 def loadTemplate():
-    f = open("output.json")
+    f = open("test_sequence.json")
     data = json.load(f)
     template = Job()
     # iterate over the list of dicts
@@ -122,17 +123,25 @@ def loadTemplate():
 
     return(template)
 
-def makeJobFromTemplate(template):
+def makeJobFromTemplate(template, initDelayMinutes, gapSeconds):
     # copy template job exactly
     copyJob = copy.deepcopy(template)
 
     # randomise jobId, but make it consistent
     newJobId = makeRandId()
 
+    # set initial timestamp to specified number of minutes behind current time
+    newStamp = datetime.utcnow() - timedelta(minutes=initDelayMinutes)
+
+    # loop over timestamps, incrementing each event by specified number of seconds
+    # as timestamps have no relation to eventid, can add to an existing loop for sake of speed
     # each event in the job needs a new eventid
     for e in copyJob.events:
         e.newEventId = makeRandId()
         e.jobId = newJobId
+        e.timestamp = newStamp.isoformat(timespec='seconds') + 'Z'
+        newStamp = newStamp + timedelta(seconds=gapSeconds)
+
     
     # once that's done, call updater to follow previous id links and set them to new ids
     copyJob.updatePrevIds()
@@ -152,11 +161,8 @@ def makeJobFromTemplate(template):
 def makeRandId():
     return(secrets.token_hex(4)+"-"+secrets.token_hex(2)+"-"+secrets.token_hex(2)+"-"+secrets.token_hex(2)+"-"+secrets.token_hex(6))
     
-# makeJobFromTemplate(loadTemplate())
 t = loadTemplate()
-c = makeJobFromTemplate(t)
-# print(t.events[5].exportEventToJson())
-# print(t.exportJobToJson())
+c = makeJobFromTemplate(t, 40, 1)
 
 with open("output.json", "w") as outfile:
     outfile.write(c.exportJobToJson())
