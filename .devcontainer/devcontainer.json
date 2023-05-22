@@ -16,11 +16,15 @@
         "1": "pip3 install --user -r requirements.txt",
         "2": "echo 'export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH' >> ~/.bashrc"
         // "3": "bash install_plus2json.sh"
-    }
+    },
 
 	// Configure tool-specific properties.
 	// "customizations": {},
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
+	"mounts": [
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached"
+	]
 }
