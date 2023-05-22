@@ -76,6 +76,9 @@ class Job:
         raise Exception("No event found with ID " + targetId)
 
     def exportJobToJson(self):
+        return json.dumps(self.exportJobToList(), indent=4)
+    
+    def exportJobToList(self):
         o = []
         for e in self.events:
             if e.hasPreviousEventId():
@@ -97,8 +100,7 @@ class Job:
                 "timestamp":e.timestamp, 
                 "applicationName":e.applicationName
                 })
-        return json.dumps(o, indent=4)
-
+        return o
 
 # Load template json file from same directory
 def loadTemplate():
@@ -164,5 +166,15 @@ def makeRandId():
 t = loadTemplate()
 c = makeJobFromTemplate(t, 40, 1)
 
+# for testing 1 job
+# with open("output.json", "w") as outfile:
+#     outfile.write(c.exportJobToJson())
+
+# for testing many jobs
+i = 0
+l = []
+while i<2:
+    l.append(makeJobFromTemplate(t, 30, 1).exportJobToList())
+    i = i + 1
 with open("output.json", "w") as outfile:
-    outfile.write(c.exportJobToJson())
+    outfile.write(json.dumps(l, indent=4))

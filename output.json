@@ -1,59 +1,120 @@
 [
-    {
-        "jobName": "ANDFork_ANDFork_a",
-        "jobId": "2be66787-b742-af9e-ef00-7b8b6560232d",
-        "eventType": "A",
-        "eventId": "e27ff45f-6386-8c7a-f4a4-534e62640ac1",
-        "timestamp": "2023-05-22T10:51:19Z",
-        "applicationName": "default_application_name"
-    },
-    {
-        "jobName": "ANDFork_ANDFork_a",
-        "jobId": "2be66787-b742-af9e-ef00-7b8b6560232d",
-        "eventType": "B",
-        "eventId": "dc2f4338-ecb8-38d5-24a7-0a8e2f5a100c",
-        "timestamp": "2023-05-22T10:51:20Z",
-        "applicationName": "default_application_name",
-        "previousEventIds": "e27ff45f-6386-8c7a-f4a4-534e62640ac1"
-    },
-    {
-        "jobName": "ANDFork_ANDFork_a",
-        "jobId": "2be66787-b742-af9e-ef00-7b8b6560232d",
-        "eventType": "C",
-        "eventId": "671c4990-f7ad-bf7c-1c9b-b311f5fddd23",
-        "timestamp": "2023-05-22T10:51:21Z",
-        "applicationName": "default_application_name",
-        "previousEventIds": "e27ff45f-6386-8c7a-f4a4-534e62640ac1"
-    },
-    {
-        "jobName": "ANDFork_ANDFork_a",
-        "jobId": "2be66787-b742-af9e-ef00-7b8b6560232d",
-        "eventType": "D",
-        "eventId": "07b47fcb-99fd-8ac4-725c-d81be645dffb",
-        "timestamp": "2023-05-22T10:51:22Z",
-        "applicationName": "default_application_name",
-        "previousEventIds": "dc2f4338-ecb8-38d5-24a7-0a8e2f5a100c"
-    },
-    {
-        "jobName": "ANDFork_ANDFork_a",
-        "jobId": "2be66787-b742-af9e-ef00-7b8b6560232d",
-        "eventType": "E",
-        "eventId": "d2de6023-46a3-3a44-1f56-dbf54a2777db",
-        "timestamp": "2023-05-22T10:51:23Z",
-        "applicationName": "default_application_name",
-        "previousEventIds": "dc2f4338-ecb8-38d5-24a7-0a8e2f5a100c"
-    },
-    {
-        "jobName": "ANDFork_ANDFork_a",
-        "jobId": "2be66787-b742-af9e-ef00-7b8b6560232d",
-        "eventType": "F",
-        "eventId": "5101798c-2e46-3866-873e-e12f899aa72b",
-        "timestamp": "2023-05-22T10:51:24Z",
-        "applicationName": "default_application_name",
-        "previousEventIds": [
-            "671c4990-f7ad-bf7c-1c9b-b311f5fddd23",
-            "07b47fcb-99fd-8ac4-725c-d81be645dffb",
-            "d2de6023-46a3-3a44-1f56-dbf54a2777db"
-        ]
-    }
+    [
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "b7f7b299-db5d-4c19-65db-9dfe1b27724c",
+            "eventType": "A",
+            "eventId": "58ef0552-c278-2c00-6604-3b45d1a92fa8",
+            "timestamp": "2023-05-22T11:13:49Z",
+            "applicationName": "default_application_name"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "b7f7b299-db5d-4c19-65db-9dfe1b27724c",
+            "eventType": "B",
+            "eventId": "1556f597-9923-f5f9-10b9-b9392fab8227",
+            "timestamp": "2023-05-22T11:13:50Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": "58ef0552-c278-2c00-6604-3b45d1a92fa8"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "b7f7b299-db5d-4c19-65db-9dfe1b27724c",
+            "eventType": "C",
+            "eventId": "a774f932-c33f-a31d-bc36-84fa8484246f",
+            "timestamp": "2023-05-22T11:13:51Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": "58ef0552-c278-2c00-6604-3b45d1a92fa8"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "b7f7b299-db5d-4c19-65db-9dfe1b27724c",
+            "eventType": "D",
+            "eventId": "a805f6d6-3be8-35a9-9967-cc35b26fede0",
+            "timestamp": "2023-05-22T11:13:52Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": "1556f597-9923-f5f9-10b9-b9392fab8227"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "b7f7b299-db5d-4c19-65db-9dfe1b27724c",
+            "eventType": "E",
+            "eventId": "eec24669-baf9-5c0f-aa96-0705e7fd4ebf",
+            "timestamp": "2023-05-22T11:13:53Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": "1556f597-9923-f5f9-10b9-b9392fab8227"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "b7f7b299-db5d-4c19-65db-9dfe1b27724c",
+            "eventType": "F",
+            "eventId": "c8385ca8-4c6d-6b32-27ec-414da536d0a7",
+            "timestamp": "2023-05-22T11:13:54Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": [
+                "a774f932-c33f-a31d-bc36-84fa8484246f",
+                "a805f6d6-3be8-35a9-9967-cc35b26fede0",
+                "eec24669-baf9-5c0f-aa96-0705e7fd4ebf"
+            ]
+        }
+    ],
+    [
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "33fcab0c-f420-9e23-bbab-3345a402dfb9",
+            "eventType": "A",
+            "eventId": "1513187b-5023-c02d-853d-a9a85a866504",
+            "timestamp": "2023-05-22T11:13:49Z",
+            "applicationName": "default_application_name"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "33fcab0c-f420-9e23-bbab-3345a402dfb9",
+            "eventType": "B",
+            "eventId": "b20089e0-2904-e3f0-6490-a083552930e5",
+            "timestamp": "2023-05-22T11:13:50Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": "1513187b-5023-c02d-853d-a9a85a866504"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "33fcab0c-f420-9e23-bbab-3345a402dfb9",
+            "eventType": "C",
+            "eventId": "dc7033d7-db23-3ec8-bcd8-67fb04b8d81c",
+            "timestamp": "2023-05-22T11:13:51Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": "1513187b-5023-c02d-853d-a9a85a866504"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "33fcab0c-f420-9e23-bbab-3345a402dfb9",
+            "eventType": "D",
+            "eventId": "a3ed7fbc-3033-a653-3a61-ae6de54aada8",
+            "timestamp": "2023-05-22T11:13:52Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": "b20089e0-2904-e3f0-6490-a083552930e5"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "33fcab0c-f420-9e23-bbab-3345a402dfb9",
+            "eventType": "E",
+            "eventId": "b2767642-45d0-030f-7f68-20e321310a93",
+            "timestamp": "2023-05-22T11:13:53Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": "b20089e0-2904-e3f0-6490-a083552930e5"
+        },
+        {
+            "jobName": "ANDFork_ANDFork_a",
+            "jobId": "33fcab0c-f420-9e23-bbab-3345a402dfb9",
+            "eventType": "F",
+            "eventId": "0c866d47-d06d-d664-273c-8af6b9faf3d9",
+            "timestamp": "2023-05-22T11:13:54Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": [
+                "dc7033d7-db23-3ec8-bcd8-67fb04b8d81c",
+                "a3ed7fbc-3033-a653-3a61-ae6de54aada8",
+                "b2767642-45d0-030f-7f68-20e321310a93"
+            ]
+        }
+    ]
 ]
