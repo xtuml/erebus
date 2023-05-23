@@ -171,10 +171,10 @@ c = makeJobFromTemplate(t, 40, 1)
 #     outfile.write(c.exportJobToJson())
 
 # for testing many jobs
-i = 0
-l = []
-while i<2:
-    l.append(makeJobFromTemplate(t, 30, 1).exportJobToList())
-    i = i + 1
-with open("output.json", "w") as outfile:
-    outfile.write(json.dumps(l, indent=4))
+# i = 0
+# l = []
+# while i<2:
+#     l.append(makeJobFromTemplate(t, 30, 1).exportJobToList())
+#     i = i + 1
+# with open("output.json", "w") as outfile:
+#     outfile.write(json.dumps(l, indent=4))
