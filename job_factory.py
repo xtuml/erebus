@@ -156,8 +156,8 @@ def makeJobFromTemplate(template, initDelayMinutes, gapSeconds):
     copyJob.updatePrevIds()
 
     # set all newEventIds to current now that the links are updated
-    for e in copyJob.events:
-        e.eventId = e.newEventId
+    for event in copyJob.events:
+        event.eventId = event.newEventId
 
     return copyJob
 
