@@ -3,44 +3,47 @@ import secrets
 import copy
 from datetime import datetime, timedelta
 
-class Event: 
-    def __init__(self): 
-        self.jobName = "" 
-        self.jobId = "" 
+
+class Event:
+    def __init__(self):
+        self.jobName = ""
+        self.jobId = ""
         self.newEventId = ""
-        self.eventType = "" 
-        self.eventId = "" 
-        self.timestamp = "" 
-        self.applicationName = "" 
+        self.eventType = ""
+        self.eventId = ""
+        self.timestamp = ""
+        self.applicationName = ""
         self.previousEventIds = []
 
     def __str__(self):
         return self.eventId
 
-    def hasPreviousEventId(self): 
-        if(len(self.previousEventIds) > 0): 
-            return True 
+    def hasPreviousEventId(self):
+        if (len(self.previousEventIds) > 0):
+            return True
         return False
 
+# TODO: make a type or similar to avoid duplication
     def exportEventToJson(self):
         if self.hasPreviousEventId():
-            return json.dumps({ 
-                "jobName":self.jobName, 
-                "jobId":self.jobId, 
-                "eventType":self.eventType, 
-                "eventId":self.eventId, 
-                "timestamp":self.timestamp, 
-                "applicationName":self.applicationName,
-                "previousEventIds":self.previousEventIds
+            return json.dumps({
+                "jobName": self.jobName,
+                "jobId": self.jobId,
+                "eventType": self.eventType,
+                "eventId": self.eventId,
+                "timestamp": self.timestamp,
+                "applicationName": self.applicationName,
+                "previousEventIds": self.previousEventIds
                 }, indent=4)
-        return json.dumps({ 
-            "jobName":self.jobName, 
-            "jobId":self.jobId, 
-            "eventType":self.eventType, 
-            "eventId":self.eventId, 
-            "timestamp":self.timestamp, 
-            "applicationName":self.applicationName 
+        return json.dumps({
+            "jobName": self.jobName,
+            "jobId": self.jobId,
+            "eventType": self.eventType,
+            "eventId": self.eventId,
+            "timestamp": self.timestamp,
+            "applicationName": self.applicationName
             }, indent=4)
+
 
 class Job:
     def __init__(self):
@@ -50,80 +53,86 @@ class Job:
         return self.events
 
     def updatePrevIds(self):
-        for e in self.events:
-            if e.hasPreviousEventId():
-                #need to check if this is a string or list
-                match type(e.previousEventIds).__name__:
-                    case "str":
-                        e.previousEventIds = self.searchForId(e.previousEventIds).newEventId
-                    case "list":
-                        # use iterators for the list
-                        i = 0
-                        # treat the list of ids as a queue
-                        while i<len(e.previousEventIds):
-                            # find the new id of the previous id at the front of the list
-                            newId = self.searchForId(e.previousEventIds[0]).newEventId
-                            # add it to the back
-                            e.previousEventIds.append(newId)
-                            # and delete the original at the front
-                            e.previousEventIds.pop(0)
-                            i = i + 1
-                
+        for event in self.events:
+            if event.hasPreviousEventId():
+                self.processPreviousEvents(event)
+
+    def processPreviousEvents(self, event):
+        # need to check if this is a string or list
+        match type(event.previousEventIds).__name__:
+            case "str":
+                prevEvent = self.searchForId(event.previousEventIds)
+                event.previousEventIds = prevEvent.newEventId
+            case "list":
+                # use iterators for the list
+                i = 0
+                # treat the list of ids as a queue
+                while i < len(event.previousEventIds):
+                    # find the new id of previous event at list 0
+                    prevEvent = self.searchForId(event.previousEventIds[0])
+                    newId = prevEvent.newEventId
+                    # add it to the back
+                    event.previousEventIds.append(newId)
+                    # and delete the original at the front
+                    event.previousEventIds.pop(0)
+                    i = i + 1
+
     def searchForId(self, targetId):
-        for e in self.events:
-            if e.eventId == targetId:
-                return e
+        for event in self.events:
+            if event.eventId == targetId:
+                return event
         raise Exception("No event found with ID " + targetId)
 
     def exportJobToJson(self):
         return json.dumps(self.exportJobToList(), indent=4)
-    
+
     def exportJobToList(self):
-        o = []
-        for e in self.events:
-            if e.hasPreviousEventId():
-                o.append({ 
-                "jobName":e.jobName, 
-                "jobId":e.jobId, 
-                "eventType":e.eventType, 
-                "eventId":e.eventId, 
-                "timestamp":e.timestamp, 
-                "applicationName":e.applicationName,
-                "previousEventIds":e.previousEventIds
+        outputList = []
+        for event in self.events:
+            if event.hasPreviousEventId():
+                outputList.append({
+                    "jobName": event.jobName,
+                    "jobId": event.jobId,
+                    "eventType": event.eventType,
+                    "eventId": event.eventId,
+                    "timestamp": event.timestamp,
+                    "applicationName": event.applicationName,
+                    "previousEventIds": event.previousEventIds
                 })
             else:
-                o.append({ 
-                "jobName":e.jobName, 
-                "jobId":e.jobId, 
-                "eventType":e.eventType, 
-                "eventId":e.eventId, 
-                "timestamp":e.timestamp, 
-                "applicationName":e.applicationName
+                outputList.append({
+                    "jobName": event.jobName,
+                    "jobId": event.jobId,
+                    "eventType": event.eventType,
+                    "eventId": event.eventId,
+                    "timestamp": event.timestamp,
+                    "applicationName": event.applicationName
                 })
-        return o
+        return outputList
+
 
 # Load template json file from same directory
 def loadTemplate():
-    f = open("test_sequence.json")
-    data = json.load(f)
-    template = Job()
+    inputJobFile = open("test_sequence.json")
+    inputJob = json.load(inputJobFile)
+    templateJob = Job()
     # iterate over the list of dicts
-    for d in data:
-        e = Event()
-        e.jobName = d["jobName"]
-        e.jobId = d["jobId"]
-        e.eventType = d["eventType"]
-        e.eventId = d["eventId"]
-        e.timestamp = d["timestamp"]
-        e.applicationName = d["applicationName"]
+    for inputEvent in inputJob:
+        templateEvent = Event()
+        templateEvent.jobName = inputEvent["jobName"]
+        templateEvent.jobId = inputEvent["jobId"]
+        templateEvent.eventType = inputEvent["eventType"]
+        templateEvent.eventId = inputEvent["eventId"]
+        templateEvent.timestamp = inputEvent["timestamp"]
+        templateEvent.applicationName = inputEvent["applicationName"]
         try:
-            e.previousEventIds = d["previousEventIds"]
+            templateEvent.previousEventIds = inputEvent["previousEventIds"]
         except KeyError:
             pass
-        template.events.append(e)
-    #template.createLinks()
+        templateJob.events.append(templateEvent)
 
-    return(template)
+    return (templateJob)
+
 
 def makeJobFromTemplate(template, initDelayMinutes, gapSeconds):
     # copy template job exactly
@@ -132,28 +141,25 @@ def makeJobFromTemplate(template, initDelayMinutes, gapSeconds):
     # randomise jobId, but make it consistent
     newJobId = makeRandId()
 
-    # set initial timestamp to specified number of minutes behind current time
+    # set initial timestamp to now - initDelayMinutes
     newStamp = datetime.utcnow() - timedelta(minutes=initDelayMinutes)
 
-    # loop over timestamps, incrementing each event by specified number of seconds
-    # as timestamps have no relation to eventid, can add to an existing loop for sake of speed
-    # each event in the job needs a new eventid
-    for e in copyJob.events:
-        e.newEventId = makeRandId()
-        e.jobId = newJobId
-        e.timestamp = newStamp.isoformat(timespec='seconds') + 'Z'
+    # loop over timestamps, incrementing by gapSeconds
+    # include in loop for events (stored in newEventId for now)
+    for event in copyJob.events:
+        event.newEventId = makeRandId()
+        event.jobId = newJobId
+        event.timestamp = newStamp.isoformat(timespec='seconds') + 'Z'
         newStamp = newStamp + timedelta(seconds=gapSeconds)
 
-    
-    # once that's done, call updater to follow previous id links and set them to new ids
+    # once that's done, match prevIds to correct newEventIds
     copyJob.updatePrevIds()
-    
-    # set all new event ids to current now that the links are updated
+
+    # set all newEventIds to current now that the links are updated
     for e in copyJob.events:
         e.eventId = e.newEventId
-        
+
     return copyJob
-        
 
 
 # Function to make a believable hex token for readability
@@ -161,14 +167,18 @@ def makeJobFromTemplate(template, initDelayMinutes, gapSeconds):
 # e.g. eventId cc2db444-f7d5-41e8-b009-f1e5d6adaae5
 # in both cases, 8-4-4-4-12 hex strings
 def makeRandId():
-    return(secrets.token_hex(4)+"-"+secrets.token_hex(2)+"-"+secrets.token_hex(2)+"-"+secrets.token_hex(2)+"-"+secrets.token_hex(6))
-    
-t = loadTemplate()
-c = makeJobFromTemplate(t, 40, 1)
+    outputId = secrets.token_hex(4)+"-"+secrets.token_hex(2)+"-"
+    outputId = outputId+secrets.token_hex(2)+"-"+secrets.token_hex(2)+"-"
+    outputId = outputId+secrets.token_hex(6)
+    return (outputId)
+
+
+templateJob = loadTemplate()
+copyJob = makeJobFromTemplate(templateJob, 40, 1)
 
 # for testing 1 job
-# with open("output.json", "w") as outfile:
-#     outfile.write(c.exportJobToJson())
+with open("output.json", "w") as outfile:
+    outfile.write(copyJob.exportJobToJson())
 
 # for testing many jobs
 # i = 0
