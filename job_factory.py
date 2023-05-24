@@ -1,190 +1,196 @@
+"""Reads a job JSON from a file, then writes n copies to file"""
 import json
 import secrets
 import copy
 from datetime import datetime, timedelta
+from functools import partial
+open_utf8 = partial(open, encoding='UTF-8')
 
 
 class Event:
+    """Describes one UML entity, as well as links to other entities"""
     def __init__(self):
-        self.jobName = ""
-        self.jobId = ""
-        self.newEventId = ""
-        self.eventType = ""
-        self.eventId = ""
+        self.job_name = ""
+        self.job_id = ""
+        self.new_event_id = ""
+        self.event_type = ""
+        self.event_id = ""
         self.timestamp = ""
-        self.applicationName = ""
-        self.previousEventIds = []
+        self.application_name = ""
+        self.previous_event_ids = []
 
-    def __str__(self):
-        return self.eventId
-
-    def hasPreviousEventId(self):
-        if (len(self.previousEventIds) > 0):
+    def has_previous_event_id(self):
+        """Checks whether an event's previous_event_ids is populated"""
+        if len(self.previous_event_ids) > 0:
             return True
         return False
 
 # TODO: make a type or similar to avoid duplication
-    def exportEventToJson(self):
-        if self.hasPreviousEventId():
+    def export_event_to_json(self):
+        """Converts an event into a JSON object"""
+        if self.has_previous_event_id():
             return json.dumps({
-                "jobName": self.jobName,
-                "jobId": self.jobId,
-                "eventType": self.eventType,
-                "eventId": self.eventId,
+                "jobName": self.job_name,
+                "jobId": self.job_id,
+                "eventType": self.event_type,
+                "eventId": self.event_id,
                 "timestamp": self.timestamp,
-                "applicationName": self.applicationName,
-                "previousEventIds": self.previousEventIds
+                "applicationName": self.application_name,
+                "previousEventIds": self.previous_event_ids
                 }, indent=4)
         return json.dumps({
-            "jobName": self.jobName,
-            "jobId": self.jobId,
-            "eventType": self.eventType,
-            "eventId": self.eventId,
+            "jobName": self.job_name,
+            "jobId": self.job_id,
+            "eventType": self.event_type,
+            "eventId": self.event_id,
             "timestamp": self.timestamp,
-            "applicationName": self.applicationName
+            "applicationName": self.application_name
             }, indent=4)
 
 
 class Job:
+    """Describes a group of related events, contains proccessing them"""
     def __init__(self):
         self.events = []
 
-    def __str__(self):
-        return self.events
-
-    def updatePrevIds(self):
+    def update_prev_ids(self):
+        """Checks all events for previous ids and updates them"""
         for event in self.events:
-            if event.hasPreviousEventId():
-                self.processPreviousEvents(event)
+            if event.has_previous_event_id():
+                self.process_previous_events(event)
 
-    def processPreviousEvents(self, event):
+    def process_previous_events(self, event):
+        """Replaces previous ids with associated new_event_ids"""
         # need to check if this is a string or list
-        match type(event.previousEventIds).__name__:
+        match type(event.previous_event_ids).__name__:
             case "str":
-                prevEvent = self.searchForId(event.previousEventIds)
-                event.previousEventIds = prevEvent.newEventId
+                prev_event = self.search_for_id(event.previous_event_ids)
+                event.previous_event_ids = prev_event.new_event_id
             case "list":
                 # use iterators for the list
                 i = 0
                 # treat the list of ids as a queue
-                while i < len(event.previousEventIds):
+                while i < len(event.previous_event_ids):
                     # find the new id of previous event at list 0
-                    prevEvent = self.searchForId(event.previousEventIds[0])
-                    newId = prevEvent.newEventId
+                    old_id = event.previous_event_ids[0]
+                    prev_event = self.search_for_id(old_id)
+                    new_id = prev_event.new_event_id
                     # add it to the back
-                    event.previousEventIds.append(newId)
+                    event.previous_event_ids.append(new_id)
                     # and delete the original at the front
-                    event.previousEventIds.pop(0)
+                    event.previous_event_ids.pop(0)
                     i = i + 1
 
-    def searchForId(self, targetId):
+    def search_for_id(self, target_id):
+        """Scans for an event with the target_id, throws if absent"""
         for event in self.events:
-            if event.eventId == targetId:
+            if event.event_id == target_id:
                 return event
-        raise Exception("No event found with ID " + targetId)
+        raise KeyError("No event found with ID " + target_id)
 
-    def exportJobToJson(self):
-        return json.dumps(self.exportJobToList(), indent=4)
+    def export_job_to_json(self):
+        """Converts a job to a JSON object"""
+        return json.dumps(self.export_job_to_list(), indent=4)
 
-    def exportJobToList(self):
-        outputList = []
+    def export_job_to_list(self):
+        """Converts a job into a list of readable events"""
+        output_list = []
         for event in self.events:
-            if event.hasPreviousEventId():
-                outputList.append({
-                    "jobName": event.jobName,
-                    "jobId": event.jobId,
-                    "eventType": event.eventType,
-                    "eventId": event.eventId,
+            if event.has_previous_event_id():
+                output_list.append({
+                    "jobName": event.job_name,
+                    "jobId": event.job_id,
+                    "eventType": event.event_type,
+                    "eventId": event.event_id,
                     "timestamp": event.timestamp,
-                    "applicationName": event.applicationName,
-                    "previousEventIds": event.previousEventIds
+                    "applicationName": event.application_name,
+                    "previousEventIds": event.previous_event_ids
                 })
             else:
-                outputList.append({
-                    "jobName": event.jobName,
-                    "jobId": event.jobId,
-                    "eventType": event.eventType,
-                    "eventId": event.eventId,
+                output_list.append({
+                    "jobName": event.job_name,
+                    "jobId": event.job_id,
+                    "eventType": event.event_type,
+                    "eventId": event.event_id,
                     "timestamp": event.timestamp,
-                    "applicationName": event.applicationName
+                    "applicationName": event.application_name
                 })
-        return outputList
+        return output_list
 
 
-# Load template json file from same directory
-def loadTemplate():
-    inputJobFile = open("test_sequence.json")
-    inputJob = json.load(inputJobFile)
-    templateJob = Job()
+def load_template():
+    """Load template json file from same directory and return Job object"""
+    input_job_file = open_utf8("test_sequence.json")
+    input_job = json.load(input_job_file)
+    template_job = Job()
     # iterate over the list of dicts
-    for inputEvent in inputJob:
-        templateEvent = Event()
-        templateEvent.jobName = inputEvent["jobName"]
-        templateEvent.jobId = inputEvent["jobId"]
-        templateEvent.eventType = inputEvent["eventType"]
-        templateEvent.eventId = inputEvent["eventId"]
-        templateEvent.timestamp = inputEvent["timestamp"]
-        templateEvent.applicationName = inputEvent["applicationName"]
+    for input_event in input_job:
+        template_event = Event()
+        template_event.job_name = input_event["jobName"]
+        template_event.job_id = input_event["jobId"]
+        template_event.event_type = input_event["eventType"]
+        template_event.event_id = input_event["eventId"]
+        template_event.timestamp = input_event["timestamp"]
+        template_event.application_name = input_event["applicationName"]
         try:
-            templateEvent.previousEventIds = inputEvent["previousEventIds"]
+            input_previous_ids = input_event["previousEventIds"]
+            template_event.previous_event_ids = input_previous_ids
         except KeyError:
             pass
-        templateJob.events.append(templateEvent)
+        template_job.events.append(template_event)
 
-    return (templateJob)
+    return template_job
 
 
-def makeJobFromTemplate(template, initDelayMinutes, gapSeconds):
+def make_job_from_template(template, init_delay_minutes, gap_seconds):
+    """Deep copies a template and randomises unique values"""
     # copy template job exactly
-    copyJob = copy.deepcopy(template)
+    copy_job = copy.deepcopy(template)
 
     # randomise jobId, but make it consistent
-    newJobId = makeRandId()
+    new_job_id = make_rand_id()
 
     # set initial timestamp to now - initDelayMinutes
-    newStamp = datetime.utcnow() - timedelta(minutes=initDelayMinutes)
+    new_stamp = datetime.utcnow() - timedelta(minutes=init_delay_minutes)
 
     # loop over timestamps, incrementing by gapSeconds
     # include in loop for events (stored in newEventId for now)
-    for event in copyJob.events:
-        event.newEventId = makeRandId()
-        event.jobId = newJobId
-        event.timestamp = newStamp.isoformat(timespec='seconds') + 'Z'
-        newStamp = newStamp + timedelta(seconds=gapSeconds)
+    for event in copy_job.events:
+        event.new_event_id = make_rand_id()
+        event.job_id = new_job_id
+        event.timestamp = new_stamp.isoformat(timespec='seconds') + 'Z'
+        new_stamp = new_stamp + timedelta(seconds=gap_seconds)
 
     # once that's done, match prevIds to correct newEventIds
-    copyJob.updatePrevIds()
+    copy_job.update_prev_ids()
 
     # set all newEventIds to current now that the links are updated
-    for event in copyJob.events:
-        event.eventId = event.newEventId
+    for event in copy_job.events:
+        event.event_id = event.new_event_id
 
-    return copyJob
-
-
-# Function to make a believable hex token for readability
-# e.g. jobId 4b9c4678-85e0-4782-8049-9ee8207c8241
-# e.g. eventId cc2db444-f7d5-41e8-b009-f1e5d6adaae5
-# in both cases, 8-4-4-4-12 hex strings
-def makeRandId():
-    outputId = secrets.token_hex(4)+"-"+secrets.token_hex(2)+"-"
-    outputId = outputId+secrets.token_hex(2)+"-"+secrets.token_hex(2)+"-"
-    outputId = outputId+secrets.token_hex(6)
-    return (outputId)
+    return copy_job
 
 
-templateJob = loadTemplate()
-copyJob = makeJobFromTemplate(templateJob, 40, 1)
+def make_rand_id():
+    """Creates a random hex string in the event/job id format"""
+    output_id = secrets.token_hex(4)+"-"+secrets.token_hex(2)+"-"
+    output_id = output_id+secrets.token_hex(2)+"-"+secrets.token_hex(2)+"-"
+    output_id = output_id+secrets.token_hex(6)
+    return output_id
+
+
+template_obj = load_template()
+copy_obj = make_job_from_template(template_obj, 40, 1)
 
 # for testing 1 job
-with open("output.json", "w") as outfile:
-    outfile.write(copyJob.exportJobToJson())
+with open_utf8("output.json", "w") as outfile:
+    outfile.write(copy_obj.export_job_to_json())
 
 # for testing many jobs
 # i = 0
-# l = []
+# test_list = []
 # while i<2:
-#     l.append(makeJobFromTemplate(t, 30, 1).exportJobToList())
+#     test_list.append(make_job_from_template(t, 30, 1).export_job_to_list())
 #     i = i + 1
 # with open("output.json", "w") as outfile:
-#     outfile.write(json.dumps(l, indent=4))
+#     outfile.write(json.dumps(test_list, indent=4))
