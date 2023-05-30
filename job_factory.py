@@ -1,99 +1,136 @@
 """Reads a job JSON from a file, then writes n copies to file"""
+# pylint: disable=R0913
+# pylint: disable=R0902
 import json
-import secrets
 import copy
 from datetime import datetime, timedelta
 from functools import partial
+from uuid import uuid4
 open_utf8 = partial(open, encoding='UTF-8')
 
 
 class Event:
-    """Describes one UML entity, as well as links to other entities"""
-    def __init__(self):
-        self.job_name = ""
-        self.job_id = ""
-        self.new_event_id = ""
-        self.event_type = ""
-        self.event_id = ""
-        self.timestamp = ""
-        self.application_name = ""
-        self.previous_event_ids = []
+    # TODO: get definition of event_type and application_name
+    """Describes one UML entity, as well as links to other entities
+
+    :param job_name: Name of the job this event belongs to, defaults to ""
+    :type job_name: `str`, optional
+    :param job_id: The job's unique hex ID, defaults to ""
+    :type job_id: `str`, optional
+    :param event_type: _description_, defaults to ""
+    :type event_type: `str`, optional
+    :param event_id: This event's unique hex ID, defaults to ""
+    :type event_id: `str`, optional
+    :param timestamp: Time e.g. 2023-04-27T08:13:56Z, defaults to ""
+    :type timestamp: `str`, optional
+    :param application_name: Name of job's application, defaults to ""
+    :type application_name: `str`, optional
+    :param previous_event_ids: IDs of previous events, defaults to ""
+    :type previous_event_ids: `list[str]`, optional
+    :param new_event_id: Remembers previous IDs, defaults to ""
+    :type new_event_id: `str`, optional
+    """
+    def __init__(
+            self,
+            job_name: str = "",
+            job_id: str = "",
+            event_type: str = "",
+            event_id: str = "",
+            timestamp: str = "",
+            application_name: str = "",
+            previous_event_ids: list[str] = "",
+            new_event_id: str = ""
+            ):
+        """Constructor method
+        """
+        self.job_name = job_name
+        self.job_id = job_id
+        self.new_event_id = new_event_id
+        self.event_type = event_type
+        self.event_id = event_id
+        self.timestamp = timestamp
+        self.application_name = application_name
+        self.previous_event_ids = previous_event_ids
 
     def has_previous_event_id(self):
-        """Checks whether an event's previous_event_ids is populated"""
+        """Checks whether an event's previous_event_ids is populated
+
+        :return: true if there are previous event ids, false otherwise
+        :rtype: boolean
+        """
         if len(self.previous_event_ids) > 0:
             return True
         return False
 
-# TODO: make a type or similar to avoid duplication
-    def export_event_to_json(self):
-        """Converts an event into a JSON object"""
-        if self.has_previous_event_id():
-            return json.dumps({
-                "jobName": self.job_name,
-                "jobId": self.job_id,
-                "eventType": self.event_type,
-                "eventId": self.event_id,
-                "timestamp": self.timestamp,
-                "applicationName": self.application_name,
-                "previousEventIds": self.previous_event_ids
-                }, indent=4)
-        return json.dumps({
-            "jobName": self.job_name,
-            "jobId": self.job_id,
-            "eventType": self.event_type,
-            "eventId": self.event_id,
-            "timestamp": self.timestamp,
-            "applicationName": self.application_name
-            }, indent=4)
-
 
 class Job:
-    """Describes a group of related events, contains proccessing them"""
+    """Describes a group of related events, contains proccessing them
+    """
     def __init__(self):
-        self.events = []
+        """Constructor method
+        """
+        self.events: list[Event] = []
 
     def update_prev_ids(self):
-        """Checks all events for previous ids and updates them"""
+        """Checks all events for previous ids and updates them
+        """
         for event in self.events:
             if event.has_previous_event_id():
                 self.process_previous_events(event)
 
-    def process_previous_events(self, event):
-        """Replaces previous ids with associated new_event_ids"""
-        # need to check if this is a string or list
-        match type(event.previous_event_ids).__name__:
-            case "str":
-                prev_event = self.search_for_id(event.previous_event_ids)
-                event.previous_event_ids = prev_event.new_event_id
-            case "list":
-                # use iterators for the list
-                i = 0
-                # treat the list of ids as a queue
-                while i < len(event.previous_event_ids):
-                    # find the new id of previous event at list 0
-                    old_id = event.previous_event_ids[0]
-                    prev_event = self.search_for_id(old_id)
-                    new_id = prev_event.new_event_id
-                    # add it to the back
-                    event.previous_event_ids.append(new_id)
-                    # and delete the original at the front
-                    event.previous_event_ids.pop(0)
-                    i = i + 1
+    def process_previous_events(self, event: Event):
+        """Replaces previous ids with associated new_event_ids
 
-    def search_for_id(self, target_id):
-        """Scans for an event with the target_id, throws if absent"""
+        :param event: The event that is to have its previous IDs updated
+        :type event: :class:`Event`
+        """
+        # need to check if this is a string or list
+        if isinstance(event.previous_event_ids, str):
+            prev_event = self.search_for_id(event.previous_event_ids)
+            event.previous_event_ids = prev_event.new_event_id
+        elif isinstance(event.previous_event_ids, list):
+            # use iterators for the list
+            i = 0
+            # treat the list of ids as a queue
+            while i < len(event.previous_event_ids):
+                # find the new id of previous event at list 0
+                old_id = event.previous_event_ids[0]
+                prev_event = self.search_for_id(old_id)
+                new_id = prev_event.new_event_id
+                # add it to the back
+                event.previous_event_ids.append(new_id)
+                # and delete the original at the front
+                event.previous_event_ids.pop(0)
+                i = i + 1
+
+    def search_for_id(self, target_id: str):
+        """Scans for an event with the target_id, throws if absent
+
+        :param target_id: The ID that is checked for matches
+        :type target_id: `str`
+        :raises KeyError: No event has been found with the target ID
+        :return: The event that has the same event ID as the target ID
+        :rtype: :class:`Event`
+        """
         for event in self.events:
             if event.event_id == target_id:
                 return event
         raise KeyError("No event found with ID " + target_id)
 
     def export_job_to_json(self):
-        """Converts a job to a JSON object"""
+        """Converts a job to a JSON object
+
+        :return: JSON representation of the job
+        :rtype: `str`
+        """
         return json.dumps(self.export_job_to_list(), indent=4)
 
     def export_job_to_list(self):
-        """Converts a job into a list of readable events"""
+        """Converts a job into a list of readable events
+
+        :return: List of dicts that represent the data of a job of events
+        :rtype: `list[dict]`
+        """
         output_list = []
         for event in self.events:
             if event.has_previous_event_id():
@@ -118,37 +155,67 @@ class Job:
         return output_list
 
 
-def load_template():
-    """Load template json file from same directory and return Job object"""
-    input_job_file = open_utf8("test_sequence.json")
-    input_job = json.load(input_job_file)
+def parse_input_jobfile(input_jobfile: list[dict]):
+    """Creates a Job object from a loaded JSON job file
+
+    :param input_job: A loaded JSON job file
+    :type input_job: `list[dict]`
+    :return: The same data delivered as a Job object, carrying Event objects
+    :rtype: :class:`Job`
+    """
     template_job = Job()
     # iterate over the list of dicts
-    for input_event in input_job:
-        template_event = Event()
-        template_event.job_name = input_event["jobName"]
-        template_event.job_id = input_event["jobId"]
-        template_event.event_type = input_event["eventType"]
-        template_event.event_id = input_event["eventId"]
-        template_event.timestamp = input_event["timestamp"]
-        template_event.application_name = input_event["applicationName"]
-        try:
-            input_previous_ids = input_event["previousEventIds"]
-            template_event.previous_event_ids = input_previous_ids
-        except KeyError:
-            pass
+    for input_dict in input_jobfile:
+        template_event = parse_input_dict(input_dict)
         template_job.events.append(template_event)
 
     return template_job
 
 
-def make_job_from_template(template, init_delay_minutes, gap_seconds):
-    """Deep copies a template and randomises unique values"""
+def parse_input_dict(input_dict: dict):
+    """Creates an Event object with the parameters of a JSON dict
+
+    :param input_dict: The incoming dict with key-value pairs
+    :type input_dict: `dict`
+    :return: The event object with properties
+    :rtype: :class:`Event`
+    """
+    if "previousEventIds" in input_dict:
+        input_previous_ids = input_dict["previousEventIds"]
+    else:
+        input_previous_ids = []
+    return Event(
+        input_dict["jobName"],
+        input_dict["jobId"],
+        input_dict["eventType"],
+        input_dict["eventId"],
+        input_dict["timestamp"],
+        input_dict["applicationName"],
+        input_previous_ids
+    )
+
+
+def make_job_from_template(
+        template: Job,
+        init_delay_minutes: int,
+        gap_seconds: int
+        ):
+    """Deep copies a template and randomises unique values
+
+    :param template: _description_
+    :type template: :class:`Job`
+    :param init_delay_minutes: _description_
+    :type init_delay_minutes: `int`
+    :param gap_seconds: _description_
+    :type gap_seconds: `int`
+    :return: _description_
+    :rtype: _type_
+    """
     # copy template job exactly
     copy_job = copy.deepcopy(template)
 
     # randomise jobId, but make it consistent
-    new_job_id = make_rand_id()
+    new_job_id = str(uuid4())
 
     # set initial timestamp to now - initDelayMinutes
     new_stamp = datetime.utcnow() - timedelta(minutes=init_delay_minutes)
@@ -156,7 +223,7 @@ def make_job_from_template(template, init_delay_minutes, gap_seconds):
     # loop over timestamps, incrementing by gapSeconds
     # include in loop for events (stored in newEventId for now)
     for event in copy_job.events:
-        event.new_event_id = make_rand_id()
+        event.new_event_id = str(uuid4())
         event.job_id = new_job_id
         event.timestamp = new_stamp.isoformat(timespec='seconds') + 'Z'
         new_stamp = new_stamp + timedelta(seconds=gap_seconds)
@@ -171,26 +238,34 @@ def make_job_from_template(template, init_delay_minutes, gap_seconds):
     return copy_job
 
 
-def make_rand_id():
-    """Creates a random hex string in the event/job id format"""
-    output_id = secrets.token_hex(4)+"-"+secrets.token_hex(2)+"-"
-    output_id = output_id+secrets.token_hex(2)+"-"+secrets.token_hex(2)+"-"
-    output_id = output_id+secrets.token_hex(6)
-    return output_id
+def write_job_to_file(write_job: Job, filepath: str):
+    """Saves the input job to a JSON file at the specified filepath
+
+    :param write_job: The job that needs to be saved
+    :type write_job: :class:`Job`
+    :param filepath: The path that the JSON files are to be sent to
+    :type filepath: `str`
+    """
+    filename = filepath + write_job.events[0].job_id + ".json"
+    with open_utf8(filename, "w") as outfile:
+        outfile.write(copy_obj.export_job_to_json())
 
 
-template_obj = load_template()
-copy_obj = make_job_from_template(template_obj, 40, 1)
+input_job_file = open_utf8("test_sequence.json")
+input_job = json.load(input_job_file)
+
+template_obj = parse_input_jobfile(input_job)
+
+
+# TODO: move this into test_harness
 
 # for testing 1 job
-with open_utf8("output.json", "w") as outfile:
-    outfile.write(copy_obj.export_job_to_json())
+# copy_obj = make_job_from_template(template_obj, 40, 1)
+# write_job_to_file(copy_obj, "output/")
 
 # for testing many jobs
-# i = 0
-# test_list = []
-# while i<2:
-#     test_list.append(make_job_from_template(t, 30, 1).export_job_to_list())
-#     i = i + 1
-# with open("output.json", "w") as outfile:
-#     outfile.write(json.dumps(test_list, indent=4))
+j = 0
+while j < 5:
+    copy_obj = make_job_from_template(template_obj, 40, 1)
+    write_job_to_file(copy_obj, "output/")
+    j = j + 1
