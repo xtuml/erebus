@@ -1,4 +1,8 @@
-"""Reads a job JSON from a file, then writes n copies to file"""
+"""Reads a job JSON from a file, then writes n copies to file
+
+:raises KeyError: When failing to find an event ID within a job
+:return: n file copies of the input event
+"""
 # pylint: disable=R0913
 # pylint: disable=R0902
 import json
@@ -10,14 +14,13 @@ open_utf8 = partial(open, encoding='UTF-8')
 
 
 class Event:
-    # TODO: get definition of event_type and application_name
     """Describes one UML entity, as well as links to other entities
 
     :param job_name: Name of the job this event belongs to, defaults to ""
     :type job_name: `str`, optional
     :param job_id: The job's unique hex ID, defaults to ""
     :type job_id: `str`, optional
-    :param event_type: _description_, defaults to ""
+    :param event_type: Type of event, defaults to ""
     :type event_type: `str`, optional
     :param event_id: This event's unique hex ID, defaults to ""
     :type event_id: `str`, optional
