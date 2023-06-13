@@ -255,21 +255,21 @@ def write_job_to_file(write_job: Job, filepath: str):
         outfile.write(copy_obj.export_job_to_json())
 
 
-input_job_file = open_utf8("test_sequence.json")
-input_job = json.load(input_job_file)
+if __name__ == "__main__":
+    input_job_file = open_utf8("test_sequence.json")
+    input_job = json.load(input_job_file)
 
-template_obj = parse_input_jobfile(input_job)
+    template_obj = parse_input_jobfile(input_job)
 
+    # move this into test_harness
 
-# move this into test_harness
+    # for testing 1 job
+    # copy_obj = make_job_from_template(template_obj, 40, 1)
+    # write_job_to_file(copy_obj, "output/")
 
-# for testing 1 job
-# copy_obj = make_job_from_template(template_obj, 40, 1)
-# write_job_to_file(copy_obj, "output/")
-
-# for testing many jobs
-j = 0
-while j < 5:
-    copy_obj = make_job_from_template(template_obj, 40, 1)
-    write_job_to_file(copy_obj, "output/")
-    j = j + 1
+    # for testing many jobs
+    j = 0
+    while j < 5:
+        copy_obj = make_job_from_template(template_obj, 40, 1)
+        write_job_to_file(copy_obj, "output/")
+        j = j + 1
