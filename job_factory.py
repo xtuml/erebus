@@ -5,6 +5,7 @@
 """
 # pylint: disable=R0913
 # pylint: disable=R0902
+# pylint: disable=R0903
 import json
 import copy
 from datetime import datetime, timedelta
@@ -55,7 +56,7 @@ class Event:
         self.application_name = application_name
         self.previous_event_ids = previous_event_ids
 
-    def has_previous_event_id(self):
+    def has_previous_event_id(self) -> bool:
         """Checks whether an event's previous_event_ids is populated
 
         :return: true if there are previous event ids, false otherwise
@@ -106,7 +107,7 @@ class Job:
                 event.previous_event_ids.pop(0)
                 i = i + 1
 
-    def search_for_id(self, target_id: str):
+    def search_for_id(self, target_id: str) -> Event:
         """Scans for an event with the target_id, throws if absent
 
         :param target_id: The ID that is checked for matches
@@ -120,7 +121,7 @@ class Job:
                 return event
         raise KeyError("No event found with ID " + target_id)
 
-    def export_job_to_json(self):
+    def export_job_to_json(self) -> str:
         """Converts a job to a JSON object
 
         :return: JSON representation of the job
@@ -128,7 +129,7 @@ class Job:
         """
         return json.dumps(self.export_job_to_list(), indent=4)
 
-    def export_job_to_list(self):
+    def export_job_to_list(self) -> list[dict]:
         """Converts a job into a list of readable events
 
         :return: List of dicts that represent the data of a job of events
@@ -158,11 +159,11 @@ class Job:
         return output_list
 
 
-def parse_input_jobfile(input_jobfile: list[dict]):
+def parse_input_jobfile(input_jobfile: list[dict]) -> Job:
     """Creates a Job object from a loaded JSON job file
 
-    :param input_job: A loaded JSON job file
-    :type input_job: `list[dict]`
+    :param input_jobfile: A loaded JSON job file
+    :type input_jobfile: `list[dict]`
     :return: The same data delivered as a Job object, carrying Event objects
     :rtype: :class:`Job`
     """
@@ -175,7 +176,7 @@ def parse_input_jobfile(input_jobfile: list[dict]):
     return template_job
 
 
-def parse_input_dict(input_dict: dict):
+def parse_input_dict(input_dict: dict) -> Event:
     """Creates an Event object with the parameters of a JSON dict
 
     :param input_dict: The incoming dict with key-value pairs
@@ -202,17 +203,17 @@ def make_job_from_template(
         template: Job,
         init_delay_minutes: int,
         gap_seconds: int
-        ):
+        ) -> Job:
     """Deep copies a template and randomises unique values
 
-    :param template: _description_
+    :param template: Existing job to be duplicated
     :type template: :class:`Job`
-    :param init_delay_minutes: _description_
+    :param init_delay_minutes: Time gap, in minutes, before now for first event
     :type init_delay_minutes: `int`
-    :param gap_seconds: _description_
+    :param gap_seconds: Time gap in seconds between events in job
     :type gap_seconds: `int`
-    :return: _description_
-    :rtype: _type_
+    :return: Unique replicated job
+    :rtype: :class:`Job`
     """
     # copy template job exactly
     copy_job = copy.deepcopy(template)
@@ -260,7 +261,7 @@ input_job = json.load(input_job_file)
 template_obj = parse_input_jobfile(input_job)
 
 
-# TODO: move this into test_harness
+# move this into test_harness
 
 # for testing 1 job
 # copy_obj = make_job_from_template(template_obj, 40, 1)
