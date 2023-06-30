@@ -42,7 +42,7 @@ class Event:
             event_id: str = "",
             timestamp: str = "",
             application_name: str = "",
-            previous_event_ids: list[str] = "",
+            previous_event_ids: list[str] | str = "",
             new_event_id: str = ""
             ):
         """Constructor method
@@ -66,6 +66,32 @@ class Event:
             return True
         return False
 
+    def event_to_dict(self) -> dict[str, str]:
+        """Method to generate and event dict for the instance
+
+        :return: Returns the event dict
+        :rtype: `dict`[`str`, `str`]
+        """
+        event_dict = {
+            "jobName": self.job_name,
+            "jobId": self.job_id,
+            "eventType": self.event_type,
+            "eventId": self.event_id,
+            "timestamp": self.timestamp,
+            "applicationName": self.application_name
+        }
+        if self.has_previous_event_id():
+            event_dict["previousEventIds"] = self.previous_event_ids
+        return event_dict
+
+    def export_event_to_json_list(self) -> str:
+        """Method to export the event to a json list
+
+        :return: Returns a json string of the event
+        :rtype: `str`
+        """
+        return json.dumps([self.event_to_dict()], indent=4)
+
 
 class Job:
     """Describes a group of related events, contains proccessing them
@@ -74,6 +100,7 @@ class Job:
         """Constructor method
         """
         self.events: list[Event] = []
+        self.job_id: str = ""
 
     def update_prev_ids(self):
         """Checks all events for previous ids and updates them
@@ -137,25 +164,7 @@ class Job:
         """
         output_list = []
         for event in self.events:
-            if event.has_previous_event_id():
-                output_list.append({
-                    "jobName": event.job_name,
-                    "jobId": event.job_id,
-                    "eventType": event.event_type,
-                    "eventId": event.event_id,
-                    "timestamp": event.timestamp,
-                    "applicationName": event.application_name,
-                    "previousEventIds": event.previous_event_ids
-                })
-            else:
-                output_list.append({
-                    "jobName": event.job_name,
-                    "jobId": event.job_id,
-                    "eventType": event.event_type,
-                    "eventId": event.event_id,
-                    "timestamp": event.timestamp,
-                    "applicationName": event.application_name
-                })
+            output_list.append(event.event_to_dict())
         return output_list
 
 
@@ -200,18 +209,23 @@ def parse_input_dict(input_dict: dict) -> Event:
 
 
 def make_job_from_template(
-        template: Job,
-        init_delay_minutes: int,
-        gap_seconds: int
-        ) -> Job:
+    template: Job,
+    gap_seconds: float,
+    start_time: datetime | None = None,
+    init_delay_minutes: float = 0,
+) -> Job:
     """Deep copies a template and randomises unique values
 
     :param template: Existing job to be duplicated
     :type template: :class:`Job`
-    :param init_delay_minutes: Time gap, in minutes, before now for first event
-    :type init_delay_minutes: `int`
     :param gap_seconds: Time gap in seconds between events in job
-    :type gap_seconds: `int`
+    :type gap_seconds: `float`
+    :param start_time: Optional start time for the first job, defaults to
+    `None`
+    :type start_time: `datetime` | `None`, optional
+    :param init_delay_minutes: Time gap, in minutes, before now for first
+    event, defaults to `0`
+    :type init_delay_minutes: `float`, optional
     :return: Unique replicated job
     :rtype: :class:`Job`
     """
@@ -220,9 +234,13 @@ def make_job_from_template(
 
     # randomise jobId, but make it consistent
     new_job_id = str(uuid4())
-
-    # set initial timestamp to now - initDelayMinutes
-    new_stamp = datetime.utcnow() - timedelta(minutes=init_delay_minutes)
+    if not start_time:
+        # set initial timestamp to now - initDelayMinutes
+        new_stamp = datetime.utcnow() - timedelta(minutes=init_delay_minutes)
+    else:
+        new_stamp = start_time
+    # set job id to job
+    copy_job.job_id = new_job_id
 
     # loop over timestamps, incrementing by gapSeconds
     # include in loop for events (stored in newEventId for now)
@@ -252,10 +270,46 @@ def write_job_to_file(write_job: Job, filepath: str):
     """
     filename = filepath + write_job.events[0].job_id + ".json"
     with open_utf8(filename, "w") as outfile:
-        outfile.write(copy_obj.export_job_to_json())
+        outfile.write(write_job.export_job_to_json())
+
+
+def concat_jobs_to_file(jobs: list[Job], out_file_path: str) -> None:
+    """Method to concatenate a list of jobs into a single list and then dump
+    to one file
+
+    :param jobs: List of :class:`Job`'s
+    :type jobs: `list`[:class:`Job`]
+    :param out_file_path: The output file path of the concatenated jobs
+    :type out_file_path: `str`
+    """
+    events_json_list = concat_jobs_to_list(
+        jobs
+    )
+    with open_utf8(out_file_path, "w") as outfile:
+        outfile.write(json.dumps(events_json_list, indent=4))
+
+
+def concat_jobs_to_list(
+    jobs: list[Job]
+) -> list[dict]:
+    """Method to concatenate a list of jobs into a single list of events
+
+    :param jobs: List of :class:`Job`'s
+    :type jobs: `list`[:class:`Job`]
+    :return: Returns a list of event dictionaries
+    :rtype: `list`[`dict`]
+    """
+    return [
+        event
+        for job in jobs
+        for event in job.export_job_to_list()
+    ]
 
 
 if __name__ == "__main__":
+    import sys
+    import os
+    args = sys.argv[1:]
     input_job_file = open_utf8("test_sequence.json")
     input_job = json.load(input_job_file)
 
@@ -268,8 +322,41 @@ if __name__ == "__main__":
     # write_job_to_file(copy_obj, "output/")
 
     # for testing many jobs
+    one_file = False
+    out_dir = "output/"
+    one_file_name = "concat_jobs.json"
+    njobs = 1
+    if args:
+        if "--filename" in args:
+            one_file_name = args[args.index("--filename") + 1]
+        if "--outdir" in args:
+            out_dir = args[args.index("--outdir") + 1]
+        if "--onefile" in args:
+            one_file = True
+        if "--njobs" in args:
+            njobs = int(args[args.index("--njobs") + 1])
+
+    one_file_out_path = os.path.join(out_dir, one_file_name)
+
     j = 0
-    while j < 5:
-        copy_obj = make_job_from_template(template_obj, 40, 1)
-        write_job_to_file(copy_obj, "output/")
+    if one_file:
+        jobs = []
+        while j < njobs:
+            job = make_job_from_template(
+                template=template_obj,
+                gap_seconds=40,
+                init_delay_minutes=1
+                )
+            jobs.append(job)
+            j += 1
+        concat_jobs_to_file(jobs=jobs, out_file_path=one_file_out_path)
+        exit()
+
+    while j < njobs:
+        job = make_job_from_template(
+            template=template_obj,
+            gap_seconds=40,
+            init_delay_minutes=1
+        )
+        write_job_to_file(job, out_dir)
         j = j + 1
