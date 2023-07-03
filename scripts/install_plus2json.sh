@@ -1,3 +1,4 @@
+#!/bin/sh
 cd /tmp/
 git clone git@github.com:xtuml/plus2json.git
 cd plus2json/plus2json
