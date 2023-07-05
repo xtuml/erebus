@@ -328,8 +328,9 @@ def generate_html_report_string(
     results_df: pd.DataFrame,
     fields: list[str],
     field_depth: int = 0
-) -> str:
-    """MEthod to generate an html report string from a results dataframe
+) -> tuple[str, str]:
+    """Method to generate an html report string from a results dataframe and
+    its junit xml it was generated from
 
     :param results_df: Dataframe containing test results
     :type results_df: :class:`pd`.`DataFrame`
@@ -338,8 +339,9 @@ def generate_html_report_string(
     :param field_depth: The depth of the fields list with which to create
     nested test suite, defaults to `0`
     :type field_depth: `int`, optional
-    :return: Returns a generated html report
-    :rtype: `str`
+    :return: Returns a generated html report and the junit xml it was
+    generated from
+    :rtype: `tuple`[`str`, `str`]
     """
     xml_string = generate_junit_xml(
         results_df=results_df,
@@ -348,7 +350,7 @@ def generate_html_report_string(
     )
     report = Junit(xmlstring=xml_string)
     html_string = report.html()
-    return html_string
+    return html_string, xml_string
 
 
 def generate_junit_xml(
@@ -377,7 +379,7 @@ def generate_junit_xml(
     children = get_test_suites_from_results_dataframe(
         results_df=results_df,
         fields=fields,
-        n=field_depth
+        nth_field=field_depth
     )
     suites.add_children(children)
     junit_string = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -388,7 +390,7 @@ def generate_junit_xml(
 def get_test_suites_from_results_dataframe(
     results_df: pd.DataFrame,
     fields: list[str],
-    n: int = 0
+    nth_field: int = 0
 ) -> list[TestSuite | TestCase]:
     """Method to obtain test suites and test cases from results dataframe
 
@@ -396,17 +398,17 @@ def get_test_suites_from_results_dataframe(
     :type results_df: :class:`pd`.`DataFrame`
     :param fields: The fields with which to categorise the results
     :type fields: `list`[`str`]
-    :param n: Integer to indicate at what index of fields list to begin,
-    defaults to `0`
-    :type n: `int`, optional
+    :param nth_field: Integer to indicate at what index of fields list to
+    begin, defaults to `0`
+    :type nthe_field: `int`, optional
     :return: Returns a list of :class:`TestSuite`'s or :class:`TestCase`'s
     :rtype: `list`[:class:`TestSuite` | :class:`TestCase`]
     """
-    n += 1
+    nth_field += 1
     children: list[TestSuite | TestCase] = []
-    if n <= len(fields):
+    if nth_field <= len(fields):
         for key, idx in results_df.groupby(
-            fields[:n]
+            fields[:nth_field]
         ).groups.items():
             if isinstance(key, tuple):
                 name = ".".join(str(col_val) for col_val in key)
@@ -418,7 +420,7 @@ def get_test_suites_from_results_dataframe(
             child_children = get_test_suites_from_results_dataframe(
                 results_df=results_df.loc[idx],
                 fields=fields,
-                n=n
+                nth_field=nth_field
             )
             child.add_children(child_children)
             children.append(child)
@@ -465,13 +467,40 @@ def generate_html_from_csv_report(
         test_report_csv_path,
         index_col="JobId"
     )
-    html_string = generate_html_report_string(
+    html_string, _ = generate_html_report_string(
         results_df=results_df,
         fields=["JobName", "Validity", "Category"],
         field_depth=2
     )
     with open(html_report_file_path, 'w', encoding="utf-8") as file:
         file.write(html_string)
+
+
+def get_report_files_mapping_from_dataframe_report(
+    results_df: pd.DataFrame,
+    results_prefix: str
+) -> dict[str, str | pd.DataFrame]:
+    """Method to get report files mapping from a results dataframe and a
+    prefix for the tests
+
+    :param results_df: :class:`pd`.`DataFrame` of results
+    :type results_df: :class:`pd`.`DataFrame`
+    :param results_prefix: The prefix for the results file names
+    :type results_prefix: `str`
+    :return: Returns a dictionary mapping file name to file
+    :rtype: `dict`[`str`, `str` | :class:`pd`.`DataFrame`]
+    """
+    html_string, xml_string = generate_html_report_string(
+        results_df=results_df,
+        fields=["JobName", "Validity", "Category"],
+        field_depth=2
+    )
+    return {
+        f"{results_prefix}.html": html_string,
+        f"{results_prefix}.xml": xml_string,
+        f"{results_prefix}.csv": results_df,
+
+    }
 
 
 if __name__ == "__main__":
