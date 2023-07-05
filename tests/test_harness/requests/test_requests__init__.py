@@ -4,10 +4,13 @@
 from io import BytesIO
 
 import responses
+
 from test_harness.requests import (
     build_upload_file_tuple,
     build_upload_file_tuples,
-    post_sync_file_bytes_in_form
+    post_sync_file_bytes_in_form,
+    send_json_post_request,
+    send_get_request
 )
 
 
@@ -120,7 +123,7 @@ def test_post_sync_file_bytes_in_form_200_ok(
     )
     assert response[0]
     assert response[1] == 0
-    assert response[2] is None
+    assert response[2].status_code == 200
 
 
 @responses.activate
@@ -154,6 +157,98 @@ def test_post_sync_file_bytes_in_form_not_404(
         url=url,
         max_retries=3
     )
+    assert not response[0]
+    assert response[1] == 3
+    assert response[2].status_code == 404
+
+
+@responses.activate
+def test_send_json_post_request_200_ok(
+    json_request_body_file_name: dict[str, str]
+) -> None:
+    """Test `send_json_post_request` for 200 ok response
+
+    :param json_request_body_file_name: Fixture providing a mapping "fileName"
+    to a file name
+    :type json_request_body_file_name: `dict`[`str`, `str`]
+    """
+    url = 'http://mockserver.com/test/post'
+    responses.add(
+        responses.POST,
+        url,
+        status=200
+    )
+    response = send_json_post_request(
+        json_dict=json_request_body_file_name,
+        url=url
+    )
+
+    assert response[0]
+    assert response[1] == 0
+    assert response[2].status_code == 200
+
+
+@responses.activate
+def test_send_json_post_request_404(
+    json_request_body_file_name: dict[str, str]
+) -> None:
+    """Test `send_json_post_request` for 404 response
+
+    :param json_request_body_file_name: Fixture providing a mapping "fileName"
+    to a file name
+    :type json_request_body_file_name: `dict`[`str`, `str`]
+    """
+    url = 'http://mockserver.com/test/post'
+    responses.add(
+        responses.POST,
+        url,
+        status=404
+    )
+    response = send_json_post_request(
+        json_dict=json_request_body_file_name,
+        url=url,
+        max_retries=3
+    )
+
+    assert not response[0]
+    assert response[1] == 3
+    assert response[2].status_code == 404
+
+
+@responses.activate
+def test_send_get_request_200_ok() -> None:
+    """Test for `send_get_request` with 200 ok response
+    """
+    url = 'http://mockserver.com/test/post'
+    responses.add(
+        responses.GET,
+        url,
+        status=200
+    )
+    response = send_get_request(
+        url=url
+    )
+
+    assert response[0]
+    assert response[1] == 0
+    assert response[2].status_code == 200
+
+
+@responses.activate
+def test_send_get_request_404() -> None:
+    """Test for `send_get_request` with 200 ok response
+    """
+    url = 'http://mockserver.com/test/post'
+    responses.add(
+        responses.GET,
+        url,
+        status=404
+    )
+    response = send_get_request(
+        url=url,
+        max_retries=3
+    )
+
     assert not response[0]
     assert response[1] == 3
     assert response[2].status_code == 404
