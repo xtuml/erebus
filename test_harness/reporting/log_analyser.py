@@ -1,3 +1,4 @@
+# pylint: disable=R0911
 """Methods to analyse logs
 """
 
@@ -176,13 +177,11 @@ def check_test_result(
     if validity:
         if all(pv_results):
             return "Pass"
-        elif any(pv_results):
+        if any(pv_results):
             return "Inconclusive|SVDC Success|Notified Failure"
-        else:
-            return "Fail"
+        return "Fail"
     if all(pv_results):
         return "Fail"
-    elif any(pv_results):
+    if any(pv_results):
         return "Inconclusive|SVDC Success|Notified Failure"
-    else:
-        return "Pass"
+    return "Pass"
