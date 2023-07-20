@@ -54,6 +54,22 @@ def set_std_error(
     sys.stderr = to_set
 
 
+def get_job_defs_from_uml_files(
+    uml_file_paths: list[str]
+) -> list[str]:
+    """Method to obtain job defs from a list of uml file paths
+
+    :param uml_file_paths: List of uml file paths
+    :type uml_file_paths: `list`[`str`]
+    :return: Returns a list of job def strings
+    :rtype: `list`[`str`]
+    """
+    return [
+        get_job_def_from_uml(uml_file_path)
+        for uml_file_path in uml_file_paths
+    ]
+
+
 def get_job_def_from_uml(
     uml_file_path: str,
 ) -> str:

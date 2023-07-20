@@ -9,6 +9,14 @@ from typing import Optional
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
+from test_harness import create_test_output_directory
+from test_harness.config.config import HarnessConfig
+
+# get test config
+test_config_path = os.path.join(
+    Path(__file__).parent,
+    "config/test_config.config"
+)
 # get resources folder in tests folder
 input_resources = Path(__file__).parent / "test_files"
 # get uml_file_store in tests folder
@@ -201,3 +209,24 @@ def test_successful_upload(client: FlaskClient) -> None:
        os.path.join(output_resources, "test_uml_2.puml"),
     )
     os.remove(os.path.join(output_resources, "test_uml_2.puml"))
+
+
+def test_create_output_directory_does_not_exist() -> None:
+    """Tests `create_test_output_directory` when the output directory does not
+    exist
+    """
+    harness_config = HarnessConfig(
+        config_path=test_config_path
+    )
+    directory_name, directory_path = create_test_output_directory(
+        harness_config=harness_config,
+        test_name="Test"
+    )
+    assert directory_name == "Test"
+    expected_path = os.path.join(
+        harness_config.report_file_store,
+        "Test"
+    )
+    assert directory_path == expected_path
+    assert os.path.exists(expected_path)
+    os.rmdir(directory_path)

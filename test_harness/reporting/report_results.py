@@ -469,7 +469,7 @@ def generate_html_from_csv_report(
     )
     html_string, _ = generate_html_report_string(
         results_df=results_df,
-        fields=["JobName", "Validity", "Category"],
+        fields=["SequenceName", "Validity", "Category"],
         field_depth=2
     )
     with open(html_report_file_path, 'w', encoding="utf-8") as file:
@@ -492,7 +492,7 @@ def get_report_files_mapping_from_dataframe_report(
     """
     html_string, xml_string = generate_html_report_string(
         results_df=results_df,
-        fields=["JobName", "Validity", "Category"],
+        fields=["SequenceName", "Validity", "Category"],
         field_depth=2
     )
     return {

@@ -79,9 +79,9 @@ async def delayed_send_payload(
             file=file,
             file_name=file_name,
             url=url
-        ), timeout=200)
-    except TimeoutError as error:
-        response = str(error)
+        ), timeout=None)
+    except Exception as error:
+        response = handle_error_response(error)
     return response
 
 
@@ -119,9 +119,24 @@ async def send_payload_async(
                     response.text(),
                     timeout=200
                 )
-            except asyncio.TimeoutError:
-                awaited_response = "timed out"
+            except Exception as error:
+                awaited_response = handle_error_response(error)
             return awaited_response
+
+
+def handle_error_response(error: Exception) -> str:
+    """Handler for an exception occuring
+
+    :param error: The error
+    :type error: :class:`Exception`
+    :return: Returns a message realting to the error
+    :rtype: `str`
+    """
+    if isinstance(error, asyncio.TimeoutError):
+        return "timed out"
+    if isinstance(error, aiohttp.ClientConnectionError):
+        return "Connection Error"
+    return str(error)
 
 
 async def delayed_async_func(
@@ -195,7 +210,7 @@ async def send_delayed_binary_files(
     tasks: list[asyncio.Task] = []
     with tqdm(total=len(binary_files)) as pbar:
         async with asyncio.TaskGroup() as task_group:
-            for file, file_name, start_time in binary_files:
+            for file, file_name, start_time, _ in binary_files:
                 task = task_group.create_task(
                     delayed_send_payload(
                         file=file,
@@ -330,7 +345,7 @@ async def send_job_templates_async(
     url: str = "http://host.docker.internal:9000/upload/events",
     test_start_time: datetime | None = None,
     shard_events: bool = False
-) -> list[Any]:
+) -> tuple[list[Any], list[tuple[bytes, str, float, str]]]:
     """Asynchronous function to send files to an endpoint from a directory
 
     :param template_jobs: A list of template jobs
@@ -346,8 +361,11 @@ async def send_job_templates_async(
     :param shard_events: Boolean indicatin whether to shard jobs into events
     or not, defaults to `False`
     :type shard_events: `bool`
-    :return: Returns a list of the return values from the sent payload
-    :rtype: `list`[`Any`]
+    :return: Returns tuple of
+    * a list of the return values from the sent payload
+    * a list of tuples of binary file, file name, delay, job id
+    :rtype: `tuple`[`list`[`Any`], `list`[`tuple`[`bytes`, `str`, `float`,
+    `str`]]]
     """
     if not test_start_time:
         test_start_time = datetime.utcnow()
@@ -359,12 +377,15 @@ async def send_job_templates_async(
             shard_events=shard_events
         )
     )
-    print(datetime.now())
+    saved_file_file_name_tuples = [
+        (data_tuple[0].getvalue(),) + data_tuple[1:]
+        for data_tuple in file_file_name_delay_tuples
+    ]
     results = await send_delayed_binary_files(
         binary_files=file_file_name_delay_tuples,
         url=url
     )
-    return results
+    return results, saved_file_file_name_tuples
 
 
 def create_binary_files_file_name_delay_tuples_from_job_templates(
@@ -372,7 +393,7 @@ def create_binary_files_file_name_delay_tuples_from_job_templates(
     interval: float,
     test_start_time: datetime,
     shard_events: bool = False
-) -> list[tuple[io.BytesIO, str, float]]:
+) -> list[tuple[io.BytesIO, str, float, str]]:
     """Method to create an iterable of binary file, file name, delay tuples
 
     :param template_jobs: A list of template jobs
@@ -385,8 +406,8 @@ def create_binary_files_file_name_delay_tuples_from_job_templates(
     :param shard_events: Boolean indicatin whether to shard jobs into events
     or not, defaults to `False`
     :type shard_events: `bool`
-    :return: Returns a list of tuples of binary file, file name, delay
-    :rtype: `list`[`tuple`[:class:`io`.`BytesIO`, `str`, `float`]]
+    :return: Returns a list of tuples of binary file, file name, delay, job id
+    :rtype: `list`[`tuple`[:class:`io`.`BytesIO`, `str`, `float`, `str`]]
     """
     if shard_events:
         delays = calc_event_start_times(
@@ -421,7 +442,7 @@ def generate_binary_file_file_name_delay_tuples_from_job_template(
     delays_slice: list[float],
     test_start_time: datetime,
     shard_events: bool = False
-) -> Generator[tuple[io.BytesIO, str, float], Any, None]:
+) -> Generator[tuple[io.BytesIO, str, float, str], Any, None]:
     """Method to create a binary file, file name, delay tuple
 
     :param template_job: A template :class:`Job`
@@ -435,8 +456,8 @@ def generate_binary_file_file_name_delay_tuples_from_job_template(
     :param shard_events: Boolean indicatin whether to shard jobs into events
     or not, defaults to `False`
     :type shard_events: `bool`
-    :return: Returns a tuple of binary file, file name, delay
-    :rtype: `tuple`[:class:`io`.`BytesIO`, `str`, `float`]
+    :return: Returns a tuple of binary file, file name, delay, job_id
+    :rtype: `tuple`[:class:`io`.`BytesIO`, `str`, `float`, `str`]
     """
     job_start_time = test_start_time + timedelta(seconds=delays_slice[0])
     if len(delays_slice) > 1:
@@ -463,16 +484,16 @@ def generate_binary_file_file_name_delay_tuples_from_job_template(
 def generate_binary_file_file_name_delay_tuple_from_job(
     job_to_send: Job,
     delay: float
-) -> Generator[tuple[io.BytesIO, str, float], Any, None]:
+) -> Generator[tuple[io.BytesIO, str, float, str], Any, None]:
     """Method to generate a json string (as bytes), file name, delay tuple
 
     :param job_to_send: The job that is being sent
     :type job_to_send: :class:`Job`
     :param delay: The delay the job will have
     :type delay: `float`
-    :yield: Yields the json string (as bytes), file name, delay tuple
-    :rtype: :class:`Generator`[`tuple`[:class:`io`.`BytesIO`, `str`, `float`],
-    `Any`, `None`]
+    :yield: Yields the json string (as bytes), file name, delay tuple, job id
+    :rtype: :class:`Generator`[`tuple`[:class:`io`.`BytesIO`, `str`, `float`,
+    `str`], `Any`, `None`]
     """
     job_io_bytes = io.BytesIO(job_to_send.export_job_to_json().encode("utf8"))
 
@@ -481,23 +502,24 @@ def generate_binary_file_file_name_delay_tuple_from_job(
     yield (
         job_io_bytes,
         file_name,
-        delay
+        delay,
+        job_to_send.job_id
     )
 
 
 def generate_binary_file_file_name_delay_tuples_events_from_job(
     job_to_send: Job,
     delays_slice: list[float]
-) -> Generator[tuple[io.BytesIO, str, float], Any, None]:
+) -> Generator[tuple[io.BytesIO, str, float, str], Any, None]:
     """_summary_
 
     :param job_to_send: The job that is being sent
     :type job_to_send: :class:`Job`
     :param delays_slice: A slice of delays to be given to each event in the job
     :type delays_slice: `list`[`float`]
-    :yield: Yields the json string (as bytes), file name, delay tuple
-    :rtype: :class:`Generator`[`tuple`[:class:`io`.`BytesIO`, `str`, `float`],
-    `Any`, `None`]
+    :yield: Yields the json string (as bytes), file name, delay tuple, job id
+    :rtype: :class:`Generator`[`tuple`[:class:`io`.`BytesIO`, `str`, `float`,
+    `str`], `Any`, `None`]
     """
     for event, delay in zip(job_to_send.events, delays_slice):
         event_io_bytes = io.BytesIO(
@@ -507,7 +529,8 @@ def generate_binary_file_file_name_delay_tuples_events_from_job(
         yield (
             event_io_bytes,
             file_name,
-            delay
+            delay,
+            job_to_send.job_id
         )
 
 
@@ -567,7 +590,7 @@ def send_job_templates(
     :return: Returns a list of the return values from the sent payload
     :rtype: `list`[`Any`]
     """
-    task_results = asyncio.run(
+    task_results, _ = asyncio.run(
         send_job_templates_async(
             template_jobs=template_jobs,
             interval_time=interval_time,
