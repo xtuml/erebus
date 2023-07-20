@@ -1,7 +1,6 @@
 # pylint: disable=R0911
 """Methods to analyse logs
 """
-
 import pandas as pd
 
 
@@ -81,6 +80,9 @@ def parse_log_string_to_pv_results_dataframe(
     )
     # aggregate results by job id
     cols = list(results_df.columns)
+    # if JobId not in columns update
+    if "JobId" not in cols:
+        results_df["JobId"] = None
     results_df = results_df.groupby("JobId").agg({
         col: list
         for col in cols
@@ -147,9 +149,11 @@ def get_job_id_failure_successes(
     * TestResult
     :rtype: :class:`pd.DataFrame`
     """
-    data_frame_result = pd.concat(
-        [job_id_validity_df, data_frame_pv_results_df],
-        axis=1
+    data_frame_result = job_id_validity_df.merge(
+        data_frame_pv_results_df,
+        how='left',
+        left_index=True,
+        right_index=True
     )
     data_frame_result["TestResult"] = data_frame_result.apply(
         lambda x: check_test_result(x["Validity"], x["PVResult"]),

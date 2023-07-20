@@ -29,7 +29,7 @@ def test_post_config_from_upload_200(
     assert post_config_form_upload(
         file_bytes_file_names=[(file_bytes, file_name)],
         url=url
-    )
+    )[0]
 
 
 @responses.activate
@@ -54,4 +54,4 @@ def test_post_config_from_upload_404(
     assert not post_config_form_upload(
         file_bytes_file_names=[(file_bytes, file_name)],
         url=url
-    )
+    )[0]

@@ -11,6 +11,7 @@ import copy
 from datetime import datetime, timedelta
 from functools import partial
 from uuid import uuid4
+import logging
 open_utf8 = partial(open, encoding='UTF-8')
 
 
@@ -62,7 +63,7 @@ class Event:
         :return: true if there are previous event ids, false otherwise
         :rtype: boolean
         """
-        if len(self.previous_event_ids) > 0:
+        if self.previous_event_ids:
             return True
         return False
 
@@ -101,6 +102,7 @@ class Job:
         """
         self.events: list[Event] = []
         self.job_id: str = ""
+        self.lost_events: dict[str, Event] = {}
 
     def update_prev_ids(self):
         """Checks all events for previous ids and updates them
@@ -143,10 +145,21 @@ class Job:
         :return: The event that has the same event ID as the target ID
         :rtype: :class:`Event`
         """
+        if not self.events:
+            raise RuntimeError("The job has no events")
         for event in self.events:
             if event.event_id == target_id:
                 return event
-        raise KeyError("No event found with ID " + target_id)
+        logging.getLogger().warning("No event found with ID %s", target_id)
+        if target_id in self.lost_events:
+            return self.lost_events[target_id]
+        else:
+            event = Event(
+                job_name=event.job_name,
+                new_event_id=str(uuid4())
+            )
+            self.lost_events[target_id] = event
+            return event
 
     def export_job_to_json(self) -> str:
         """Converts a job to a JSON object

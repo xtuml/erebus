@@ -2,10 +2,11 @@
 """
 import os
 from pandas import DataFrame
+from plotly.graph_objs import Figure
 
 
 def deliver_test_report_files(
-    report_files_mapping: dict[str, str | DataFrame],
+    report_files_mapping: dict[str, str | DataFrame | Figure],
     output_directory: str
 ) -> None:
     """Method to save files (mapped to file names) into an output directory.
@@ -28,7 +29,7 @@ def deliver_test_report_files(
 
 def deliver_test_report_file(
     report_file_name: str,
-    report_file: str | DataFrame,
+    report_file: str | DataFrame | Figure,
     output_directory: str
 ) -> None:
     """Method to save a report file given its name and an output directory to
@@ -48,6 +49,8 @@ def deliver_test_report_file(
     out_path = os.path.join(output_directory, report_file_name)
     if isinstance(report_file, DataFrame):
         report_file.to_csv(out_path, index=True)
+    elif isinstance(report_file, Figure):
+        report_file.write_html(out_path)
     else:
         with open(out_path, 'w', encoding="utf-8") as file:
             file.write(report_file)

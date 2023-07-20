@@ -23,7 +23,7 @@ def post_sync_file_bytes_in_form(
     :param max_retries: Number of times to retry the request, defaults to `0`
     :type max_retries: `int`, optional
     :param timeout: The number of seconds to wait for a response, defaults to
-    `0`
+    `10`
     :type timeout: `int`, optional
     :return: Returns a tuple with:
     * Boolean indicating if the request was succesful or not
@@ -170,7 +170,7 @@ def send_get_request(
     :return: Returns a tuple with:
     * Boolean indicating if the request was succesful or not
     * An integer indicating the nuber of retries
-    * The :class:`requests`.`Response` object received or None if it was 200 OK
+    * The :class:`requests`.`Response` object received
     :rtype: `tuple`[`bool`, `int`, :class:`requests`.`Response`]
     """
     response_tuple = request_retry(

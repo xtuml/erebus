@@ -22,7 +22,9 @@ def validity_df() -> pd.DataFrame:
         ["job_5", "job_name", False, "MissingEdges", "file_5"],
     ]
     validity = pd.DataFrame(
-        data, columns=["JobId", "JobName", "Validity", "Category", "FileName"]
+        data, columns=[
+            "JobId", "SequenceName", "Validity", "Category", "FileName"
+        ]
     )
     validity.set_index("JobId", inplace=True)
     return validity
@@ -111,7 +113,7 @@ def expected_results() -> pd.DataFrame:
         data,
         columns=[
             "JobId",
-            "JobName",
+            "SequenceName",
             "Validity",
             "Category",
             "FileName",

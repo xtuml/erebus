@@ -24,7 +24,7 @@ def test_generate_junit_xml(
     """
     xml_string = generate_junit_xml(
         results_df=expected_results,
-        fields=["JobName", "Validity", "Category"],
+        fields=["SequenceName", "Validity", "Category"],
         field_depth=2
     )
     assert xml_string == expected_junit_string
@@ -46,7 +46,7 @@ def test_generate_html_report_string(
     """
     html_string, xml_string = generate_html_report_string(
         results_df=expected_results,
-        fields=["JobName", "Validity", "Category"],
+        fields=["SequenceName", "Validity", "Category"],
         field_depth=2
     )
     assert expected_junit_string == xml_string
