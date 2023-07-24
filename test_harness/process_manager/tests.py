@@ -489,21 +489,30 @@ class PerformanceTest(Test):
     def calc_results(self) -> None:
         """Method to calc the results after the test and save reports
         """
-        test_boundaries = self.pv_file_inspector.calc_test_boundaries()
+        self.pv_file_inspector.calc_test_boundaries()
+        self.pv_file_inspector.normalise_coords()
         num_jobs = 0
         num_events = 0
         for chunk in self.chunked_jobs_to_send:
             for job_data in chunk:
                 num_jobs += 1
                 num_events += len(job_data[0].events)
-        average_num_jobs_per_sec = num_jobs / test_boundaries[2]
-        average_num_events_per_sec = num_events / test_boundaries[2]
+        average_num_jobs_per_sec = (
+            num_jobs / self.pv_file_inspector.test_boundaries[2]
+        )
+        average_num_events_per_sec = (
+            num_events / self.pv_file_inspector.test_boundaries[2]
+        )
         df_basic_results = pd.DataFrame.from_dict(
             {
                 "num_jobs": num_jobs,
                 "num_events": num_events,
                 "average_jobs_per_sec": average_num_jobs_per_sec,
                 "average_events_per_sec": average_num_events_per_sec,
+                "reception_end_time": (
+                    self.pv_file_inspector.test_boundaries[3]
+                ),
+                "verifier_end_time": self.pv_file_inspector.test_boundaries[4],
             },
             orient="index",
         )
@@ -511,7 +520,7 @@ class PerformanceTest(Test):
         df_pv_file_results = pd.DataFrame(
             [
                 (
-                    test_boundaries[0] + time,
+                    time,
                     self.test_config.performance_options["num_files_per_sec"],
                     "Files Sent/s",
                 )
@@ -527,29 +536,49 @@ class PerformanceTest(Test):
                 for coord in self.pv_file_inspector.coords["aer"]
             ]
             + [
-                (test_boundaries[0] + time, 0, "Files Sent/s")
+                (time, 0, "Files Sent/s")
                 for time in range(
                     len(self.results.responses)
                     // self.test_config.performance_options[
                         "num_files_per_sec"
                     ],
-                    test_boundaries[2],
+                    self.pv_file_inspector.test_boundaries[2],
                 )
             ]
             + [
-                (coord[0], coord[1] - coord_prev[1], "Verifier Files/s")
-                for coord_prev, coord in zip(
-                    self.pv_file_inspector.coords["ver"][:1]
-                    + self.pv_file_inspector.coords["ver"][:-1],
-                    self.pv_file_inspector.coords["ver"],
-                )
+                coord + ("Verifier Files",)
+                for coord in self.pv_file_inspector.coords["ver"]
             ],
             columns=["Time (s)", "Number", "Metric"],
         )
-        df_pv_file_results["Time (s)"] = (
-            df_pv_file_results["Time (s)"] - test_boundaries[0]
+        df_pv_file_results = df_pv_file_results.groupby(
+            ["Time (s)", "Metric"]
+        ).mean().reset_index()
+        # add verifier files pers second
+        verifier_files_per_second = (
+            df_pv_file_results.loc[
+                df_pv_file_results["Metric"] == "Verifier Files"
+            ].sort_values("Time (s)").reset_index(
+                drop=True
+            )
         )
+        verifier_files_per_second["Number"] = verifier_files_per_second[
+            "Number"
+        ].diff()
+        verifier_files_per_second.loc[0, "Number"] = 0
+        verifier_files_per_second["Metric"] = "Verifier Files/s"
+        df_pv_file_results = pd.concat(
+            [df_pv_file_results, verifier_files_per_second],
+            ignore_index=True
+        )
+        # filter out results that are greater than the calculated test end time
+        df_pv_file_results = df_pv_file_results[
+            (
+                df_pv_file_results["Time (s)"]
+            ) <= self.pv_file_inspector.test_boundaries[2]
+        ]
         df_pv_file_results.index.name = "Index"
+        # make figures
         figure = self.make_figs(df_pv_file_results)
         deliver_test_report_files(
             {
@@ -581,5 +610,5 @@ class PerformanceTest(Test):
             color="Metric",
             barmode="group",
         )
-        fig.update_yaxes(dtick=0)
+        fig.update_xaxes(dtick=1)
         return fig

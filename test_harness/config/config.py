@@ -17,11 +17,13 @@ class HarnessConfig:
     """
     def __init__(
         self,
-        config_path: Optional[str] = None
+        config_path: Optional[str] = None,
+        store_config_path: Optional[str] = None
     ) -> None:
         """Constructor method
         """
         self.config_path = config_path
+        self.store_config_path = store_config_path
         self.config_parser = ConfigParser()
         self.parse_config()
 
@@ -33,7 +35,11 @@ class HarnessConfig:
             self.config_path = str(
                 Path(__file__).parent / "default_config.config"
             )
-        self.config_parser.read(self.config_path)
+        if not self.store_config_path:
+            self.store_config_path = str(
+                Path(__file__).parent / "store_config.config"
+            )
+        self.config_parser.read([self.config_path, self.store_config_path])
         self.parse_config_to_attributes()
 
     def parse_config_to_attributes(self) -> None:
