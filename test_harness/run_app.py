@@ -5,6 +5,7 @@
 import threading
 import logging
 import sys
+import os
 
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -32,7 +33,9 @@ def run_harness_app(
     thread = threading.Thread(
         target=harness_app.run,
         kwargs={
-            "debug": False
+            "debug": False,
+            "port": 8800,
+            "host": "0.0.0.0"
         }
     )
     thread.daemon = True
@@ -113,7 +116,15 @@ if __name__ == "__main__":
     args = sys.argv
     cli_harness_config_path = None
     if "--harness-config-path" in args:
-        cli_harness_config_path = args[args.index("--harness-config-path")]
+        given_path = args[args.index("--harness-config-path")]
+        if os.path.exists(given_path):
+            cli_harness_config_path = given_path
+        else:
+            logging.getLogger().warning(
+                "Given harness config path does not exist"
+                ": %s",
+                given_path
+            )
     run_harness_app(
         harness_config_path=cli_harness_config_path
     )

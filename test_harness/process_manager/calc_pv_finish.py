@@ -7,8 +7,6 @@ import os
 from typing import Any
 import logging
 
-import numpy as np
-
 from test_harness.requests.request_logs import get_log_files
 from test_harness.requests.request_pv_io import (
     gather_get_requests_json_response
@@ -309,6 +307,7 @@ class PVFileInspector:
             domain: []
             for domain in self.harness_config.io_urls.keys()
         }
+        self.test_boundaries: tuple[int, int, int, int, int] | None = None
 
     async def run_pv_file_inspector(
         self,
@@ -343,25 +342,47 @@ class PVFileInspector:
         * start of the test
         * end of the test
         * test running time
-        :rtype: `tuple`[`int`, `int`, `int`]
+        * aer end time
+        * ver end time
+        :rtype: `tuple`[`int`, `int`, `int`, `int`, `int`]
         """
         test_start = min(
             self.coords["aer"][0][0],
             self.coords["ver"][0][0]
         )
-        test_end = self.calc_test_end()
-        test_run_time = test_end - test_start
-        return (test_start, test_end, test_run_time)
+        aer_end_time = self.calc_domain_end(
+            self.coords["aer"]
+        ) - test_start
+        test_end_time = self.calc_domain_end(
+            self.coords["ver"]
+        )
+        test_run_time = test_end_time - test_start
+        ver_end_time = test_end_time - test_start
+        self.test_boundaries = (
+            test_start, test_end_time, test_run_time, aer_end_time,
+            ver_end_time
+        )
 
-    def calc_test_end(self) -> int:
-        """Method to calculate the end of the test
+    @staticmethod
+    def calc_domain_end(domain_coords: list[tuple[int, int]]) -> int:
+        """Method to calculate the end time of a domain
 
-        :return: Returns the end of the test
+        :param domain_coords: The coordinates of the domain to calculate end
+        time for
+        :type domain_coords: `list`[`tuple`[`int`, `int`]]
+        :return: Returns the end time for the domain
         :rtype: `int`
         """
-        index_end = np.argmax([coord[1] for coord in self.coords["ver"]])
-        test_end = self.coords["ver"][index_end][0]
-        return test_end
+        end_time = domain_coords[-1][0]
+        for coord, coord_prev in zip(
+            domain_coords[-1:0:-1],
+            domain_coords[-2::-1]
+        ):
+            difference = coord[1] - coord_prev[1]
+            if difference != 0:
+                end_time = coord[0]
+                break
+        return end_time
 
     def load_log_files_and_concat_strings(self, domain: str = "ver") -> str:
         """Method to get a log string from a list of log files from a
@@ -381,6 +402,20 @@ class PVFileInspector:
             ) as file:
                 log_string += file.read() + "\n"
         return log_string
+
+    def normalise_coords(self) -> None:
+        """Method to normalise data
+        """
+        if not self.test_boundaries:
+            return
+        for domain, coords in self.coords.items():
+            coords_start = coords[0]
+            for index, coord in enumerate(coords):
+                coords[index] = (
+                    coord[0] - self.test_boundaries[0],
+                    coord[1] - coords_start[1] if domain == "ver"
+                    else coord[1]
+                )
 
 
 async def run_pv_file_inspector(
