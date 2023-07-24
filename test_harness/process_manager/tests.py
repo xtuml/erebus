@@ -23,6 +23,7 @@ from test_harness.jobs.job_delivery import send_job_templates_async
 from test_harness.process_manager.calc_pv_finish import PVFileInspector
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
+from test_harness.requests import send_get_request
 
 
 class Results:
@@ -305,6 +306,17 @@ class Test(ABC):
                 self.harness_config.log_file_store
             ]
         )
+        response_tuple = send_get_request(
+            url=self.harness_config.pv_clean_folders_url,
+            max_retries=self.harness_config.requests_max_retries,
+            timeout=self.harness_config.requests_timeout
+        )
+        if not response_tuple[0]:
+            logging.getLogger().warning(
+                "There was an error with the request to clean up PV folders"
+                " for next test with request response: %s",
+                response_tuple[2].text
+            )
 
 
 class FunctionalTest(Test):

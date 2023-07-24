@@ -89,6 +89,9 @@ class HarnessConfig:
         self.pv_config_update_time = int(self.config_parser[
             "non-default"
         ]["pv_config_update_time"])
+        self.pv_clean_folders_url = self.config_parser[
+            "non-default"
+        ]["pv_clean_folders_url"]
 
     def parse_requests_config(self) -> None:
         """Method to parse requests to pv server config
