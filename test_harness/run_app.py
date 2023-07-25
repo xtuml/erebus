@@ -116,7 +116,7 @@ if __name__ == "__main__":
     args = sys.argv
     cli_harness_config_path = None
     if "--harness-config-path" in args:
-        given_path = args[args.index("--harness-config-path")]
+        given_path = args[args.index("--harness-config-path") + 1]
         if os.path.exists(given_path):
             cli_harness_config_path = given_path
         else:
