@@ -118,13 +118,175 @@ To change default values of these files a parameter can be copied under the `[no
     * `pv_config_update_time` - The amount of time to wait for the uploaded job definition to be seen by the Protocol Verifier. Defaults to `60` (seconds). This should be greater than the field `SpecUpdateRate` of the PV
     * `pv_finish_interval` - The amount of time thats is required for the Verifier logs to not have updated so that the Test Harness can finish the test. Defaults to `30`. It is recommended that this value be greater than the value of the fields (of the PV config) `MaximumJobTime` and `JobCompletePeriod`
 * `pv_clean_folders_url` - The url of the endpoint that requests are sent to that clean the PV folders of all files relating to a test. Defaults to `http://host.docker.internal:9000/io/cleanup-test`
-[non-default]
 ***
 ## Usage
 ***
+Currently there are two main ways to use the Test Harness:
+* Flask Service - A flask service that serves http requests to run the test harness
+* Command Line Interface (CLI) Tool
 
-***
-## License
-***
-For open source projects, say how it is licensed.
+The basic usage of each of these methods is outlines below along with an overview of the test configuration that can be used.
+### <b>Test Configuration</b>
+Test configuration can be provided to the test harness in the form of:
+* Json when starting the test using the Flask Service
+* A yaml file when using the CLI Tool
+
+The fields within the json and yaml file are as follows:
+
+* `type`: `"Functional"` | `"Perfomance"` : `str` - Indicates if the test is to be
+    * `"Functional"` - A test of the functionality of the PV
+    * `"Perfomance"` - A test of the performance of the PV 
+* `max_different_sequences`: `int` `> 0` - Indicates the maximum number of different sequences to use in the tests
+* `event_gen_options`: `dict` - Options for event sequence generation using the Test Event Generator. This option contains the following sub-fields: 
+    * `solution_limit`: `int` `>= 0` - The max number of solutions to each ILP model in the Test Event Generator. This option can be used to limit how many solutions are found if the possibilities for a job definition are very large.
+    * `max_sol_time`: `int` `>= 0` - The maximum time (in seconds) to run an ILP solution in the Test Event Generator. This option should be used to limit the time getting solutions to the ILP models if they are taking too long
+    * `invalid`: `True` | `False` : `bool` - Boolean value indicating whether to include invalid sequences or not in the output
+    * `invalid_types`: [
+    `"StackedSolutions"` | `"MissingEvents"` | `"MissingEdges"` | `"GhostEvents"` | `"SpyEvents"` | `"XORConstraintBreaks"` | `"ANDConstraintBreaks"`
+    ] : `list`[`str`] - A list of the invalid solutions to include if `invalid` is set to `True`
+* `performance_options`: `dict` - Options for a perfomance test is `type` is set to `"Performance"`. This option contains the folloing sub-fields: 
+    * `num_files_per_sec`: `int` `>= 0` - The number of files to send per second to the PV. If used in conjuction with `shard` set to `True` this will send single Events files at the prescribed rate
+    * `shard`: `True` | `False` : `bool` - Boolean value indicating whether to shard job sequences into single event files and send them separately
+    * `total_jobs`: `int` `>= 0` - The total number of separate jobs to use in the performance test.
+
+#### <b>Example Json test config</b>
+```
+{
+    "type":"Performance",
+    "max_different_sequences": 100,
+    "event_gen_options": {
+        "solution_limit": 100,
+        "max_sol_time": 120 
+        "invalid": true,
+        "invalid_types": [
+            "StackedSolutions", "MissingEvents"
+        ]
+    },
+    "performance_options": {
+        "num_files_per_sec": 10,
+        "total_jobs": 100,
+        "shard": false
+    }
+}
+```
+
+#### <b>Exmaple YAML test config</b>
+```
+type: "Functional"
+max_different_sequences: 200
+event_gen_options: 
+  solution_limit: 100
+  max_sol_time: 120
+  invalid: False
+  invalid_types: [
+    "StackedSolutions", "MissingEvents", "MissingEdges",
+    "GhostEvents", "SpyEvents", "XORConstraintBreaks",
+    "ANDConstraintBreaks"
+  ]
+performance_options:
+  num_files_per_sec: 10
+  shard: False
+  total_jobs: 100
+```
+
+### <b>Flask Service</b>
+#### <b>Running the Service</b>
+The flask service can be run in two ways:
+* Following the instructions in <b>Deployment</b>:<b>Test Harness</b>:<b>Deploy</b> above. The following should then appear in stdout:
+    ```
+    [+] Building 0.0s (0/0)                                                             
+    [+] Running 2/2
+     ✔ Network test-harness_default           Cr...                                0.1s 
+     ✔ Container test-harness-test-harness-1  Created                              0.0s 
+    Attaching to test-harness-test-harness-1
+    test-harness-test-harness-1  | INFO:root:Test Harness Listener started
+    test-harness-test-harness-1  |  * Serving Flask app 'test_harness'
+    test-harness-test-harness-1  |  * Debug mode: off
+    test-harness-test-harness-1  | INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+    test-harness-test-harness-1  |  * Running on all addresses (0.0.0.0)
+    test-harness-test-harness-1  |  * Running on http://127.0.0.1:8800
+    test-harness-test-harness-1  |  * Running on http://172.24.0.2:8800
+    test-harness-test-harness-1  | INFO:werkzeug:Press CTRL+C to quit
+    ```
+
+* Following the instructions in <b>Installation and Image Build</b>:<b>Installation</b> and then running the following command from the project root (with a custom harness config file)
+
+    `python -m test_harness.run_app --harness-config-path <path to harness config file>`
+
+    Once one of this has been followed the following should appear in stdout of the terminal:
+    ```
+    INFO:root:Test Harness Listener started
+     * Serving Flask app 'test_harness'
+     * Debug mode: off
+    INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+     * Running on all addresses (0.0.0.0)
+     * Running on http://127.0.0.1:8800
+     * Running on http://172.17.0.3:8800
+    INFO:werkzeug:Press CTRL+C to quit
+    ```
+#### <b>Running a Test</b>
+A test is run in two stages once the Flask service is running:
+* Upload of UML files - PUML files that are the graphical representation of a Job Definition must be uploaded before a test can begin. This can be done by sending a POST request with the PUML file/s attached that are needed for the test to the endpoint `/uploadUML`. An example using `curl` is given below:
+    
+    ```
+    curl --location --request POST 'http://127.0.0.1:8800/uploadUML' --form 'file1=@"ANDFork_ANDFork_a.puml"'
+    ```
+    This should receive a 200 OK response with the following body text `Files uploaded successfully`
+* Start Tests Once all files required for the test have been uploaded to the harness the test can be started by sending a POST request with the JSON test data attached (must use header `'Content-Type: application/json'`) to the endpoint `/startTest`.
+
+    The JSON can contain (but does not have to) the following fields:
+    * `"TestName"`: `str` - A string representing the name of the test. If not provided a random uuid test name will be provided. Once a test is complete a directory will be created with the name given to the test and all report files relating to the test will be found within that directory.
+    * `"TestConfig"`: `dict` - A JSON object like that given in <b>Example Json test config</b> above that provides the configuration for the test
+
+    An example of a POST request using curl is provided below:
+    ```
+    curl -X POST -d '{"TestName": "A_perfomance_test", "TestConfig":{"event_gen_options":{"invalid":false}, "type":"Performance", "performance_options": {"num_files_per_sec":10, "total_jobs":100}}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
+    ```
+### <b>CLI Tool</b>
+Functionality has been provided to use the Test Harness as a CLI tool.
+
+The test harness CLI can be run from the project root directory using the following command (this will run with default harness config, test config and output report directories):
+
+`python -m test_harness <path to puml job def 1> ... <path to puml job def n>`
+
+As is clear from the above one can use multiple puml files in a test harness run. Currently the following extra arguments are supported:
+* `-o` or `--outdir` - Path to the output directory for the test report
+* `--harness_config` - Path to a valid harness config file
+* `--test_config` - Path to a test config yaml file like the example outlined in <b>Exmaple YAML test config</b>
+
+An example of using the CLI tool with all of the options would be
+```
+python -m test_harness \
+    --outdir <path to report output directory> \
+    --harnes_config <path to custom harness config> \ 
+    --test_conifg <path to custom test config yaml> \
+    <path to puml job def 1> ... <path to puml job def n>`
+```
+
+### <b>Test reports</b>
+Test reports can be found in a directory named after the `"TestName"` field sent in the POST request to `/startTest` endpoint. These directories are located in the `report_output` directory.
+* For a run using the instructions in <b>Deployment</b>:<b>Test Harness</b>:<b>Deploy</b> the report output folder is located at `deployment/report_output` relative to the project root directory
+* For a run using the command
+    `python -m test_harness.run_app --harness-config-path <path to harness config file>`
+
+    The report output folder is (by default) located at `test_harness/report_output` relative to the porject root directory. One can change this directory by editing the field `report_file_store` in the file `test_harness/config/store_config.config` and changing it to a path of the users choice
+* For a run using the CLI tool the report output folder is (by default) located at `test_harness/report_output`. If the `--outdir` option is specified the report files will be saved to the relevant folder.
+#### <b>Functional</b>
+Within the directory of the specific test a Functional test will produce the following files:
+* `Results.xml` - A junit representation of the test results
+* `Results.html` - An html representation of the test results
+* `Results.csv` - A csv representation of the test results
+
+All of the job files of the test will also be saved within this folder so that if failures have occurred the user is able to pinpoint why the test may have failed.
+#### <b>Performance</b>
+Within the directory of the specific test a Performance test will produce the following files:
+* `Basic_Stats.csv` - This file contains the basic results of the performance test
+    * `num_jobs` - The total number of jobs sent 
+    * `num_events` - The total number of events sent
+    * `average_jobs_per_sec` - Average jobs processed per second
+    * `average_events_per_sec` - Averge number of events processed per second
+    * `reception_end_time` - The simulation ending time of Reception
+    * `verifier_end_time` - The simulation ending time of the Verifier also the end time of the test
+* `PV_File_IO.csv` - This file contains the readings of the number of files in AER incoming and Verifier Processed at the given time and the calculated files processed per second
+* `PV_File_IO.html` - This provides an interactive plot of the number of files in AER incoming and Verifier Processed at the given time and the calculated files processed per second
 
