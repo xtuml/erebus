@@ -1,0 +1,61 @@
+@startuml deployment
+cloud VPC {
+    node "ec2" as EC2PV {
+        folder "Job\nDefintions" as JDEF
+        folder "AER\nIncoming" as AER_INC
+        folder "Verifier\nIncoming" as VER_INC
+        folder "Verifier\nProcessed" as VER_PROC
+        folder "Logs\nReception" as LOG_F_AER
+        folder "Logs\nVerifier" as LOG_F_VER
+        folder "Job Id\nStore" as ID_STORE
+        folder "Invariant\nStore" as INV_STORE
+        component "Protocol\nVerifier" as PV
+        component "HTTP\nServer" as HTTP {
+            portin "9000" as HTTP_9000
+            card HTTP_ENDPOINTS [
+                End Points
+                ====
+                /upload/job-definitions
+                ----
+                /upload/events
+                ====
+                /download/verifierlog
+                ----
+                /download/verifier-log-file-names
+                ----
+                /download/aerlog
+                ----
+                /download/aer-log-file-names
+                ====
+                /ioTracking/aer-incoming
+                ----
+                /ioTracking/verifier-processed
+                ====
+                /io/cleanup-test
+            ]
+        }
+    }
+    node "ec2" as EC2Harness {
+        actor User
+        port "8800" as ec2_8800
+        portout "Dynamic" as ec2_Dynamic
+        component "Test Harness" as TH {
+            portin "8800" as TH_8800
+            portout "Dynamic" as TH_Dynamic
+        }
+    }
+}
+ec2_8800 --> TH_8800 : Forward HTTP Requests
+User --> ec2_8800 : Send HTTP Requests
+TH_Dynamic --> ec2_Dynamic : Send HTTP Requests
+ec2_Dynamic --> HTTP_9000 : Forward HTTP Requests
+
+HTTP --> JDEF : Mounted
+HTTP --> AER_INC : Mounted
+HTTP --> VER_INC : Mounted
+HTTP --> VER_PROC : Mounted
+HTTP --> LOG_F_AER : Mounted
+HTTP --> LOG_F_VER : Mounted
+HTTP --> ID_STORE : Mounted
+HTTP --> INV_STORE : Mounted
+@enduml
