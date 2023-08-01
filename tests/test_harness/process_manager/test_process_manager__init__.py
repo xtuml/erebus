@@ -46,6 +46,9 @@ def test_puml_files_test() -> None:
         }
     })
     with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
         responses.post(
             url=harness_config.pv_send_job_defs_url
         )
@@ -118,6 +121,9 @@ def test_harness_test_manager_uml_exists() -> None:
     test_config = TestConfig()
     shutil.copy(test_file_path, harness_config.uml_file_store)
     with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
         responses.post(
             url=harness_config.pv_send_job_defs_url
         )
