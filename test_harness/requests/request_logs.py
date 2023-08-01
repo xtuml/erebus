@@ -3,6 +3,7 @@
 """
 from typing import Iterable
 import gzip
+import logging
 
 import requests
 
@@ -167,10 +168,15 @@ def get_log_files_strings_from_log_files_bytes(
     """
     files = {}
     for file_name, raw_bytes in raw_bytes_files.items():
-        files[file_name] = get_log_file_string_from_log_file_bytes(
-            raw_bytes=raw_bytes,
-            is_gzip=".gz" in file_name
-        )
+        try:
+            files[file_name] = get_log_file_string_from_log_file_bytes(
+                raw_bytes=raw_bytes,
+                is_gzip=".gz" in file_name
+            )
+        except gzip.BadGzipFile:
+            logging.getLogger().warning(
+                "gzip log file '%s' was found to be invalid", file_name
+            )
     return files
 
 

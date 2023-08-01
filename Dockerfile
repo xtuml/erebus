@@ -1,7 +1,7 @@
 FROM python:slim-bullseye
 
 # install pre-requisites and setup folders
-RUN apt-get update && apt-get upgrade && \
+RUN apt-get update && yes "yes" | apt-get upgrade && \
     yes "yes" | apt-get install openssh-client && \
     yes "yes" | apt-get install git && \
     mkdir -p -m 0600 /root/.ssh/ && \
