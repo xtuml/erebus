@@ -1,0 +1,8 @@
+@startuml
+participant Client as "Client"
+participant HTTP as "HTTP Server"
+database LogFiles as "Mounted Logs\nFolder"
+Client -> HTTP : GET request\nlog file names
+HTTP <-> LogFiles : Grab log file names
+HTTP -> Client : Send log file names 
+@enduml

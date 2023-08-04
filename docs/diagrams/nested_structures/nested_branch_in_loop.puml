@@ -1,0 +1,8 @@
+@startuml
+#green:A;
+repeat
+    :B,BCNT,name=BC1;
+    :C;
+repeat while (loop)
+#red:D;
+@enduml

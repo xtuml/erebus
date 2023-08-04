@@ -1,0 +1,17 @@
+@startuml
+fork
+    -[hidden]->;
+    #green:C;
+fork again
+    -[hidden]->;
+    #green:D;
+end fork
+:E;
+if (XOR) then (true)
+    #red:F;
+    detach
+else (false)
+    #red:G;
+    detach
+endif
+@enduml

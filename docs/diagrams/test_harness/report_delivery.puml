@@ -1,0 +1,17 @@
+@startuml
+left to right direction
+node Container {
+    component TestHarness as "Test Harness"
+    folder Folder as "Report\nDelivery\nFolder" {
+        folder TestFolder as "Test1" {
+            file repfile1 as "CSV report"
+            file repfile2 as "HTML report"
+            file repfile3 as "JUNIT report"
+        }
+    }
+}
+TestHarness --> TestFolder : Create directory if not exists
+TestHarness --> repfile1
+TestHarness --> repfile2
+TestHarness --> repfile3
+@enduml
