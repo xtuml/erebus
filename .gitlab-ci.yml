@@ -1,0 +1,45 @@
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  GITLAB_PYTHON_VERSION: python:3.11
+
+stages:
+  - lint
+  - test
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: "Jobs/Secret-Detection.latest.gitlab-ci.yml"
+  - template: "Security/Dependency-Scanning.gitlab-ci.yml"
+  - template: "Security/License-Scanning.gitlab-ci.yml"
+  - project: 'smartdcs1/internal/gitlab-ci-templates/python-linting-ci'
+    ref: main
+    file: '.python-linting-ci-template.yml'
+  - '/ci/.terraform-ci.yml'
+
+pytest:
+  image: $GITLAB_PYTHON_VERSION
+  stage: test
+  before_script:
+    - pip install pytest
+    - pytest --version
+    - pip install -r requirements.txt
+    - ./ci/install_prerequisites.sh
+  script:
+    - export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
+    - pytest --junitxml=report.xml --ignore=tests/test_harness/pv_config/test_pv_config_generation.py
+      --ignore=tests/test_harness/process_manager/test_send_job_defs.py
+      --ignore=tests/test_harness/process_manager/test_process_manager__init__.py
+      --ignore=tests/test_harness/process_manager/test_generate_test_files.py
+      --ignore=tests/test_harness/process_manager/test_tests.py
+
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'

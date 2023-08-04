@@ -1,0 +1,16 @@
+@startuml
+database FileStore as "File Store"
+participant Client as "Test\nHarness"
+participant HTTP as "HTTP Server"
+loop while test running
+    Client -> HTTP : GET request\nlog file names
+    HTTP -> Client : Send log file names
+    Client <-> FileStore : Filter out gzipped\nfile names already stored
+    loop file names (gzipped files stored filtered out)
+        Client -> HTTP : POST request with\nlog file name
+        HTTP -> Client : Send log file
+        Client -> FileStore : Store File
+    end 
+end
+FileStore -> Client : Grab Files and gunzip
+@enduml

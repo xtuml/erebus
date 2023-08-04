@@ -1,0 +1,5 @@
+@startuml
+#green:A;
+:B;
+#orange:Loop Event;
+#red:H;
