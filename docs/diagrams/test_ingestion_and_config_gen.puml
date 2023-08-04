@@ -1,0 +1,69 @@
+@startuml Test Harness Web Mode 
+left to right direction
+frame agent as "User" #LightGreen {
+    file file1 as "UML\nto\nIngest"
+}
+
+package http as "HTTP\nListener" {
+    component upload as "/upload" #Yellow
+    component start as "/start" #LightBlue
+}
+
+component processManager as "Process Manager" 
+
+component plus2json
+
+component eventGen as "Event\nGenerator"
+
+interface pullJobConfig as "Pull Job Config"
+
+folder eventStaging as "Event Staging" {
+        file testEvents as "Generated\nTest Events" #LightBlue
+}
+
+folder umlStaging as "UML Staging" {
+    file umlStaged as "UML\nStaged" #Yellow
+}
+
+folder PVconfig as "PV Config Staging" {
+    file jobConfig as "Job\nConfig" #LightBlue
+    file appConfig as "App\nConfig" #LightBlue
+}
+
+interface checkFolder as "Check UML uploaded"
+
+interface pullUMLStaged as "Pull UML"
+
+interface checkJobConfig as "Check Job Config"
+
+processManager --- checkJobConfig
+
+checkJobConfig ... jobConfig
+
+checkJobConfig ---> eventGen : Start Generating Events
+
+processManager --- checkFolder
+
+eventGen --- pullJobConfig
+
+pullJobConfig <--- jobConfig
+
+pullJobConfig ---> eventStaging : Store Generated Events
+
+agent ---> http : POST
+
+start ---> processManager : Begin config\nand job\n generation
+
+checkFolder ---> plus2json : Start plus2json
+
+checkFolder ... umlStaging : Check UML exists
+
+upload ---> umlStaging : Store\nUML
+
+plus2json --- pullUMLStaged
+
+pullUMLStaged ---> PVconfig : Store Job/App config
+
+pullUMLStaged <--- umlStaged
+
+@enduml

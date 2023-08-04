@@ -1,0 +1,107 @@
+{
+    "(A, 0)": {
+        "group_in": null,
+        "group_out": {
+            "type": "AND",
+            "sub_groups": [
+                "AtoB"
+            ]
+        },
+        "meta_data": {
+            "EventType": "A",
+            "occurenceId": 0
+        }
+    },
+    "(B, 0)": {
+        "group_in": {
+            "type": "OR",
+            "sub_groups": [
+                "AtoB"
+            ]
+        },
+        "group_out": null,
+        "meta_data": {
+            "EventType": "B",
+            "occurenceId": 0,
+            "dynamic_control_events": {
+                "X" : {
+                    "control_type": "BRANCHCOUNT",
+                    "provider": {
+                        "EventType": "B",
+                        "occurenceId": 0
+                    },
+                    "user": {
+                        "EventType": "B",
+                        "occurenceId": 0
+                    }
+                }
+            }
+        },
+        "branch_graph": {
+            "(C, 0)": {
+                "group_in": null,
+                "group_out": {
+                    "type": "XOR",
+                    "sub_groups": [
+                        "CtoD",
+                        "CtoE"
+                    ]
+                },
+                "meta_data": {
+                    "EventType": "C",
+                    "occurenceId": 0
+                }
+            },
+            "(D, 0)": {
+                "group_in": {
+                    "type": "OR",
+                    "sub_groups": [
+                        "CtoD"
+                    ]
+                },
+                "group_out": {
+                    "type": "OR",
+                    "sub_groups": [
+                        "DtoF"
+                    ]
+                },
+                "meta_data": {
+                    "EventType": "D",
+                    "occurenceId": 0
+                }
+            },
+            "(E, 0)": {
+                "group_in": {
+                    "type": "OR",
+                    "sub_groups": [
+                        "CtoE"
+                    ]
+                },
+                "group_out": {
+                    "type": "OR",
+                    "sub_groups": [
+                        "EtoF"
+                    ]
+                },
+                "meta_data": {
+                    "EventType": "E",
+                    "occurenceId": 0
+                }
+            },
+            "(F, 0)": {
+                "group_in": {
+                    "type": "OR",
+                    "sub_groups": [
+                        "DtoF",
+                        "EtoF"
+                    ]
+                },
+                "group_out": null,
+                "meta_data": {
+                    "EventType": "F",
+                    "occurenceId": 0
+                }
+            }
+        }
+    }
+}
