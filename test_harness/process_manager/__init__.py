@@ -111,8 +111,14 @@ def puml_files_test(
     )
     asyncio.run(test.run_test())
     # calculate results
+    logging.getLogger().info(
+        "Post processing results"
+    )
     test.calc_results()
     # clean directories ready for next test
+    logging.getLogger().info(
+        "Cleaning Test Harness and PV directories"
+    )
     test.clean_directories()
 
 

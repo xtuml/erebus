@@ -104,7 +104,8 @@ To change default values of these files a parameter can be copied under the `[no
 * folder file io tracking
     * `aer_io_url` - The http url of the endpoint that responds with the number of files currently in aer incoming. Defaults to `http://host.docker.internal:9000/ioTracking/aer-incoming`
     * `ver_io_url` - The http url of the endpoint that responds with the number of files currently in verifier processed. Defaults to `http://host.docker.internal:9000/ioTracking/verifier-processed`
-    * `io_calc_interval_time` - The interval time between each reading of the folders numbers of files. Defaults to `1`
+    * `io_calc_interval_time` - The interval time between each reading of the folders numbers of files. Defaults to `1`. It is recommended for large workloads (over 100,000) that this value be set to a large value (over 60 seconds or more than the read timeout) to ensure that lots of request that take a long time are not being performed at the same time.   
+    * `io_read_timeout` - The read timeout of the requests to track the number of files in the AEReception incoming and Verifier processed folders. Defaults to `300` (seconds). It is recommended for large workloads (over 100,000) files sent that this value be large otherwise requests for io tracking will fail.  
 * log reception and finishing time parameters
     * `log_calc_interval_time` - The interval time between requests for the log files. Defaults to `5`
     * `aer_get_file_url` - The url of the endpoint that requests are sent to receive a named log files for AER. Defaults to  `http://host.docker.internal:9000/download/aerlog`
@@ -118,6 +119,7 @@ To change default values of these files a parameter can be copied under the `[no
     * `pv_config_update_time` - The amount of time to wait for the uploaded job definition to be seen by the Protocol Verifier. Defaults to `60` (seconds). This should be greater than the field `SpecUpdateRate` of the PV
     * `pv_finish_interval` - The amount of time thats is required for the Verifier logs to not have updated so that the Test Harness can finish the test. Defaults to `30`. It is recommended that this value be greater than the value of the fields (of the PV config) `MaximumJobTime` and `JobCompletePeriod`
 * `pv_clean_folders_url` - The url of the endpoint that requests are sent to that clean the PV folders of all files relating to a test. Defaults to `http://host.docker.internal:9000/io/cleanup-test`
+* `pv_clean_folders_read_timeout` - The amount of time to wait for a read timeout when cleaning the Protocol Verifier folders after a test. Defaults to `300` (seconds). It is recommended to set this value reasonably large for tests with a large amount of files.
 ***
 ## Usage
 ***
