@@ -1,7 +1,4 @@
-"""Reads a job JSON from a file, then writes n copies to file
-
-:raises KeyError: When failing to find an event ID within a job
-:return: n file copies of the input event
+"""Module to create multiple jobs and events from templates
 """
 # pylint: disable=R0913
 # pylint: disable=R0902
@@ -16,7 +13,7 @@ open_utf8 = partial(open, encoding='UTF-8')
 
 
 class Event:
-    """Describes one UML entity, as well as links to other entities
+    """Class to hold data and links pertaining to Protocol Verifier Events.
 
     :param job_name: Name of the job this event belongs to, defaults to ""
     :type job_name: `str`, optional
@@ -32,9 +29,22 @@ class Event:
     :type application_name: `str`, optional
     :param previous_event_ids: IDs of previous events, defaults to ""
     :type previous_event_ids: `list[str]`, optional
+    :param meta_data: Any meta data attached to event, defaults to ""
+    :type meta_data: `dict`, optional
     :param new_event_id: Remembers previous IDs, defaults to ""
     :type new_event_id: `str`, optional
+
     """
+    attribute_mappings = {
+        "jobName": "job_name",
+        "jobId": "job_id",
+        "eventType": "event_type",
+        "eventId": "event_id",
+        "timestamp": "timestamp",
+        "applicationName": "application_name",
+        "previousEventIds": "previous_event_ids"
+    }
+
     def __init__(
             self,
             job_name: str = "",
@@ -43,19 +53,40 @@ class Event:
             event_id: str = "",
             timestamp: str = "",
             application_name: str = "",
-            previous_event_ids: list[str] | str = "",
+            previous_event_ids: str | list[str] = "",
+            meta_data: dict = {},
             new_event_id: str = ""
-            ):
+            ) -> None:
         """Constructor method
         """
         self.job_name = job_name
         self.job_id = job_id
-        self.new_event_id = new_event_id
         self.event_type = event_type
         self.event_id = event_id
         self.timestamp = timestamp
         self.application_name = application_name
         self.previous_event_ids = previous_event_ids
+        self.meta_data = meta_data
+        self.new_event_id = new_event_id
+
+    def parse_from_input_dict(
+        self,
+        input_dict: dict[str, str | list[str], dict]
+    ) -> None:
+        """Updates the instances attributes given an input dictionary
+
+        :param input_dict: The incoming dict with key-value pairs
+        :type input_dict: `dict`[`str`, `str` | `list`[`str`], `dict`]
+        """
+        for field, attribute in self.attribute_mappings.items():
+            if field == "previousEventIds" and field not in input_dict:
+                attribute_value = []
+            else:
+                attribute_value = input_dict.pop(field)
+            setattr(self, attribute, attribute_value)
+        self.meta_data = {
+            **input_dict
+        }
 
     def has_previous_event_id(self) -> bool:
         """Checks whether an event's previous_event_ids is populated
@@ -67,7 +98,7 @@ class Event:
             return True
         return False
 
-    def event_to_dict(self) -> dict[str, str]:
+    def event_to_dict(self) -> dict[str, str | list[str] | dict]:
         """Method to generate and event dict for the instance
 
         :return: Returns the event dict
@@ -83,6 +114,11 @@ class Event:
         }
         if self.has_previous_event_id():
             event_dict["previousEventIds"] = self.previous_event_ids
+        # add meta data if it exists
+        event_dict = {
+            **event_dict,
+            **self.meta_data
+        }
         return event_dict
 
     def export_event_to_json_list(self) -> str:
@@ -150,7 +186,11 @@ class Job:
         for event in self.events:
             if event.event_id == target_id:
                 return event
-        logging.getLogger().warning("No event found with ID %s", target_id)
+        logging.getLogger().warning(
+            "No event found with ID %s. Likely an event for an invalid test"
+            " job is being processed",
+            target_id
+            )
         if target_id in self.lost_events:
             return self.lost_events[target_id]
         else:
@@ -192,33 +232,11 @@ def parse_input_jobfile(input_jobfile: list[dict]) -> Job:
     template_job = Job()
     # iterate over the list of dicts
     for input_dict in input_jobfile:
-        template_event = parse_input_dict(input_dict)
+        template_event = Event()
+        template_event.parse_from_input_dict(input_dict)
         template_job.events.append(template_event)
 
     return template_job
-
-
-def parse_input_dict(input_dict: dict) -> Event:
-    """Creates an Event object with the parameters of a JSON dict
-
-    :param input_dict: The incoming dict with key-value pairs
-    :type input_dict: `dict`
-    :return: The event object with properties
-    :rtype: :class:`Event`
-    """
-    if "previousEventIds" in input_dict:
-        input_previous_ids = input_dict["previousEventIds"]
-    else:
-        input_previous_ids = []
-    return Event(
-        input_dict["jobName"],
-        input_dict["jobId"],
-        input_dict["eventType"],
-        input_dict["eventId"],
-        input_dict["timestamp"],
-        input_dict["applicationName"],
-        input_previous_ids
-    )
 
 
 def make_job_from_template(
@@ -317,59 +335,3 @@ def concat_jobs_to_list(
         for job in jobs
         for event in job.export_job_to_list()
     ]
-
-
-if __name__ == "__main__":
-    import sys
-    import os
-    args = sys.argv[1:]
-    input_job_file = open_utf8("test_sequence.json")
-    input_job = json.load(input_job_file)
-
-    template_obj = parse_input_jobfile(input_job)
-
-    # move this into test_harness
-
-    # for testing 1 job
-    # copy_obj = make_job_from_template(template_obj, 40, 1)
-    # write_job_to_file(copy_obj, "output/")
-
-    # for testing many jobs
-    one_file = False
-    out_dir = "output/"
-    one_file_name = "concat_jobs.json"
-    njobs = 1
-    if args:
-        if "--filename" in args:
-            one_file_name = args[args.index("--filename") + 1]
-        if "--outdir" in args:
-            out_dir = args[args.index("--outdir") + 1]
-        if "--onefile" in args:
-            one_file = True
-        if "--njobs" in args:
-            njobs = int(args[args.index("--njobs") + 1])
-
-    one_file_out_path = os.path.join(out_dir, one_file_name)
-
-    j = 0
-    if one_file:
-        jobs = []
-        while j < njobs:
-            job = make_job_from_template(
-                template=template_obj,
-                gap_seconds=40,
-                init_delay_minutes=1
-                )
-            jobs.append(job)
-            j += 1
-        concat_jobs_to_file(jobs=jobs, out_file_path=one_file_out_path)
-        exit()
-
-    while j < njobs:
-        job = make_job_from_template(
-            template=template_obj,
-            gap_seconds=40,
-            init_delay_minutes=1
-        )
-        write_job_to_file(job, out_dir)
-        j = j + 1
