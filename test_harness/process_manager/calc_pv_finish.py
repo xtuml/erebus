@@ -73,17 +73,22 @@ def calc_interval(
 
 
 async def get_coords(
-    urls: dict[str, str]
+    urls: dict[str, str],
+    read_timeout: float = 300.0
 ) -> dict[str, tuple[int, int]]:
     """Asynchronous function to get time, number of files pairs for each url
 
     :param urls: Dictionary mapping domain to urls to get the pairs
     :type urls: `dict`[`str`, `str`]
+    :param read_timeout: The timeout for reading of the request, defaults to
+    `300.0`
+    :type read_timeout: `float`
     :return: Returns dictionary mapping domain to time, number of files pair
     :rtype: `dict`[`str`, `tuple`[`int`, `int`]]
     """
     num_files = await gather_get_requests_json_response(
-        urls.values()
+        urls.values(),
+        read_timeout=read_timeout
     )
     return {
         url_name: (coord_pair["t"], coord_pair["num_files"])
@@ -97,7 +102,8 @@ async def get_coords(
 async def pv_inspector_io(
     coords: dict[str, list[tuple[int, int]]],
     io_calc_interval_time: int,
-    urls: dict[str, str]
+    urls: dict[str, str],
+    read_timeout: float = 300.0
 ) -> None:
     """Asynchronous method to inspect the io of folders in the protocol
     verifier
@@ -110,14 +116,17 @@ async def pv_inspector_io(
     :type io_calc_interval_time: `int`
     :param urls: Dictionary mapping domain to url
     :type urls: `dict`[`str`, `str`]
+    :param read_timeout: The timeout for reading of the request, defaults to
+    `300.0`
+    :type read_timeout: `float`
     """
     while True:
         t_1 = time()
-        current_coords = await get_coords(
-            urls=urls
+        await handle_coords_request(
+            coords=coords,
+            urls=urls,
+            read_timeout=read_timeout
         )
-        for domain, coord in current_coords.items():
-            coords[domain].append(coord)
         t_2 = time()
         interval = calc_interval(
             t_1,
@@ -125,6 +134,41 @@ async def pv_inspector_io(
             io_calc_interval_time
         )
         await asyncio.sleep(interval)
+
+
+async def handle_coords_request(
+    coords: dict[str, list[tuple[int, int]]],
+    urls: dict[str, str],
+    read_timeout: float = 300.0
+) -> None:
+    """Asynchronous method to handle request to obtain the number of files in
+    the pv directories. Looks for timeout excpetions and logs a warning
+    indicating the problem.
+
+    :param coords: Dictionary mapping domain to lists of time, number of files
+    pair
+    :type coords: `dict`[`str`, `list`[`tuple`[`int`, `int`]]]
+    :param urls: Dictionary mapping domain to url
+    :type urls: `dict`[`str`, `str`]
+    :param read_timeout: The timeout for reading of the request, defaults to
+    `300.0`
+    :type read_timeout: `float`
+    """
+    try:
+        current_coords = await get_coords(
+            urls=urls,
+            read_timeout=read_timeout
+        )
+        for domain, coord in current_coords.items():
+            coords[domain].append(coord)
+    except asyncio.TimeoutError:
+        logging.getLogger().warning(
+            "Obtaining the number of files in one of the domains has timed"
+            " out. Suggest increasing the harnes config parameter"
+            " io_read_timeout and io_calc_interval_time if this is smaller"
+            " than the time requests are tiaking to timeout %.1f",
+            read_timeout
+        )
 
 
 async def pv_finish_inspector_logs(
@@ -314,11 +358,11 @@ class PVFileInspector:
     ) -> None:
         """Method to run the pv file inspector and update attributes
         """
-        io_data = await get_coords(
-                urls=self.harness_config.io_urls
-            )
-        for domain, datum in io_data.items():
-            self.coords[domain].append(datum)
+        await handle_coords_request(
+            coords=self.coords,
+            urls=self.harness_config.io_urls,
+            read_timeout=self.harness_config.io_read_timeout
+        )
         gathered_futures = asyncio.gather(
             pv_finish_inspector_logs(
                 file_names=self.file_names,
@@ -330,7 +374,10 @@ class PVFileInspector:
             pv_inspector_io(
                 coords=self.coords,
                 urls=self.harness_config.io_urls,
-                io_calc_interval_time=self.harness_config.io_calc_interval_time
+                io_calc_interval_time=(
+                    self.harness_config.io_calc_interval_time
+                ),
+                read_timeout=self.harness_config.io_read_timeout
             )
         )
         await gathered_futures
@@ -416,53 +463,3 @@ class PVFileInspector:
                     coord[1] - coords_start[1] if domain == "ver"
                     else coord[1]
                 )
-
-
-async def run_pv_file_inspector(
-    harness_config: HarnessConfig,
-) -> tuple[dict[str, list[tuple[int, int]]], list[str]]:
-    """Method to run the pv file inspector
-
-    :param harness_config: Test harness config
-    :type harness_config: :class:`HarnessConfig`
-    :return: Returns a tuple of a dictionary mapping domain to file io and a
-    list of filenames generated
-    :rtype: `tuple`[`dict`[`str`, `list`[`tuple`[`int`, `int`]]],
-    `list`[`str`]]
-    """
-    urls_io_tracking = harness_config.io_urls
-    io_calc_interval_time = harness_config.io_calc_interval_time
-    pv_finish_interval = harness_config.pv_finish_interval
-    log_calc_interval_time = harness_config.log_calc_interval_time
-    log_urls = harness_config.log_urls
-    log_store_path = harness_config.log_file_store
-    io_data = await get_coords(
-            urls=urls_io_tracking
-        )
-    coords = {
-        domain: [datum]
-        for domain, datum in io_data.items()
-    }
-    file_names = {
-        domain: []
-        for domain in io_data.keys()
-    }
-    gathered_futures = asyncio.gather(
-        pv_finish_inspector_logs(
-            file_names=file_names,
-            urls=log_urls,
-            interval_time=log_calc_interval_time,
-            required_time_interval=pv_finish_interval,
-            log_file_store_path=log_store_path
-        ),
-        pv_inspector_io(
-            coords=coords,
-            urls=urls_io_tracking,
-            io_calc_interval_time=io_calc_interval_time
-        )
-    )
-    try:
-        await gathered_futures
-    except RuntimeError as error:
-        logging.getLogger().info(msg=str(error))
-    return coords, file_names

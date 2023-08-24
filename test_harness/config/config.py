@@ -92,6 +92,11 @@ class HarnessConfig:
         self.pv_clean_folders_url = self.config_parser[
             "non-default"
         ]["pv_clean_folders_url"]
+        self.pv_clean_folders_read_timeout = int(
+            self.config_parser[
+                "non-default"
+            ]["pv_clean_folders_read_timeout"]
+        )
 
     def parse_requests_config(self) -> None:
         """Method to parse requests to pv server config
@@ -107,6 +112,9 @@ class HarnessConfig:
         self.io_calc_interval_time = int(self.config_parser[
             "non-default"
         ]["io_calc_interval_time"])
+        self.io_read_timeout = float(self.config_parser[
+            "non-default"
+        ]["io_read_timeout"])
         aer_io_url = self.config_parser[
             "non-default"
         ]["aer_io_url"]

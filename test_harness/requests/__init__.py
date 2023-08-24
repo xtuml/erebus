@@ -156,7 +156,7 @@ def request_retry(
 def send_get_request(
     url: str,
     max_retries: int = 0,
-    timeout: int = 10
+    timeout: int | tuple[int, int] = 10
 ) -> tuple[bool, int, requests.Response]:
     """Method to send a get request to an url endpoint
 

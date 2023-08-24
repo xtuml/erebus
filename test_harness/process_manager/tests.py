@@ -15,6 +15,7 @@ from tqdm import tqdm
 import pandas as pd
 import plotly.express as px
 from plotly.graph_objects import Figure
+from requests import ReadTimeout
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.jobs.job_factory import parse_input_jobfile, Job
@@ -306,16 +307,27 @@ class Test(ABC):
                 self.harness_config.log_file_store
             ]
         )
-        response_tuple = send_get_request(
-            url=self.harness_config.pv_clean_folders_url,
-            max_retries=self.harness_config.requests_max_retries,
-            timeout=self.harness_config.requests_timeout
-        )
-        if not response_tuple[0]:
+        try:
+            response_tuple = send_get_request(
+                url=self.harness_config.pv_clean_folders_url,
+                max_retries=self.harness_config.requests_max_retries,
+                timeout=(
+                    self.harness_config.requests_timeout,
+                    self.harness_config.pv_clean_folders_read_timeout
+                )
+            )
+            if not response_tuple[0]:
+                logging.getLogger().warning(
+                    "There was an error with the request to clean up PV"
+                    "folders"
+                    " for next test with request response: %s",
+                    response_tuple[2].text
+                )
+        except ReadTimeout:
             logging.getLogger().warning(
-                "There was an error with the request to clean up PV folders"
-                " for next test with request response: %s",
-                response_tuple[2].text
+                "The read time out limit of %s was reached. Not all PV folders"
+                "will be empty. It is suggested the harness config "
+                "'pv_clean_folder_read_timeout' is increased."
             )
 
 
@@ -501,6 +513,16 @@ class PerformanceTest(Test):
     def calc_results(self) -> None:
         """Method to calc the results after the test and save reports
         """
+        if any(
+            len(domain_coords) < 2
+            for domain_coords in self.pv_file_inspector.coords.values()
+        ):
+            logging.getLogger().warning(
+                "Cannot calculate results as not enough data points were "
+                "taken. The read timeout of io folder calculations may need "
+                "to be increased"
+            )
+            return
         self.pv_file_inspector.calc_test_boundaries()
         self.pv_file_inspector.normalise_coords()
         num_jobs = 0
