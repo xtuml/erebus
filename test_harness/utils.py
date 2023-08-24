@@ -5,6 +5,8 @@ from io import BytesIO
 import os
 import glob
 
+import flatdict
+
 
 def create_file_io_file_name_tuple(
     file_name: str,
@@ -91,4 +93,35 @@ def clean_directory(
                 directory_path,
                 file
             )
+        )
+
+
+def check_dict_equivalency(
+    dict_1: dict,
+    dict_2: dict
+) -> None:
+    """Method to check the equivalency of two dictionaries
+
+    :param dict_1: Dictionary to compare
+    :type dict_1: `dict`
+    :param dict_2: Dictionary to compare
+    :type dict_2: `dict`
+    """
+    flat_dict_1 = flatdict.FlatterDict(
+        dict_1
+    )
+    flat_dict_2 = flatdict.FlatterDict(
+        dict_2
+    )
+    for sub_1_item, sub_2_item in zip(
+        sorted(flat_dict_1.items(), key=lambda item: item[0]),
+        sorted(flat_dict_2.items(), key=lambda item: item[0])
+    ):
+        # check sorted values are the same
+        assert sub_1_item[1] == sub_2_item[1]
+        # check the value lies at the correct depth
+        assert (
+            len(sub_1_item[0].split(":"))
+        ) == (
+            len(sub_2_item[0].split(":"))
         )
