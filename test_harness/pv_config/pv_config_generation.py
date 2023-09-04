@@ -1,129 +1,91 @@
 """Generate Protocol Verifier config using Plus2Json
 """
-import sys
-from typing import TextIO, Callable
-from io import StringIO
-from plus2json.__main__ import main
+import zipimport
+import logging
+import json
+
+import xtuml
+
+from test_harness.utils import (
+    FilterException,
+    ErrorFilter,
+    collect_error_logs_from_func
+)
+
+# import plus2json
+importer = zipimport.zipimporter("test_harness/plus2json.pyz")
+plus2json = importer.load_module('plusj2son.plus2json')
 
 
-def collect_std_out() -> tuple[StringIO, TextIO]:
-    """Method to start collecting the stdout
-
-    :return: Returns the values of new stdout collector and old stdout
-    collector
-    :rtype: `tuple`[:class:`StringIO`, :class:`TextIO`]
+class Plus2JsonString(plus2json.plus2json.Plus2Json):
+    """Subclass of Plus2Json needed to integrate with Test Harness correctly
     """
-    old = sys.stdout
-    new = StringIO()
-    set_std_out(new)
-    return new, old
+    def __init__(self) -> None:
+        super().__init__()
 
+    def check_consistency(self) -> None:
+        """Method to check whether the model from puml file works correctly
 
-def collect_std_err() -> tuple[StringIO, TextIO]:
-    """Method to start collecting the stderr
+        :raises RuntimeError: Raises a :class:`RuntimeError` when there is an
+        error with the model
+        """
+        if (
+            xtuml.check_association_integrity(self.metamodel)
+            + xtuml.check_uniqueness_constraint(self.metamodel)
+        ) > 0:
+            logging.getLogger().error('Failed model integrity check')
+            raise RuntimeError("Check of puml failed whilst loading job defs")
 
-    :return: Returns the values of new stderr collector and old stderr
-    collector
-    :rtype: `tuple`[:class:`StringIO`, :class:`TextIO`]
-    """
-    old = sys.stderr
-    new = StringIO()
-    set_std_error(new)
-    return new, old
+    def get_job_def_strings(self, file_names: list[str]) -> list[str]:
+        """Method to obtain job def strings from a list of input puml
+        graphical job definitions
 
+        :param file_names: List of puml file paths
+        :type file_names: `list`[`str`]
+        :raises RuntimeError: Raises a :class:`RuntimeError` when there is an
+        error in the puml file syntax
+        :return: Returns a list of the job definition json strings
+        :rtype: `list`[`str`]
+        """
+        self.filename_input(file_names)
+        plus2json_log_filter = ErrorFilter()
+        try:
+            collect_error_logs_from_func(
+                logger=plus2json.populate.logger,
+                filter=plus2json_log_filter,
+                func=self.load,
+                opts={"event_data": []}
+            )
+        except FilterException:
+            raise RuntimeError(
+                f"Plus2json found the following errors that should be "
+                f"rectified:\n{plus2json_log_filter.output_error_message}"
+            )
 
-def set_std_out(
-    to_set: TextIO
-) -> None:
-    """Method to set the stdout collector
-
-    :param to_set: The collector object to be set
-    :type to_set: :class:`TextIO`
-    """
-    sys.stdout = to_set
-
-
-def set_std_error(
-    to_set: TextIO
-) -> None:
-    """Method to set the stderr collector
-
-    :param to_set: The collector object to be set
-    :type to_set: :class:`TextIO`
-    """
-    sys.stderr = to_set
+        # self.load(opts={"event_data": []})
+        # output each job definition
+        return [
+            json.dumps(
+                plus2json.definition.JobDefn_json(job_defn),
+                indent=4,
+                separators=(',', ': ')
+            )
+            for job_defn in self.metamodel.select_many('JobDefn')
+        ]
 
 
 def get_job_defs_from_uml_files(
     uml_file_paths: list[str]
 ) -> list[str]:
-    """Method to obtain job defs from a list of uml file paths
+    """Method to obtain job def strings from a list of input puml
+    graphical job definitions using :class:`Plus2JsonString`
 
-    :param uml_file_paths: List of uml file paths
-    :type uml_file_paths: `list`[`str`]
-    :return: Returns a list of job def strings
-    :rtype: `list`[`str`]
+    :param uml_file_paths: _description_
+    :type uml_file_paths: list[str]
+    :return: _description_
+    :rtype: list[str]
     """
-    return [
-        get_job_def_from_uml(uml_file_path)
-        for uml_file_path in uml_file_paths
-    ]
-
-
-def get_job_def_from_uml(
-    uml_file_path: str,
-) -> str:
-    """Method to take a uml file by file path and convert into PV job
-    definition json string
-
-    :param uml_file_path: The path of the uml file
-    :type uml_file_path: `str`
-    :return: Returns the json string
-    :rtype: `str`
-    """
-    args = [
-        None,
-        uml_file_path,
-    ]
-    check_string = get_string_io_output_from_main_with_args(
-        args,
-        collect_func=collect_std_err,
-        set_func=set_std_error
+    plus2json_handler = Plus2JsonString()
+    return plus2json_handler.get_job_def_strings(
+        uml_file_paths
     )
-    if check_string:
-        raise RuntimeError(
-            f"Plus2json found the following errors that should be rectified:\n"
-            f"{check_string}"
-        )
-    args += ["--job"]
-    job_string = get_string_io_output_from_main_with_args(
-        args,
-        collect_func=collect_std_out,
-        set_func=set_std_out
-    )
-    return job_string
-
-
-def get_string_io_output_from_main_with_args(
-    args: list,
-    collect_func: Callable[[], tuple[StringIO, TextIO]],
-    set_func: Callable[[TextIO], None]
-) -> str:
-    """Method to run `main` and collect text going to the shell
-
-    :param args: The arguments for `main`
-    :type args: `list`
-    :param collect_func: The function used to collect text from the
-    shell
-    :type collect_func: :class:`Callable`[[], `tuple`[:class:`StringIO`,
-    :class:`TextIO`]]
-    :param set_func: The function to reset the collector to the old value
-    :type set_func: :class:`Callable`[[:class:`TextIO`], `None`]
-    :return: Returns the string representation of the shell output
-    :rtype: `str`
-    """
-    new, old = collect_func()
-    main(args)
-    std_out_string = new.getvalue()
-    set_func(old)
-    return std_out_string

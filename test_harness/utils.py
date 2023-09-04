@@ -1,9 +1,12 @@
+# pylint: disable=W0622
+# pylint: disable=R0903
 """Utility functions
 """
-from typing import Generator, Any
+from typing import Generator, Any, Literal, Callable
 from io import BytesIO
 import os
 import glob
+import logging
 
 import flatdict
 
@@ -125,3 +128,73 @@ def check_dict_equivalency(
         ) == (
             len(sub_2_item[0].split(":"))
         )
+
+
+class FilterException(Exception):
+    """:class:`Exception` subslass to differentiate exceptions when logs
+    filtered by :class:`ErrorFilter:
+    """
+    def __init__(self, *args: object) -> None:
+        """Constructor method
+        """
+        super().__init__(*args)
+
+
+class ErrorFilter(logging.Filter):
+    """Subclass of :class:`logging`.`Filter` used to filter anything but
+    errors from the logger and raise a :class:`FilterException` error when an
+    error is logged
+
+    :param name: Name of the filter, defaults to `""`
+    :type name: `str`, optional
+    """
+    def __init__(self, name: str = "") -> None:
+        """Constructor method
+        """
+        super().__init__(name)
+        self.output_error_message: str
+
+    def filter(self, record: logging.LogRecord) -> Literal[False]:
+        """Method to perform the described filtering
+
+        :param rec: The logging record
+        :type rec: :class:`logging`.`LogRecord`
+        :raises FilterException: Raises a :class:`FilterException` when an
+        error is logged
+        :return: Returns `False` if an error is not raised
+        :rtype: :class:`Literal`[`False`]
+        """
+        if record.levelno == logging.ERROR:
+            self.output_error_message = record.msg
+            raise FilterException(
+                "There was a logging error from the logger"
+            )
+        return False
+
+
+def collect_error_logs_from_func(
+    logger: logging.Logger,
+    filter: ErrorFilter,
+    func: Callable,
+    *args,
+    **kwargs
+) -> None:
+    """Collects errors logs and raises exception when found. Filters any other
+    logs
+
+    :param logger: The logger
+    :type logger: :class:`logging`.`Logger`
+    :param filter: The filter
+    :type filter: :class:`ErrorFilter`
+    :param func: Function whose logs will be collected and filtered
+    :type func: :class:`Callable`
+    :raises FilterException: Raises a :class:`FilterException` when the filter
+    raises the same excpetion
+    """
+    logger.addFilter(filter)
+    try:
+        func(*args, **kwargs)
+    except FilterException as error:
+        logger.removeFilter(filter)
+        raise error
+    logger.removeFilter(filter)
