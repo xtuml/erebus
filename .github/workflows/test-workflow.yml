@@ -14,11 +14,11 @@ jobs:
       - name: Install Requirements
         run: |
           echo "Installing absolutely nothing for now!"
-          # pip install --upgrade pip
-          # pip install pytest
-          # pytest --version
-          # pip install flake8
-          # flake8 --version
+          pip install --upgrade pip
+          pip install pytest
+          pytest --version
+          pip install flake8
+          flake8 --version
           # pip install -r requirements.txt
           # ./ci/install_prerequisites.sh
       - name: Run Tests
