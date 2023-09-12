@@ -10,18 +10,21 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-          cache: 'pip'  ##TODO: probably need to check whether caching speeds up or slows things down
+          cache: 'pip'
       - name: Install Requirements
         run: |
           echo "Installing absolutely nothing!"
+          # pip install --upgrade pip
           # pip install pytest
           # pytest --version
+          # pip install flake8
+          # flake8 --version
           # pip install -r requirements.txt
           # ./ci/install_prerequisites.sh
       - name: Run Tests
         run: |
           echo "Hello World!"
-          # export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH  ##TODO: this path may need to change
+          # export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
           # pytest --junitxml=report.xml --ignore=tests/test_harness/pv_config/test_pv_config_generation.py
           #   --ignore=tests/test_harness/process_manager/test_send_job_defs.py
           #   --ignore=tests/test_harness/process_manager/test_process_manager__init__.py
