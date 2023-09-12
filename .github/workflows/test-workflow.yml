@@ -4,13 +4,27 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install Requirements
-        run: |
-          echo "Installing absolutely nothing!"
+      - name: Setup Checkout
+        uses: actions/checkout@v3
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - name: Test all good
-        run: echo "Hello World!"
+          cache: 'pip'  ##TODO: probably need to check whether caching speeds up or slows things down
+      - name: Install Requirements
+        run: |
+          echo "Installing absolutely nothing!"
+          # pip install pytest
+          # pytest --version
+          # pip install -r requirements.txt
+          # ./ci/install_prerequisites.sh
+      - name: Run Tests
+        run: |
+          echo "Hello World!"
+          # export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH  ##TODO: this path may need to change
+          # pytest --junitxml=report.xml --ignore=tests/test_harness/pv_config/test_pv_config_generation.py
+          #   --ignore=tests/test_harness/process_manager/test_send_job_defs.py
+          #   --ignore=tests/test_harness/process_manager/test_process_manager__init__.py
+          #   --ignore=tests/test_harness/process_manager/test_generate_test_files.py
+          #   --ignore=tests/test_harness/process_manager/test_tests.py
+          #   --ignore=tests/test_harness/process_manager/test_calc_pv_finish.py
