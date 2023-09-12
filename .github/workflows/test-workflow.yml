@@ -13,7 +13,7 @@ jobs:
           cache: 'pip'
       - name: Install Requirements
         run: |
-          echo "Installing absolutely nothing!"
+          echo "Installing absolutely nothing for now!"
           # pip install --upgrade pip
           # pip install pytest
           # pytest --version
