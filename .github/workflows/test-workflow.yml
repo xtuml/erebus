@@ -5,7 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - name: Setup Checkout (external)
+        uses: actions/checkout@v4
+        with:
+          repository: SmartDCSITlimited/test-event-generator
+          ref: CDSDT-41-test-event-generator
+          # token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
+          path: external
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
