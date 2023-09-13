@@ -10,7 +10,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: SmartDCSITlimited/test-event-generator
-          ref: CDSDT-41-test-event-generator
           # token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
           path: external
       - name: Setup Python
