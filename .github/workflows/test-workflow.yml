@@ -6,12 +6,12 @@ jobs:
     steps:
       - name: Setup Checkout
         uses: actions/checkout@v4
-      # - name: Setup Checkout (external)
-      #   uses: actions/checkout@v4
-      #   with:
-      #     repository: SmartDCSITlimited/test-event-generator
-      #     token: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
-      #     path: external
+      - name: Setup Checkout (external)
+        uses: actions/checkout@v4
+        with:
+          repository: SmartDCSITlimited/test-event-generator
+          token: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+          path: external
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -27,11 +27,12 @@ jobs:
           flake8 --version
 
           pip install -r requirements.txt
-
-          # cd external
-          # pip install -r requirements.txt
-          # pip install .
-          # cd ..
+      - name: Install Requirements (external)
+        run: |
+          cd external
+          pip install -r requirements.txt
+          pip install .
+          cd ..
       - name: Run Tests
         run: |
           # export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
