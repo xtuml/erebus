@@ -1,11 +1,17 @@
 name: basic
 on: [push]
 jobs:
+  direct_use_of_action:
+    uses: ./.github/workflows/install.yml
+
   install_and_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
       - run: pip list
       - uses: ./.github/workflows/install.yml
       - run: pip list
