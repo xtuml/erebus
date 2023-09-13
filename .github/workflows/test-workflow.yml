@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: SmartDCSITlimited/test-event-generator
-          token: ${{ secrets.TEMP_GH_PAT }}
+          token: ${{ secrets.TESTKEY }}
           path: external
       - name: Setup Python
         uses: actions/setup-python@v4
