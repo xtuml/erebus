@@ -1,0 +1,10 @@
+name: basic
+on: [push]
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Checkout
+        uses: install.yml@install
+      - name: List pip Installs
+        run: pip list
