@@ -6,8 +6,6 @@ jobs:
     steps:
       - name: Setup Checkout
         uses: actions/checkout@v4
-      # - name: Setup Test Event Generator
-      #   uses: SmartDCSITlimited/test-event-generator@install
       # - name: Setup Checkout (external)
       #   uses: actions/checkout@v4
       #   with:

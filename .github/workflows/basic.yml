@@ -2,4 +2,10 @@ name: basic
 on: [push]
 jobs:
   install:
-    uses: SmartDCSITlimited/test-harness/.github/workflows/install.yml@install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+      - run: pip list
+      - uses: ./.github/workflows/install.yml@install
+      - run: pip list
