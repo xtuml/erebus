@@ -1,7 +1,7 @@
-name: install
+name: install_requirements
 on: [workflow_call]
 jobs:
-  install:
+  install_reqs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Checkout
