@@ -5,6 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Checkout
-        uses: ./install.yml@install
+        uses: SmartDCSITlimited/test-harness/.github/workflows/install.yml@install
       - name: List pip Installs
         run: pip list
