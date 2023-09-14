@@ -11,6 +11,14 @@ Let people know what your project can do specifically. Provide context and add a
 ## Installation and Image Build
 ***
 
+### Quickstart
+On MacOS, you can run the test harness with:
+```sh
+ssh-add --apple-use-keychain ~/.ssh/id_rsa # Add your private key used for SSH to apple keychain
+docker compose up --build
+```
+NOTE: If the above doesn't work, check that you can access gitlab via git without user interaction (e.g. if you've added your SSH key to the apple keychain).
+
 ### <b>Pre-requisites</b>
 To install and build this project one must have the following pre-requisites:
 * python 3.11 (https://docs.python.org/3/whatsnew/3.11.html) and pip (or other python package manager) be installed on the machine that will be hosting the Test Harness (installation only)
@@ -18,6 +26,7 @@ To install and build this project one must have the following pre-requisites:
     * https://gitlab.com/smartdcs1/cdsdt/test-event-generator
     * https://github.com/xtuml/plus2json 
 * Docker installed on the machine (build only)
+
 
 ### <b>Installation</b>
 The project can be installed on the machine by choosing the project root directory as the working directory and running the following sequence of commands (it is recommended that a python virtual environment is set up so as not to pollute the main install):

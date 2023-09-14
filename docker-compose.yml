@@ -1,8 +1,11 @@
 version: "1"
-name: test-harness
+name: test-harness-dev
 services:
   test-harness:
-    image: "registry.gitlab.com/smartdcs1/cdsdt/test-harness:MuninP2S1-midstage"
+    build: 
+      dockerfile: ./Dockerfile
+      ssh: 
+        - default
     volumes:
       - "./config:/config"
       - "./report_output:/test_harness_app/test_harness/report_output"
