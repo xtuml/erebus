@@ -6,17 +6,20 @@ jobs:
     steps:
       - name: Setup Checkout
         uses: actions/checkout@v4
+
       - name: Setup Checkout (external)
         uses: actions/checkout@v4
         with:
           repository: SmartDCSITlimited/test-event-generator
           ssh-key: ${{ secrets.TESTKEY }}
           path: external
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
           cache: 'pip'
+
       - name: Install Requirements
         run: |
           pip install --upgrade pip
@@ -27,6 +30,7 @@ jobs:
           flake8 --version
 
           pip install -r requirements.txt
+
       - name: Install Requirements (external)
         run: |
           cd external
@@ -34,6 +38,7 @@ jobs:
           pip install .
           cd ..
           rm -rf external
+
       - name: Run Tests
         run: |
           export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
