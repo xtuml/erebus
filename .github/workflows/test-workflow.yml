@@ -37,10 +37,10 @@ jobs:
       - name: Run Tests
         run: |
           export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
-          pytest --ignore=tests/test_harness/pv_config/test_pv_config_generation.py
-            --ignore=tests/test_harness/process_manager/test_send_job_defs.py
-            --ignore=tests/test_harness/process_manager/test_process_manager__init__.py
-            --ignore=tests/test_harness/process_manager/test_generate_test_files.py
-            --ignore=tests/test_harness/process_manager/test_tests.py
+          pytest --ignore=tests/test_harness/pv_config/test_pv_config_generation.py \
+            --ignore=tests/test_harness/process_manager/test_send_job_defs.py \
+            --ignore=tests/test_harness/process_manager/test_process_manager__init__.py \
+            --ignore=tests/test_harness/process_manager/test_generate_test_files.py \
+            --ignore=tests/test_harness/process_manager/test_tests.py \
             --ignore=tests/test_harness/process_manager/test_calc_pv_finish.py
           flake8
