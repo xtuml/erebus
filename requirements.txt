@@ -56,3 +56,4 @@ tzdata==2023.3
 urllib3==2.0.2
 Werkzeug==2.2.3
 yarl==1.9.2
+pyxtuml==2.3.1
