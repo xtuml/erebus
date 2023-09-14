@@ -31,7 +31,7 @@ jobs:
         run: |
           cd external
           pip install -r requirements.txt
-          pip install .
+          pip install . ../tests
           cd ..
       - name: Run Tests
         run: |
