@@ -29,10 +29,8 @@ jobs:
           pip install -r requirements.txt
       - name: Install Requirements (external)
         run: |
-          cd external
-          pip install -r requirements.txt
-          pip install . ../tests
-          cd ..
+          pip install -r external/requirements.txt
+          pip install external
       - name: Run Tests
         run: |
           export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
