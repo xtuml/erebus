@@ -16,8 +16,6 @@ jobs:
     uses: SmartDCSITlimited/actions-store/.github/workflows/LicenseScanning.yml@main
   python-linting:
     uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
-  terraform-checks:
-    uses: SmartDCSITlimited/actions-store/.github/workflows/TerraformChecks.yml@main
 
   run-tests:
     runs-on: ubuntu-latest
