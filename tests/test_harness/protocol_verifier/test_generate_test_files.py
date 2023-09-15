@@ -2,7 +2,7 @@
 """
 from pathlib import Path
 
-from test_harness.process_manager.generate_test_files import (
+from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_file,
     generate_test_events_from_puml_files
 )

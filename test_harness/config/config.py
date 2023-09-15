@@ -53,6 +53,14 @@ class HarnessConfig:
             uml_file_store_path,
             "uml_file_store"
         )
+        # parse uml file store
+        profile_store_path = self.config_parser[
+            "non-default"
+        ]["profile_store"]
+        self.profile_store = self.calc_path(
+            profile_store_path,
+            "profile_store"
+        )
         # parse report filestore path
         report_file_store_path = self.config_parser[
             "non-default"

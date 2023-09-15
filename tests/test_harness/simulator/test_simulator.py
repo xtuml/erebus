@@ -1,0 +1,334 @@
+# pylint: disable=W0212
+# pylint: disable=W0143
+# pylint: disable=R0903
+"""Tests for simulator.py
+"""
+import asyncio
+from time import time
+
+import pytest
+from tqdm import tqdm
+
+from test_harness.simulator.simulator import (
+    SimDatum,
+    Simulator,
+    SimpleSimDatumTranformer,
+    Batch,
+    async_do_nothing,
+    SimpleResultsHandler
+)
+
+
+class TestSimDatum:
+    """Group of tests for :class:`SimDatum`
+    """
+    @staticmethod
+    def test_sim_datum_no_kwargs() -> None:
+        """Tests :class:`SimDatum` with no kwargs given
+        """
+        sim_datum = SimDatum()
+        assert isinstance(sim_datum.args, list)
+        assert isinstance(sim_datum.kwargs, dict)
+        assert not sim_datum.args and not sim_datum.kwargs
+        assert sim_datum.action_func is None
+
+    @staticmethod
+    def test_sim_datum() -> None:
+        """Tests :class:`SimDatum` with kwargs given
+        """
+        args = [1]
+        kwargs = {"kwarg": 1}
+
+        async def action_func() -> None:
+            await asyncio.sleep(1)
+        sim_datum_kwargs = {
+            "args": args,
+            "kwargs": kwargs,
+            "action_func": action_func
+        }
+        sim_datum = SimDatum(
+            **sim_datum_kwargs
+        )
+        for kwarg_name, kwarg in sim_datum_kwargs.items():
+            assert kwarg == getattr(sim_datum, kwarg_name)
+
+
+class TestSimulator:
+    """Group of tests for :class:`Simulator`
+    """
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test__execute_simulation_data_single_action_func_iterator(
+    ) -> None:
+        """Tests :class:`Simulator`.`_execute_simulation_data` with a single
+        action function input to the instance as an attribute and using an
+        input iterator
+        """
+        delays = [1]
+        simulation_data = [SimDatum(
+            args=[{}],
+            kwargs={"kwarg": {}}
+        )]
+        simulation_data_iter = iter(simulation_data)
+
+        async def action_func(arg, kwarg) -> None:
+            return (arg, kwarg)
+        simulator = Simulator(
+            delays=delays,
+            simulation_data=simulation_data_iter,
+            action_func=action_func
+        )
+        return_data = await simulator._execute_simulation_data()
+
+        assert return_data[0] == simulation_data[0].args[0]
+        assert return_data[1] == simulation_data[0].kwargs[
+            "kwarg"
+        ]
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test__execute_simulation_data_single_action_func_generator(
+    ) -> None:
+        """Tests :class:`Simulator`.`_execute_simulation_data` with a single
+        action function input to the instance as an attribute and using an
+        input generator
+        """
+        delays = [1]
+        simulation_data = SimDatum(
+            args=[{}],
+            kwargs={"kwarg": {}}
+        )
+
+        def gen_data():
+            """Create generator
+            """
+            yield simulation_data
+        simulation_data_gen = gen_data()
+
+        async def action_func(arg, kwarg) -> None:
+            return (arg, kwarg)
+        simulator = Simulator(
+            delays=delays,
+            simulation_data=simulation_data_gen,
+            action_func=action_func
+        )
+        return_data = await simulator._execute_simulation_data()
+
+        assert return_data[0] == simulation_data.args[0]
+        assert return_data[1] == simulation_data.kwargs[
+            "kwarg"
+        ]
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test__execute_simulation_data_action_func_in_iterator(
+    ) -> None:
+        """Tests :class:`Simulator`.`_execute_simulation_data` with an
+        action function input into the :class:`SimDatum`
+        """
+        async def action_func(arg, kwarg) -> None:
+            return (arg, kwarg)
+        delays = [1]
+        simulation_data = [SimDatum(
+            args=[{}],
+            kwargs={"kwarg": {}},
+            action_func=action_func
+        )]
+        simulation_data_iter = iter(simulation_data)
+        simulator = Simulator(
+            delays=delays,
+            simulation_data=simulation_data_iter,
+        )
+        return_data = await simulator._execute_simulation_data()
+
+        assert return_data[0] == simulation_data[0].args[0]
+        assert return_data[1] == simulation_data[0].kwargs[
+            "kwarg"
+        ]
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test__execute_simulation_data_no_action_func(
+    ) -> None:
+        """Tests :class:`Simulator`.`_execute_simulation_data` with no action
+        function provided to the instance or in the :class:`SimDatum`
+        """
+        delays = [1]
+        simulation_data = [SimDatum(
+            args=[{}],
+            kwargs={"kwarg": {}},
+        )]
+        simulation_data_iter = iter(simulation_data)
+        simulator = Simulator(
+            delays=delays,
+            simulation_data=simulation_data_iter,
+        )
+        with pytest.raises(RuntimeError) as e_info:
+            await simulator._execute_simulation_data()
+        assert e_info.value.args[0] == (
+            "There is no action function prescribed for current sim datum"
+        )
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test__pass_data_to_delay_func(
+    ) -> None:
+        """Tests :class:`Simulator`.`_pass_data_to_delay_func`
+        """
+        delays = [2.0]
+        simulation_data = [SimDatum(
+            args=[{}],
+            kwargs={"kwarg": {}}
+        )]
+        simulation_data_iter = iter(simulation_data)
+
+        async def action_func(arg, kwarg) -> None:
+            return (arg, kwarg)
+        simulator = Simulator(
+            delays=delays,
+            simulation_data=simulation_data_iter,
+            action_func=action_func
+        )
+        with tqdm(total=len(delays)) as pbar:
+            t_1 = time()
+            await simulator._pass_data_to_delay_function(
+                delay=delays[0],
+                pbar=pbar
+            )
+            t_2 = time()
+        assert round(t_2 - t_1) == delays[0]
+
+        assert simulator.results_handler.results[0][0] == (
+            simulation_data[0].args[0]
+        )
+        assert simulator.results_handler.results[0][1] == (
+            simulation_data[0].kwargs[
+                "kwarg"
+            ]
+        )
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_simulate() -> None:
+        """Tests :class:`Simulator`.`simulate`
+        """
+        delays = [2.0]
+        simulation_data = [SimDatum(
+            args=[{}],
+            kwargs={"kwarg": {}}
+        )]
+        simulation_data_iter = iter(simulation_data)
+
+        async def action_func(arg, kwarg) -> None:
+            return (arg, kwarg)
+        simulator = Simulator(
+            delays=delays,
+            simulation_data=simulation_data_iter,
+            action_func=action_func
+        )
+        t_1 = time()
+        await simulator.simulate()
+        t_2 = time()
+        assert round(t_2 - t_1) == delays[0]
+
+        assert simulator.results_handler.results[0][0] == (
+            simulation_data[0].args[0]
+        )
+        assert simulator.results_handler.results[0][1] == (
+            simulation_data[0].kwargs[
+                "kwarg"
+            ]
+        )
+
+
+class TestSimpleSimDatumTransformer:
+    """Groups of tests for :class:`SimpleSimDatumTransformer`
+    """
+    @staticmethod
+    def test_get_sim_datum() -> None:
+        """Test for :class:`SimpleSimDatumTransformer`.`get_sim_datum`
+        """
+        simple_transformer = SimpleSimDatumTranformer()
+        args = [{}]
+        kwargs = {"a_field": "test"}
+        generator = simple_transformer.get_sim_datum(
+            *args,
+            **kwargs
+        )
+        sim_datums = list(generator)
+        assert len(sim_datums) == 1
+        assert sim_datums[0].args[0] == args[0]
+        assert "a_field" in sim_datums[0].kwargs
+        assert sim_datums[0].kwargs["a_field"] == "test"
+        assert sim_datums[0].action_func is None
+
+
+class TestBatch:
+    """Class to group tests for :class:`Batch`
+    """
+    @staticmethod
+    def test_update_batcher_batch_size_not_reached() -> None:
+        """Test for :class:`Batch`.`update_batcher` when the batch size isn't
+        reached
+        """
+        batcher = Batch(
+            length=2,
+            batch_concat=list
+        )
+        batch_member = {}
+        batcher.update_batcher(batch_member)
+        assert batcher._counter == 1
+        assert len(batcher.batch_list) == 1
+        assert batcher.batch_output is None
+        assert batcher.batch_list[0] == batch_member
+
+    @staticmethod
+    def test_update_batcher_batch_size_reached() -> None:
+        """Test for :class:`Batch`.`update_batcher` when the batch size is
+        reached
+        """
+        batcher = Batch(
+            length=2,
+            batch_concat=list
+        )
+        batch_members = [
+            {}
+            for _ in range(2)
+        ]
+        for batch_member in batch_members:
+            batcher.update_batcher(batch_member)
+        assert batcher._counter == 2
+        assert len(batcher.batch_list) == 2
+        assert batcher.batch_output
+        for (
+            expected_batch_member,
+            batch_list_member,
+            batch_output_member
+        ) in zip(
+            batch_members,
+            batcher.batch_list,
+            batcher.batch_output
+        ):
+            assert expected_batch_member == batch_list_member
+            assert expected_batch_member == batch_output_member
+
+
+class TestSimpleResultsHandler:
+    """Group of tests for :class:`SimpleResultsHandler`
+    """
+    @staticmethod
+    def test_handle_result() -> None:
+        """Tests :class:`SimpleResultsHandler`.`handle_result`
+        """
+        result_1 = {}
+        result_2 = {}
+        result_handler = SimpleResultsHandler()
+        result_handler.handle_result(result_1)
+        result_handler.handle_result(result_2)
+
+
+@pytest.mark.asyncio
+async def test_async_do_nothing() -> None:
+    """Test for `async_do_nothing`
+    """
+    await async_do_nothing()
