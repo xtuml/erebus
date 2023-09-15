@@ -6,6 +6,15 @@ on:
     branches:
       main
 jobs:
+  sast:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
+  secret-detection:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/SecretDetection.yml@main
+  dependency-scanning:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/DependencyScanning.yml@main
+  license-scanning:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/LicenseScanning.yml@main
+
   run-tests:
     runs-on: ubuntu-latest
     steps:
