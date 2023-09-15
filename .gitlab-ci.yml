@@ -1,6 +1,7 @@
 variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PIP_CACHE_DIR: "$CI_BUILDS_DIR/$CI_PROJECT_NAME/.cache/pip"
   GITLAB_PYTHON_VERSION: python:3.11
+  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_PROJECT_NAME/$CI_PIPELINE_ID'
 
 stages:
   - lint

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from functools import partial
 from uuid import uuid4
 import logging
+
 open_utf8 = partial(open, encoding='UTF-8')
 
 
@@ -68,6 +69,7 @@ class Event:
         self.previous_event_ids = previous_event_ids
         self.meta_data = meta_data
         self.new_event_id = new_event_id
+        self.prev_events = []
 
     def parse_from_input_dict(
         self,
@@ -139,6 +141,7 @@ class Job:
         self.events: list[Event] = []
         self.job_id: str = ""
         self.lost_events: dict[str, Event] = {}
+        self.missing_events: dict[int, Event] = {}
 
     def update_prev_ids(self):
         """Checks all events for previous ids and updates them
@@ -291,7 +294,7 @@ def make_job_from_template(
     return copy_job
 
 
-def write_job_to_file(write_job: Job, filepath: str):
+def write_job_to_file(write_job: Job, filepath: str) -> None:
     """Saves the input job to a JSON file at the specified filepath
 
     :param write_job: The job that needs to be saved

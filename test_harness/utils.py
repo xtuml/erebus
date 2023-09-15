@@ -2,13 +2,15 @@
 # pylint: disable=R0903
 """Utility functions
 """
-from typing import Generator, Any, Literal, Callable
+from typing import Generator, Any, Literal, Callable, Awaitable
 from io import BytesIO
 import os
 import glob
 import logging
+import asyncio
 
 import flatdict
+from tqdm import tqdm
 
 
 def create_file_io_file_name_tuple(
@@ -198,3 +200,32 @@ def collect_error_logs_from_func(
         logger.removeFilter(filter)
         raise error
     logger.removeFilter(filter)
+
+
+async def delayed_async_func(
+    delay: float,
+    func: Callable[..., Awaitable[Any]],
+    pbar: tqdm | None = None,
+    args: list[Any] | None = None,
+    kwargs: dict | None = None
+) -> Any:
+    """Method to delay an async func by an amount of time in seconds
+
+    :param delay: The delay before th async function starts
+    :type delay: `float`
+    :param func: The async function to delay
+    :type func: :class:`Callable`[`...`, :class:`Awaitable`[`Any`]]
+    :param pbar: Progress bar
+    :type pbar: :class:`tqdm`
+    :return: Returns any value that the input function would
+    :rtype: `Any`
+    """
+    await asyncio.sleep(delay)
+    if pbar:
+        pbar.update(1)
+    if not args:
+        args = []
+    if not kwargs:
+        kwargs = {}
+    awaited_data = await func(*args, **kwargs)
+    return awaited_data

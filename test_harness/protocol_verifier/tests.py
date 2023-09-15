@@ -2,26 +2,40 @@
 # pylint: disable=R0913
 """Methods and classes relating to tests
 """
-from typing import Generator, Any
+from typing import Generator, Any, Type
 from abc import ABC, abstractmethod
 from random import choice, choices
 import os
 import asyncio
 import logging
+import math
+from queue import Queue, Empty
+import json
+from threading import Thread
 
 import matplotlib.pyplot as plt
 import flatdict
-from tqdm import tqdm
 import pandas as pd
 import plotly.express as px
 from plotly.graph_objects import Figure
 from requests import ReadTimeout
+import numpy as np
 
 from test_harness.config.config import HarnessConfig, TestConfig
-from test_harness.jobs.job_factory import parse_input_jobfile, Job
-from test_harness.utils import divide_chunks, clean_directories
-from test_harness.jobs.job_delivery import send_job_templates_async
-from test_harness.process_manager.calc_pv_finish import PVFileInspector
+from test_harness.utils import clean_directories
+from test_harness.protocol_verifier.calc_pv_finish import PVFileInspector
+from test_harness.protocol_verifier.simulator_data import (
+    Job,
+    generate_events_from_template_jobs,
+    generate_job_batch_events,
+    generate_single_events,
+    job_sequencer,
+    send_list_dict_as_json_wrap_url
+)
+from test_harness.simulator.simulator import (
+    SimDatum, Simulator, ResultsHandler
+)
+from test_harness.simulator.simulator_profile import Profile
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
 from test_harness.requests import send_get_request
@@ -99,6 +113,130 @@ class Results:
         return validity_df
 
 
+class PVResultsHandler(ResultsHandler):
+    """Subclass of :class:`ResultsHandler` to handle saving of files and data
+    from a PV test run. Uses a context manager and daemon thread to save
+    results in the background whilst a test is running.
+
+
+    :param results_holder: Instance used to hold the data relating to the sent
+    jobs/events
+    :type results_holder: :class:`Results`
+    :param test_output_directory: The path of the output directory of the test
+    :type test_output_directory: `str`
+    :param save_files: Boolean indicating whether the files should be saved or
+    not, defaults to `False`
+    :type save_files: `bool`, optional
+    """
+    def __init__(
+        self,
+        results_holder: Results,
+        test_output_directory: str,
+        save_files: bool = False
+    ) -> None:
+        """Constructor method
+        """
+        self.queue = Queue()
+        self.results_holder = results_holder
+        self.test_output_directory = test_output_directory
+        self.daemon_thread = Thread(target=self.queue_handler, daemon=True)
+        self.daemon_not_done = True
+        self.save_files = save_files
+
+    def __enter__(self) -> None:
+        """Entry to the context manager
+        """
+        self.daemon_thread.start()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[Exception] | None,
+        exc_value: Exception | None,
+        *args
+    ) -> None:
+        """Exit from context manager
+
+        :param exc_type: The type of the exception
+        :type exc_type: :class:`Type` | `None`
+        :param exc_value: The value of the excpetion
+        :type exc_value: `str` | `None`
+        :param traceback: The traceback fo the error
+        :type traceback: `str` | `None`
+        :raises RuntimeError: Raises a :class:`RuntimeError`
+        if an error occurred in the main thread
+        """
+        if exc_type is not None:
+            logging.getLogger().error(
+                "The folowing type of error occurred %s with value %s",
+                exc_type,
+                exc_value
+            )
+            raise exc_value
+        while self.queue.qsize() != 0:
+            continue
+        self.daemon_not_done = False
+        self.daemon_thread.join()
+
+    def handle_result(
+        self,
+        result: tuple[
+            list[dict[str, Any]], str, str, dict[str, str | None], str
+        ] | None
+    ) -> None:
+        """Method to handle the result from a simulation iteration
+
+        :param result: The result from the PV simulation iteration - could be
+        `None` or a tuple of:
+        * the event dicts in a list
+        * a string representing the filename used to send the data
+        * a string representing the job id
+        * a dict representing the job info
+        * a string representing the response from the request
+        :type result: `tuple`[ `list`[`dict`[`str`, `Any`]], `str`, `str`,
+        `dict`[`str`, `str`  |  `None`], `str` ] | `None`
+        """
+        self.queue.put(result)
+
+    def queue_handler(self) -> None:
+        """Method to handle the queue as it is added to
+        """
+        while self.daemon_not_done:
+            try:
+                item = self.queue.get(timeout=1)
+                self.handle_item_from_queue(item)
+            except Empty:
+                continue
+
+    def handle_item_from_queue(
+        self,
+        item: tuple[
+            list[dict[str, Any]], str, str, dict[str, str | None], str
+        ] | None
+    ) -> None:
+        """Method to handle saving the data when an item is take from the queue
+
+        :param item: PV iteration data taken from the queue
+        :type item: `tuple`[ `list`[`dict`[`str`, `Any`]], `str`, `str`,
+        `dict`[`str`, `str`  |  `None`], `str` ] | `None`
+        """
+        if item is None:
+            return
+        self.results_holder.update_test_files_info(
+            job_ids=[item[2]],
+            jobs_info=[item[3]],
+            file_names=[item[1]]
+        )
+        self.results_holder.update_responses([item[4]])
+        if self.save_files:
+            output_file_path = os.path.join(
+                self.test_output_directory,
+                item[1]
+            )
+            with open(output_file_path, 'w', encoding="utf-8") as file:
+                json.dump(item[0], file)
+
+
 class Test(ABC):
     """Base class to hold and run a test.
 
@@ -138,6 +276,7 @@ class Test(ABC):
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
+        test_profile: Profile | None = None,
         save_files: bool = True,
     ) -> None:
         """Constructor method"""
@@ -147,6 +286,9 @@ class Test(ABC):
             harness_config if harness_config else HarnessConfig()
         )
         self.test_config = test_config if test_config else TestConfig()
+        self.test_profile = test_profile
+        self.simulator: Simulator | None = None
+        self.sim_data_generator: Generator[SimDatum, Any, None] | None = None
         if save_files and not test_output_directory:
             logging.getLogger().warning(
                 (
@@ -158,17 +300,17 @@ class Test(ABC):
             save_files if save_files and test_output_directory else False
         )
         # set up requires attributes
-        self.job_templates: list[tuple[Job, dict[str, str | bool]]] = []
-        self.chunked_jobs_to_send: list[
-            list[tuple[Job, dict[str, str | bool]]]
-        ] = []
+        self.job_templates: list[Job] = []
         self.results = Results()
         self.pv_file_inspector = PVFileInspector(harness_config)
+        self.total_number_of_events: int
+        self.delay_times: list[float]
+        self.jobs_to_send: list[Job]
         self.set_test_rate()
         # prepare the test given inputs
         self.prepare_test()
 
-    def make_job_templates(self) -> None:
+    def _make_job_templates(self) -> None:
         """Method to make the template jobs from the generated tests files
         """
         flattened_test_files = flatdict.FlatDict(self.test_files)
@@ -187,18 +329,16 @@ class Test(ABC):
                         flattened_test_files[flattened_key][0]
                     )[0]
                     job_name_sol_type = flattened_key.split(":")
-                    self.job_templates.append(
-                        (
-                            parse_input_jobfile(job_sequence),
-                            {
-                                "SequenceName": job_name_sol_type[0],
-                                "Category": job_name_sol_type[1],
-                                "Validity": flattened_test_files[
-                                    flattened_key
-                                ][1],
-                            },
-                        )
-                    )
+                    job_info = {
+                        "SequenceName": job_name_sol_type[0],
+                        "Category": job_name_sol_type[1],
+                        "Validity": flattened_test_files[
+                            flattened_key
+                        ][1],
+                    }
+                    job = Job(job_info=job_info)
+                    job.parse_input_jobfile(job_sequence)
+                    self.job_templates.append(job)
                 except StopIteration:
                     flattened_keys.remove(flattened_key)
             except IndexError:
@@ -207,23 +347,83 @@ class Test(ABC):
     def prepare_test(self) -> None:
         """Method to prepare the test data
         """
-        self.make_job_templates()
-        jobs_to_send = self.get_jobs_to_send()
-        self.chunked_jobs_to_send = list(
-            divide_chunks(
-                jobs_to_send,
-                chunk_size=self.harness_config.max_files_in_memory,
-            )
+        self._make_job_templates()
+        if self.test_profile is not None:
+            self.test_profile.transform_raw_profile()
+        self._set_jobs_to_send()
+        self._set_total_number_of_events()
+        self._set_delay_profile()
+        self.sim_data_generator = self._get_sim_data(
+            self.jobs_to_send
         )
 
+    def _set_total_number_of_events(self) -> None:
+        """Method to calculate and set the total number of events of the
+        simulation
+        """
+        self.total_number_of_events = sum(
+            len(job.events)
+            for job in self.jobs_to_send
+        )
+
+    def _set_delay_profile(self) -> None:
+        """Method to set the delay profile for the test. If no test profile
+        has been input a uniform profile is created using a rate of one
+        divided by the `interval` attribute
+        """
+        if self.test_profile is None:
+            num_per_sec = min(
+                self.total_number_of_events, round(1 / self.interval)
+            )
+            self.test_profile = Profile(
+                pd.DataFrame([
+                    [sim_time, num_per_sec] for sim_time in range(
+                        math.ceil(
+                            (self.total_number_of_events + 1) / num_per_sec
+                        ) + 1
+                    )
+                ])
+            )
+            self.test_profile.transform_raw_profile()
+        self.delay_times = self.test_profile.delay_times[
+            : self.total_number_of_events
+        ]
+
+    def _get_min_interval(self) -> float | int:
+        return np.min(np.diff(self.delay_times))
+
     @abstractmethod
-    def get_jobs_to_send(self) -> list[tuple[Job, dict[str, str | bool]]]:
+    def _get_sim_data(
+        self,
+        jobs_to_send: list[Job]
+    ) -> Generator[SimDatum, Any, None]:
+        """Abstract method to get the sim data for the test
+
+        :param jobs_to_send: A list of the template jobs to send
+        :type jobs_to_send: `list`[:class:`Job`]
+        :yield: Yields :class:`SimDatum` containing the relevant simulation
+        information for each event, respectively
+        :rtype: :class:`Generator`[:class:`SimDatum`, `Any`, `None`]
+        """
+        yield from generate_events_from_template_jobs(
+            template_jobs=jobs_to_send,
+            sequence_generator=job_sequencer,
+            generator_function=generate_job_batch_events,
+            sequencer_kwargs={
+                "min_interval_between_job_events": self._get_min_interval()
+            }
+        )
+
+    def _set_jobs_to_send(self):
+        self.jobs_to_send = self._get_jobs_to_send()
+
+    @abstractmethod
+    def _get_jobs_to_send(self) -> list[Job]:
         """Method to get all the jobs to send
 
         :return: Returns a list of jobs sequences and their info
-        :rtype: `list`[`tuple`[:class:`Job`, `dict`[`str`, `str` | `bool`]]]
+        :rtype: `list`[:class:`Job`]
         """
-        return self.job_templates
 
     @abstractmethod
     def set_test_rate(self) -> None:
@@ -232,66 +432,40 @@ class Test(ABC):
         self.interval = 0.1
         self.shard = False
 
-    async def send_test_files(self) -> None:
+    async def send_test_files(
+        self,
+        results_handler: PVResultsHandler
+    ) -> None:
         """Asynchronous method to send test files to the PV
+
+        :param results_handler: A list of the template jobs to send
+        :type results_handler: `list`[:class:`Job`]
         """
-        # send the chunked jobs
-        for test_files_info_chunk in tqdm(
-            self.chunked_jobs_to_send,
-            total=len(self.chunked_jobs_to_send),
-            desc="Sending Chunks",
-        ):
-            # split the jobs and their info into separate lists
-            jobs_and_info = list(map(list, zip(*test_files_info_chunk)))
-            jobs_to_send: list[Job] = jobs_and_info[0]
-            job_info: list[dict[str, str | bool]] = jobs_and_info[1]
-
-            # send all the jobs
-            results, files = await send_job_templates_async(
-                jobs_to_send,
-                self.interval,
-                url=self.harness_config.pv_send_url,
-                shard_events=self.shard,
-            )
-            # update the responses
-            self.results.update_responses(results)
-
-            # update test info
-            job_ids = []
-            file_names = []
-            for file_tuple in files:
-                job_ids.append(file_tuple[3])
-                file_names.append(file_tuple[1])
-            self.results.update_test_files_info(
-                job_ids=job_ids,
-                jobs_info=job_info,
-                file_names=file_names
-            )
-            # save test files if option enabled
-            if self.save_files:
-                for file_tuple in files:
-                    file_string = file_tuple[0].decode("utf-8")
-                    with open(
-                        os.path.join(
-                            self.test_output_directory, file_tuple[1]
-                        ),
-                        "w",
-                        encoding="utf-8",
-                    ) as file_to_save:
-                        file_to_save.write(
-                            file_string
-                        )
+        self.simulator = Simulator(
+            delays=self.delay_times,
+            simulation_data=self.sim_data_generator,
+            action_func=send_list_dict_as_json_wrap_url(
+                url=self.harness_config.pv_send_url
+            ),
+            results_handler=results_handler
+        )
+        await self.simulator.simulate()
 
     async def run_test(self) -> None:
-        """Asynchronous method to run the tes
+        """Asynchronous method to run the test
         """
-        try:
-            await asyncio.gather(
-                self.send_test_files(),
-                self.pv_file_inspector.run_pv_file_inspector(),
-            )
-        except RuntimeError as error:
-            logging.getLogger().info(msg=str(error))
+        with PVResultsHandler(
+            results_holder=self.results,
+            test_output_directory=self.test_output_directory,
+            save_files=self.save_files
+        ) as pv_results_handler:
+            try:
+                await asyncio.gather(
+                    self.send_test_files(results_handler=pv_results_handler),
+                    self.pv_file_inspector.run_pv_file_inspector(),
+                )
+            except RuntimeError as error:
+                logging.getLogger().info(msg=str(error))
 
     @abstractmethod
     def calc_results(self) -> None:
@@ -304,7 +478,8 @@ class Test(ABC):
         clean_directories(
             [
                 self.harness_config.uml_file_store,
-                self.harness_config.log_file_store
+                self.harness_config.log_file_store,
+                self.harness_config.profile_store
             ]
         )
         try:
@@ -367,20 +542,36 @@ class FunctionalTest(Test):
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
+        test_profile: None = None
     ) -> None:
         super().__init__(
             test_file_generators,
             harness_config,
             test_config,
             test_output_directory=test_output_directory,
-            save_files=True
+            save_files=True,
+            test_profile=test_profile
         )
 
-    def get_jobs_to_send(self) -> list[tuple[Job, dict[str, str | bool]]]:
+    def _get_sim_data(
+        self,
+        jobs_to_send: list[Job]
+    ) -> Generator[SimDatum, Any, None]:
+        """Method to get the sim data for the test
+
+        :param jobs_to_send: A list of the template jobs to send
+        :type jobs_to_send: `list`[:class:`Job`]
+        :yield: Yields :class:`SimDatum` containing the relevant simulation
+        information for each event, respectively
+        :rtype: :class:`Generator`[:class:`SimDatum`, `Any`, `None`]
+        """
+        yield from super()._get_sim_data(jobs_to_send)
+
+    def _get_jobs_to_send(self) -> list[Job]:
         """Method to get all the jobs to send
 
         :return: Returns a list of jobs sequences and their info
-        :rtype: `list`[`tuple`[:class:`Job`, `dict`[`str`, `str` | `bool`]]]
+        :rtype: `list`[:class:`Job`]
         """
         return self.job_templates
 
@@ -478,6 +669,7 @@ class PerformanceTest(Test):
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
+        test_profile: Profile | None = None
     ) -> None:
         """Constructor method
         """
@@ -487,18 +679,55 @@ class PerformanceTest(Test):
             test_config,
             test_output_directory=test_output_directory,
             save_files=False,
+            test_profile=test_profile
         )
 
-    def get_jobs_to_send(self) -> list[tuple[Job, dict[str, str | bool]]]:
+    def _get_sim_data(
+        self,
+        jobs_to_send: list[Job]
+    ) -> Generator[SimDatum, Any, None]:
+        """Method to get the sim data for the test
+
+        :param jobs_to_send: A list of the template jobs to send
+        :type jobs_to_send: `list`[:class:`Job`]
+        :yield: Yields :class:`SimDatum` containing the relevant simulation
+        information for each event, respectively
+        :rtype: :class:`Generator`[:class:`SimDatum`, `Any`, `None`]
+        """
+        if self.shard:
+            event_generator = generate_single_events
+        else:
+            event_generator = generate_job_batch_events
+        yield from generate_events_from_template_jobs(
+            template_jobs=jobs_to_send,
+            sequence_generator=job_sequencer,
+            generator_function=event_generator,
+            sequencer_kwargs={
+                "min_interval_between_job_events": self._get_min_interval()
+            }
+        )
+
+    def _get_jobs_to_send(self) -> list[Job]:
         """Method to create the jobs to send
 
         :return: Returns the jobs to send
         :rtype: `list`[`tuple`[:class:`Job`, `dict`[`str`, `str` | `bool`]]]
         """
-        jobs_to_send = choices(
-            self.job_templates,
-            k=self.test_config.performance_options["total_jobs"],
-        )
+        if self.test_profile:
+            jobs_to_send = []
+            num_events = 0
+            max_number_of_events = len(self.test_profile.delay_times)
+            while True:
+                job = choice(self.job_templates)
+                num_events += len(job.events)
+                if num_events > max_number_of_events:
+                    break
+                jobs_to_send.append(job)
+        else:
+            jobs_to_send = choices(
+                self.job_templates,
+                k=self.test_config.performance_options["total_jobs"],
+            )
         return jobs_to_send
 
     def set_test_rate(self) -> None:
@@ -525,12 +754,8 @@ class PerformanceTest(Test):
             return
         self.pv_file_inspector.calc_test_boundaries()
         self.pv_file_inspector.normalise_coords()
-        num_jobs = 0
-        num_events = 0
-        for chunk in self.chunked_jobs_to_send:
-            for job_data in chunk:
-                num_jobs += 1
-                num_events += len(job_data[0].events)
+        num_jobs = len(self.jobs_to_send)
+        num_events = self.total_number_of_events
         average_num_jobs_per_sec = (
             num_jobs / self.pv_file_inspector.test_boundaries[2]
         )
