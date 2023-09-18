@@ -1,0 +1,67 @@
+name: test-workflow
+on:
+  pull_request:
+
+  push:
+    branches:
+      main
+jobs:
+  sast:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
+  secret-detection:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/SecretDetection.yml@main
+  dependency-scanning:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/DependencyScanning.yml@main
+  license-scanning:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/LicenseScanning.yml@main
+  python-linting:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
+
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Checkout (external)
+        uses: actions/checkout@v4
+        with:
+          repository: SmartDCSITlimited/test-event-generator
+          ssh-key: ${{ secrets.TESTKEY }}
+          path: external
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Requirements
+        run: |
+          pip install --upgrade pip
+
+          pip install pytest
+          pytest --version
+          pip install flake8
+          flake8 --version
+
+          pip install -r requirements.txt
+
+      - name: Install Requirements (external)
+        run: |
+          cd external
+          pip install -r requirements.txt
+          pip install .
+          cd ..
+          rm -rf external
+
+      - name: Run Tests
+        run: |
+          export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
+          pytest --ignore=tests/test_harness/pv_config/test_pv_config_generation.py \
+            --ignore=tests/test_harness/process_manager/test_send_job_defs.py \
+            --ignore=tests/test_harness/process_manager/test_process_manager__init__.py \
+            --ignore=tests/test_harness/process_manager/test_generate_test_files.py \
+            --ignore=tests/test_harness/process_manager/test_tests.py \
+            --ignore=tests/test_harness/process_manager/test_calc_pv_finish.py
+          flake8
