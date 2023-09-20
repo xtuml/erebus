@@ -1,9 +1,11 @@
 # pylint: disable=R0903
+# pylint: disable=R0913
 """Generic async simulator
 """
 from abc import ABC, abstractmethod
 from typing import Callable, Awaitable, Any, NamedTuple, Iterator, Generator
 import asyncio
+from datetime import datetime
 
 from tqdm import tqdm
 
@@ -15,17 +17,17 @@ class SimDatum(NamedTuple):
     an asynchronous action func
 
     """
+
     args: list[Any] = []
     kwargs: dict = {}
     action_func: Callable[[Any, Any], Awaitable[Any]] | None = None
 
 
 class SimDatumTransformer(ABC):
-    """Base class to be used for transforming data to :class:`SimDatum`'s
-    """
+    """Base class to be used for transforming data to :class:`SimDatum`'s"""
+
     def __init__(self) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
 
     @abstractmethod
     def get_sim_datum(
@@ -33,17 +35,16 @@ class SimDatumTransformer(ABC):
         *args,
         **kwargs,
     ) -> None:
-        """Abstract method to generate :class:`SimDatum`
-        """
+        """Abstract method to generate :class:`SimDatum`"""
 
 
 class SimpleSimDatumTranformer(SimDatumTransformer):
     """Sub class that provides the basis for a simple transform to
     :class:`SimDatum`
     """
+
     def __init__(self) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
 
     def get_sim_datum(self, *args, **kwargs) -> Generator[SimDatum, Any, None]:
         """Generates a :class:`SimDatum`
@@ -64,13 +65,13 @@ class Batch:
     :type batch_concat: :class:`Callable`[[`list`[`Any`]], `Any`] | `None`,
     optional
     """
+
     def __init__(
         self,
         length: int,
-        batch_concat: Callable[[list[Any]], Any] | None = None
+        batch_concat: Callable[[list[Any]], Any] | None = None,
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         self._counter = 0
         self._length = length
         self.batch_list = []
@@ -98,13 +99,12 @@ class Batch:
 
 
 async def async_do_nothing() -> None:
-    """async method to do nothing
-    """
+    """async method to do nothing"""
 
 
 class ResultsHandler(ABC):
-    """Base class for results handling
-    """
+    """Base class for results handling"""
+
     @abstractmethod
     def handle_result(self, result: Any) -> None:
         """Abstract method that will be called in the simulation class to
@@ -119,9 +119,9 @@ class SimpleResultsHandler(ResultsHandler):
     """Sub class of :class:`ResultsHandler` to provide a simple means of
     saving results to the class.
     """
+
     def __init__(self) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         self.results: list[Any] = []
 
     def handle_result(self, result: Any) -> None:
@@ -150,22 +150,33 @@ class Simulator:
     :param return_data: A list that return data from the action_func's is
     added to, defaults to `None`
     :type return_data: `list` | `None`, optional
+    :param schedule_ahead_time: The amount of time events in the future are
+    scheduled for, e.g. a value of 10 will schedule events approximately 10
+    seconds before they are due to happen
+    :type schedule_ahead_time: `int`, optional
     """
+
     def __init__(
         self,
         delays: list[float],
         simulation_data: Iterator[SimDatum],
         action_func: Callable[[Any, Any], Awaitable[Any]] | None = None,
-        results_handler: ResultsHandler | None = None
+        results_handler: ResultsHandler | None = None,
+        schedule_ahead_time=10,
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         self.delays = delays
         self.simulation_data = simulation_data
         self.action_func = action_func
         if not results_handler:
             results_handler = SimpleResultsHandler()
         self.results_handler = results_handler
+        self.schedule_ahead_time = schedule_ahead_time
+        if schedule_ahead_time < 0.2:
+            raise ValueError(
+                "Values of less than 0.2 can lead to unpredictable "
+                "behaviour, consider increasing the value"
+            )
 
     async def _execute_simulation_data(self) -> Any:
         """Asynchronous method to execute the next :class:`SimDatum` in the
@@ -191,9 +202,7 @@ class Simulator:
         return return_data
 
     async def _pass_data_to_delay_function(
-        self,
-        delay: float,
-        pbar: tqdm
+        self, delay: float, pbar: tqdm
     ) -> None:
         """Method to put a delay on (or schedule) the executed simulation data
         for the next item in the `simulation_data` attribute sequence
@@ -205,21 +214,29 @@ class Simulator:
         :type pbar: :class:`tqdm`
         """
         return_data = await delayed_async_func(
-            delay=delay,
-            func=self._execute_simulation_data,
-            pbar=pbar
+            delay=delay, func=self._execute_simulation_data, pbar=pbar
         )
         self.results_handler.handle_result(return_data)
 
     async def simulate(self) -> None:
-        """Method to simulate the instances simulation data
-        """
+        """Method to simulate the instances simulation data"""
         with tqdm(total=len(self.delays)) as pbar:
             async with asyncio.TaskGroup() as task_group:
+                start_time = datetime.utcnow()
                 for delay in self.delays:
+                    time_from_start = (
+                        datetime.utcnow() - start_time
+                    ).total_seconds()
+                    new_delay = delay - time_from_start
+                    while new_delay > self.schedule_ahead_time:
+                        await asyncio.sleep(0.1)
+                        time_from_start = (
+                            datetime.utcnow() - start_time
+                        ).total_seconds()
+                        new_delay = delay - time_from_start
+
                     task_group.create_task(
                         self._pass_data_to_delay_function(
-                            delay=delay,
-                            pbar=pbar
+                            delay=new_delay, pbar=pbar
                         )
                     )
