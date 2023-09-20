@@ -3,9 +3,10 @@
 import numpy as np
 from pandas import DataFrame
 import pytest
+
 from test_harness.reporting.log_analyser import (
     check_test_result,
-    get_job_id_failure_successes
+    get_job_id_failure_successes,
 )
 
 

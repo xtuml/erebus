@@ -159,6 +159,9 @@ class HarnessConfig:
                 ]["ver_get_file_names_url"]
             }
         }
+        self.pv_grok_exporter_url = self.config_parser[
+            "non-default"
+        ]["pv_grok_exporter_url"]
 
     @staticmethod
     def calc_path(

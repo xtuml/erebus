@@ -1,8 +1,11 @@
 """Module init file
 """
+
 from typing import Literal, Iterable, Callable
 from io import BytesIO
 import requests
+
+from tqdm import tqdm
 
 
 def post_sync_file_bytes_in_form(
@@ -201,3 +204,31 @@ def check_response_tuple_ok(
             f"unreachable.\nResponse code is {response_tuple[2].status_code} "
             f"and response text is:\n'{response_tuple[2].reason}'"
         )
+
+
+def download_file_to_path(
+    url: str,
+    output_path: str,
+    timeout: int = 300
+) -> None:
+    """Method to download and stream a file to a filepath
+
+    :param url: The url of the download
+    :type url: `str`
+    :param output_path: The output path to save the file
+    :type output_path: `str`
+    :param timeout: Timeout for the request, defaults to `300`
+    :type timeout: `int`, optional
+    """
+    with requests.get(
+        url,
+        stream=True,
+        timeout=timeout
+    ) as response:
+        response.raise_for_status()
+        with open(output_path, 'wb') as file:
+            for chunk in tqdm(
+                response.iter_content(chunk_size=8192),
+                desc="Reading chunks in :"
+            ):
+                file.write(chunk)
