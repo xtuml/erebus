@@ -322,7 +322,9 @@ def send_list_dict_as_json_wrap_url(
         list_dict: list[dict[str, Any]],
         job_id: str,
         job_info: dict[str, str | None]
-    ) -> tuple[list[dict[str, Any]], str, str, dict[str, str | None], str]:
+    ) -> tuple[
+        list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
+    ]:
         """Async method to send a list of dicts as a json payload
 
         :param list_dict: The list of dictionaries
@@ -333,7 +335,8 @@ def send_list_dict_as_json_wrap_url(
         * the list of dicts sent
         * the file name given
         * the result of the request
-        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`]
+        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
+        :class:`datetime`]
         """
         file = convert_list_dict_to_json_io_bytes(list_dict)
         file_name = str(uuid4()) + ".json"
@@ -342,7 +345,8 @@ def send_list_dict_as_json_wrap_url(
             file_name=file_name,
             url=url
         )
-        return list_dict, file_name, job_id, job_info, result
+        time_completed = datetime.now()
+        return list_dict, file_name, job_id, job_info, result, time_completed
     return send_list_dict_as_json
 
 

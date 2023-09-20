@@ -1,8 +1,12 @@
 # pylint: disable=R0902
 # pylint: disable=R0913
+# pylint: disable=W0221
+# pylint: disable=W0246
+# pylint: disable=W0613
+# pylint: disable=C0302
 """Methods and classes relating to tests
 """
-from typing import Generator, Any, Type
+from typing import Generator, Any, Type, TextIO
 from abc import ABC, abstractmethod
 from random import choice, choices
 import os
@@ -12,6 +16,8 @@ import math
 from queue import Queue, Empty
 import json
 from threading import Thread
+from datetime import datetime
+
 
 import matplotlib.pyplot as plt
 import flatdict
@@ -20,6 +26,8 @@ import plotly.express as px
 from plotly.graph_objects import Figure
 from requests import ReadTimeout
 import numpy as np
+import scipy.stats as sps
+from prometheus_client.parser import text_fd_to_metric_families
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import clean_directories
@@ -38,17 +46,682 @@ from test_harness.simulator.simulator import (
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
-from test_harness.requests import send_get_request
+from test_harness.requests import send_get_request, download_file_to_path
 
 
-class Results:
-    """Class to hold results of test
+class PVResults(ABC):
+    """Base abstract class to hold an calculate results from a PV simulation
     """
     def __init__(self) -> None:
+        """Constructor method
+        """
+        self.time_start = None
+
+    @property
+    def time_start(self) -> datetime | None:
+        """Property getter for the start time of the simulation
+
+        :return: Returns the start time if set
+        :rtype: :class:`datetime` | `None`
+        """
+        return self._time_start
+
+    @time_start.setter
+    def time_start(self, input_time_start: datetime | None) -> None:
+        """Property setter for the start time of the simulation
+
+        :param input_time_start: The start time
+        :type input_time_start: :class:`datetime` | `None`
+        """
+        self._time_start = input_time_start
+
+    @abstractmethod
+    def update_from_sim(
+        self,
+        event_list: list[dict],
+        job_id: str,
+        file_name: str,
+        job_info: dict[str, str],
+        response: str,
+        time_completed: datetime
+    ) -> None:
+        """Abstract method used to do an update when receiving data output
+        from the simulation
+
+        :param event_list: The list of event dicts
+        :type event_list: `list`[`dict`]
+        :param job_id: The job id the lit of events are associated with
+        :type job_id: `str`
+        :param file_name: The name of the file that was sent and/or saved
+        :type file_name: `str`
+        :param job_info: The validity information pertaining to the job
+        :type job_info: `dict`[`str`, `str`]
+        :param response: The response received from the http request sending
+        the file
+        :type response: `str``
+        :param time_completed: The time the request was completed at
+        :type time_completed: :class:`datetime`
+        """
+
+
+class PVPerformanceResults(PVResults):
+    """Base class for perfromance test results extending :class:`PVResults`
+    """
+    pv_grok_map = {
+        "reception_event_received_total": "AER_start",
+        "reception_event_written_total": "AER_end",
+        "aeordering_events_processed_total": "AEOSVDC_start",
+        "svdc_job_success_total": "AEOSVDC_end",
+        "svdc_job_failed_total": "AEOSVDC_end"
+    }
+    data_fields = [
+        "job_id",
+        "time_sent",
+        "response",
+        "AER_start",
+        "AER_end",
+        "AEOSVDC_start",
+        "AEOSVDC_end"
+    ]
+
+    def __init__(
+        self,
+    ) -> None:
+        """Constructor method
+        """
+        super().__init__()
+        self.create_results_holder()
+        self.end_times: dict[str, float] | None = None
+        self.failures: dict[str, int] | None = None
+        self.full_averages: dict[str, float] | None = None
+        self.agg_results: pd.DataFrame | None = None
+
+    @abstractmethod
+    def create_results_holder(self) -> None:
+        """Abstract method that creates the results holder that will be
+        updated with results
+        """
+
+    @abstractmethod
+    def update_event_results_with_event_id(
+        self,
+        event_id: str,
+        update_values: dict[str, Any]
+    ) -> None:
+        """Abstract method that is used to update the results holder with an
+        event id as key and update values named in a dictionary
+
+        :param event_id: Unique event id
+        :type event_id: `str`
+        :param update_values: Arbitrary named update values
+        :type update_values: `dict`[`str`, `Any`]
+        """
+
+    @abstractmethod
+    def update_event_results_with_job_id(
+        self,
+        job_id: str,
+        update_values: dict[str, Any]
+    ) -> None:
+        """Abstract method to update all rows in results holder based on the
+        column job id match
+
+        :param job_id: Job id
+        :type job_id: `str`
+        :param update_values: Arbitrary named update values
+        :type update_values: `dict`[`str`, `Any`]
+        """
+
+    @abstractmethod
+    def create_event_result_row(
+        self,
+        event_id: str
+    ) -> None:
+        """Abstract method to create a row in the results holder based on an
+        event id
+
+        :param event_id: Unique event id
+        :type event_id: `str`
+        """
+
+    def update_from_sim(
+        self,
+        event_list: list[dict],
+        job_id: str,
+        response: bool,
+        time_completed: datetime,
+        **kwargs
+    ) -> None:
+        """Method used to do an update when receiving data output
+        from the simulation
+
+        :param event_list: The list of event dicts
+        :type event_list: `list`[`dict`]
+        :param job_id: The job id the lit of events are associated with
+        :type job_id: `str`
+        :param response: The response received from the http request sending
+        the file
+        :type response: `str`
+        :param time_completed: The time the request was completed at
+        :type time_completed: :class:`datetime`
+        """
+        for event in event_list:
+            self.add_first_event_data(
+                event_id=event["eventId"],
+                job_id=job_id,
+                response=response,
+                time_completed=time_completed
+            )
+
+    def add_first_event_data(
+        self,
+        event_id: str,
+        job_id: str,
+        response: str,
+        time_completed: datetime
+    ) -> None:
+        """Method to add the first data received fro the simulation to the
+        results holder
+
+        :param event_id: The event id
+        :type event_id: `str`
+        :param job_id: The job id
+        :type job_id: `str`
+        :param response: The response received from the http request sending
+        the file
+        :type response: `str`
+        :param time_completed: The time the request was completed at
+        :type time_completed: :class:`datetime`
+        """
+        self.create_event_result_row(
+            event_id
+        )
+        time_sent_sim_time = (
+            time_completed - self.time_start
+        ).total_seconds()
+
+        update_values = {
+            "job_id": job_id,
+            "response": response,
+            "time_sent": time_sent_sim_time,
+        }
+        self.update_event_results_with_event_id(
+            event_id,
+            update_values=update_values
+        )
+
+    def update_pv_sim_time_field(
+        self,
+        field: str,
+        timestamp: str,
+        event_id: str | None = None,
+        job_id: str | None = None,
+        **kwargs
+    ) -> None:
+        """Method to update the results holder field with results from PV logs
+        that are a timestamp string and coverting the reading to sim time
+
+        :param field: The field of the results holder to update
+        :type field: `str`
+        :param timestamp: The timestamp string of the field
+        :type timestamp: `str`
+        :param event_id: The event id, defaults to `None`
+        :type event_id: `str` | `None`, optional
+        :param job_id: The job id, defaults to `None`
+        :type job_id: `str` | `None`, optional
+        :raises RuntimeError: Raises a :class:`RuntimeError` if event id and
+        job id are not set
+        """
+        update_value = {
+            field: self.convert_pv_time_string(timestamp)
+        }
+        if event_id is None and job_id is None:
+            raise RuntimeError(
+                "Both event id and job id have not been specified"
+            )
+        if event_id:
+            self.update_event_results_with_event_id(
+                event_id,
+                update_value
+            )
+        else:
+            self.update_event_results_with_job_id(
+                job_id,
+                update_value
+            )
+
+    def convert_pv_time_string(
+        self,
+        pv_time_str: str
+    ) -> float:
+        """Method to convert the PV timstamp string to sim time
+
+        :param pv_time_str: The PV timestamp string
+        :type pv_time_str: `str`
+        :return: Returns the sim time of the pv time
+        :rtype: `float`
+        """
+        date_time = datetime.strptime(
+            pv_time_str,
+            '%Y-%m-%dT%H:%M:%S.%fZ'
+        )
+        sim_time = (
+            date_time - self.time_start
+        ).total_seconds()
+        return sim_time
+
+    def get_and_read_grok_metrics(
+        self,
+        file_path: str
+    ) -> None:
+        """Opens a file and reads a groked file as a stream into the results
+        holder
+
+        :param file_path: The file path of the groked file
+        :type file_path: `str`
+        """
+        with open(file_path, "r", encoding="utf-8") as file:
+            self.read_groked_string_io(file)
+
+    def read_groked_string_io(
+        self,
+        grok_string_io: TextIO
+    ) -> None:
+        """Reads a streamable :class:`TextIO` object into the results holder
+        parsing as a grok file
+
+        :param grok_string_io: The streamable grok file :class:`TextIO` object
+        :type grok_string_io: :class:`TextIO`
+        """
+        for family in text_fd_to_metric_families(grok_string_io):
+            for sample in family.samples:
+                name = sample.name
+                if name not in self.pv_grok_map:
+                    continue
+                self.update_pv_sim_time_field(
+                    field=self.pv_grok_map[name],
+                    **sample.labels
+                )
+
+    def calc_all_results(
+        self,
+        agg_time_window: float = 1.0
+    ) -> None:
+        """Method to calculate al aggregated results. Data aggregations happen
+        over the given time window inseconds
+
+        :param agg_time_window: The time window in seconds for aggregating
+        data,
+        defaults to `1.0`
+        :type agg_time_window: `float`, optional
+        """
+        self.create_response_time_fields()
+        self.end_times = self.calc_end_times()
+        self.failures = self.calculate_failures()
+        self.full_averages = self.calc_full_averages()
+        self.agg_results = self.calculate_aggregated_results_dataframe(
+            agg_time_window
+        )
+
+    @abstractmethod
+    def create_response_time_fields(self) -> None:
+        """Abstract method used to create response fields in the rsults holder
+        * full_response_time - the AEOSVDC end time minus the time sent
+        * queue_time - The time when event was picked up by AER minus the time
+        sent
+        """
+
+    @abstractmethod
+    def calculate_failures(self) -> dict[str, int]:
+        """Abstract method to generate the failures and successes from the sim
+
+        :return: Returns a dictionary of integers of the following fields:
+        * "th_failures" - The number of event failures given by the test
+        harness (i.e. the response received was not empty)
+        * "pv_failures" - The number of event failures in the PV groked logs
+        (i.e. did not register a time in all of the pv sim time fields)
+        * "pv_sccesses" - The number of event successes in the PV groked logs
+        (i.e. registered a time in all of the pv sim time fields)
+        :rtype: `dict`[`str`, `int`]
+        """
+
+    @abstractmethod
+    def calc_end_times(self) -> dict[str, float]:
+        """Significant end times in the simulation
+
+        :return: A dictionary of significant ending sim times with the
+        following fields:
+        * "th_end" - the time when the test harness sent its last event
+        * "pv_end" - the time when aeosvdc processed it last event
+        * "aer_end" - the time when aer processed its last event
+        :rtype: `dict`[`str`, `float`]
+        """
+
+    @abstractmethod
+    def calc_full_averages(self) -> dict[str, float]:
+        """Averages calculated in the data
+
+        :return: Returns the dictionary of the following full avergaes of the
+        simulation:
+        * "average_sent_per_sec" - The average events sent per second over the
+        entire simulation
+        * "average_processed_per_sec" - The average number processed fully by
+        the full PV stack over the entire simulation
+        * "average_queue_time" - The average time waiting for an event befre
+        being picked up by AER
+        * "average_response_time" - The average time an event is sent and then
+        fully processed by the PV stack
+        :rtype: `dict`[`str`, `float`]
+        """
+
+    @abstractmethod
+    def calculate_aggregated_results_dataframe(
+        self,
+        time_window: int = 1
+    ) -> pd.DataFrame:
+        """Abstract method to calculate the following aggregated results
+        within bins of the specified time window in seconds. The dataframe has
+        the following columns:
+        * Time (s) - The midpoint of the time window for the aggregated result
+        * Events Sent (/s) - The average number of events sent per second in
+        the time window
+        * Events Processed (/s) - The average number of events procesed
+        per second in the time window
+        * Queue Time (s) - The average queuing time before being picked up by
+        AER in the time window. Given time window bin of when it is picked up
+        not when it is sent.
+        * Response Time (s) - The average time before being being fully
+        processe by the PV stack in the time window. Given time window bin of
+        when it is fully processed not when it is sent.
+        :param time_window: The time window to use for aggregations, defaults
+        to `1`
+        :type time_window: `int`, optional
+        :return: Returns a dataframe of the aggeragted results
+        :rtype: :class:`pd`.`DataFrame`
+        """
+
+
+class PVResultsDataFrame(PVPerformanceResults):
+    """Sub class of :class:`PVPerformanceResults: to get perfromance results
+    using a pandas dataframe as the results holder.
+    """
+    def __init__(
+        self,
+    ) -> None:
+        """Constructor method
+        """
+        super().__init__()
+
+    def __len__(self) -> int:
+        """The length of the results
+
+        :return: The length of the results holder
+        :rtype: `int`
+        """
+        return len(self.results)
+
+    def create_results_holder(self) -> None:
+        """Creates the results holder as pandas DataFrame
+        """
+        self.results = pd.DataFrame(columns=self.data_fields)
+
+    def create_event_result_row(self, event_id: str) -> None:
+        """Method to create a row in the results holder based on an
+        event id
+
+        :param event_id: Unique event id
+        :type event_id: `str`
+        """
+        self.results.loc[event_id] = None
+
+    def update_event_results_with_event_id(
+        self,
+        event_id: str,
+        update_values: dict[str, Any]
+    ) -> None:
+        """Method that is used to update the results holder with an
+        event id as key and update values named in a dictionary
+
+        :param event_id: Unique event id
+        :type event_id: `str`
+        :param update_values: Arbitrary named update values
+        :type update_values: `dict`[`str`, `Any`]
+        """
+        self.results.loc[
+            event_id, list(update_values.keys())
+        ] = list(update_values.values())
+
+    def update_event_results_with_job_id(
+        self,
+        job_id: str,
+        update_values: dict[str, Any]
+    ) -> None:
+        """Method to update all rows in results holder based on the
+        column job id match
+
+        :param job_id: Job id
+        :type job_id: `str`
+        :param update_values: Arbitrary named update values
+        :type update_values: `dict`[`str`, `Any`]
+        """
+        self.results.loc[
+            self.results["job_id"] == job_id,
+            list(update_values.keys())
+        ] = list(update_values.values())
+
+    def create_response_time_fields(self) -> None:
+        """Method used to create response fields in the results holder
+        * full_response_time - the AEOSVDC end time minus the time sent
+        * queue_time - The time when event was picked up by AER minus the time
+        sent
+        """
+        self.results["full_response_time"] = (
+            self.results["AEOSVDC_end"] - self.results["time_sent"]
+        )
+        self.results["full_response_time"].clip(lower=0, inplace=True)
+        self.results["queue_time"] = (
+            self.results["AER_start"] - self.results["time_sent"]
+        )
+        self.results["queue_time"].clip(lower=0, inplace=True)
+
+    def calculate_failures(self) -> dict[str, int]:
+        """Method to generate the failures and successes from the sim
+
+        :return: Returns a dictionary of integers of the following fields:
+        * "th_failures" - The number of event failures given by the test
+        harness (i.e. the response received was not empty)
+        * "pv_failures" - The number of event failures in the PV groked logs
+        (i.e. did not register a time in all of the pv sim time fields)
+        * "pv_sccesses" - The number of event successes in the PV groked logs
+        (i.e. registered a time in all of the pv sim time fields)
+        :rtype: `dict`[`str`, `int`]
+        """
+        th_failures = len(self.results[self.results["response"] != ""])
+        pv_failures = pd.isnull(
+            self.results.loc[:, [
+                "AER_start",
+                "AER_end",
+                "AEOSVDC_start",
+                "AEOSVDC_end"
+            ]]
+        ).all(axis=1).sum()
+        pv_successes = len(self.results) - pv_failures
+        return {
+            "th_failures": th_failures,
+            "pv_failures": pv_failures,
+            "pv_successes": pv_successes,
+        }
+
+    def calc_end_times(self) -> dict[str, float]:
+        """Significant end times in the simulation
+
+        :return: A dictionary of significant ending sim times with the
+        following fields:
+        * "th_end" - the time when the test harness sent its last event
+        * "pv_end" - the time when aeosvdc processed it last event
+        * "aer_end" - the time when aer processed its last event
+        :rtype: `dict`[`str`, `float`]
+        """
+        return {
+            "th_end": np.nanmax(self.results["time_sent"]),
+            "pv_end": np.nanmax(self.results["AEOSVDC_end"]),
+            "aer_end": np.nanmax(self.results["AER_end"])
+        }
+
+    def calc_full_averages(
+        self,
+    ) -> dict[str, float]:
+        """Averages calculated in the data
+
+        :return: Returns the dictionary of the following full avergaes of the
+        simulation:
+        * "average_sent_per_sec" - The average events sent per second over the
+        entire simulation
+        * "average_processed_per_sec" - The average number processed fully by
+        the full PV stack over the entire simulation
+        * "average_queue_time" - The average time waiting for an event befre
+        being picked up by AER
+        * "average_response_time" - The average time an event is sent and then
+        fully processed by the PV stack
+        :rtype: `dict`[`str`, `float`]
+        """
+        averages = {
+            "average_sent_per_sec": (
+                self.results["time_sent"].count() / self.end_times["th_end"]
+            ),
+            "average_processed_per_sec": (
+                self.results["AEOSVDC_end"].count() / self.end_times["pv_end"]
+            ),
+            "average_queue_time": np.nanmean(self.results["queue_time"]),
+            "average_response_time": np.nanmean(
+                self.results["full_response_time"]
+            )
+        }
+        return averages
+
+    def calculate_aggregated_results_dataframe(
+        self,
+        time_window: int = 1
+    ) -> pd.DataFrame:
+        """Method to calculate the following aggregated results
+        within bins of the specified time window in seconds. The dataframe has
+        the following columns:
+        * Time (s) - The midpoint of the time window for the aggregated result
+        * Events Sent (/s) - The average number of events sent per second in
+        the time window
+        * Events Processed (/s) - The average number of events procesed
+        per second in the time window
+        * Queue Time (s) - The average queuing time before being picked up by
+        AER in the time window. Given time window bin of when it is picked up
+        not when it is sent.
+        * Response Time (s) - The average time before being being fully
+        processe by the PV stack in the time window. Given time window bin of
+        when it is fully processed not when it is sent.
+        :param time_window: The time window to use for aggregations, defaults
+        to `1`
+        :type time_window: `int`, optional
+        :return: Returns a dataframe of the aggeragted results
+        :rtype: :class:`pd`.`DataFrame`
+        """
+        test_end_ceil = np.ceil(np.nanmax(
+            list(self.end_times.values())
+        ))
+        time_range = np.arange(
+            0,
+            test_end_ceil + time_window,
+            time_window
+        )
+        # get aggregated events sent per second
+        aggregated_sent_per_second = sps.binned_statistic(
+            self.results["time_sent"],
+            [1] * len(self.results),
+            bins=time_range,
+            statistic='count'
+        ).statistic / time_window
+        # get events per second
+        aggregated_events_per_second = sps.binned_statistic(
+            self.results["AEOSVDC_end"],
+            [1] * len(self.results),
+            bins=time_range,
+            statistic='count'
+        ).statistic / time_window
+        # get aggregated full response time
+        aggregated_full_response_time = sps.binned_statistic(
+            self.results["AEOSVDC_end"],
+            self.results["full_response_time"],
+            bins=time_range,
+            statistic=np.nanmean
+        ).statistic
+        # get aggregated time in queue
+        aggregated_queue_time = sps.binned_statistic(
+            self.results["AER_start"],
+            self.results["queue_time"],
+            bins=time_range,
+            statistic=np.nanmean
+        ).statistic
+        aggregated_results = pd.DataFrame(
+            np.vstack(
+                [
+                    time_range[:-1] + time_window / 2,
+                    aggregated_sent_per_second,
+                    aggregated_events_per_second,
+                    aggregated_queue_time,
+                    aggregated_full_response_time
+                ]
+            ).T,
+            columns=[
+                "Time (s)",
+                "Events Sent (/s)",
+                "Events Processed (/s)",
+                "Queue Time (s)",
+                "Response Time (s)"
+            ]
+        )
+        return aggregated_results
+
+
+class PVFunctionalResults(PVResults):
+    """Sub-class of :class:`PVResults` to update and store functional results
+    within a Functional test run
+    """
+    def __init__(
+        self,
+    ) -> None:
+        """Constructor method
+        """
+        super().__init__()
         self.job_ids = []
         self.jobs_info = []
         self.file_names = []
         self.responses = []
+
+    def update_from_sim(
+        self,
+        job_id: str,
+        file_name: str,
+        job_info: dict[str, str],
+        response: str,
+        **kwargs
+    ) -> None:
+        """Implementation of abstract method when given a data point from the
+        Functional simulaiona
+
+        :param job_id: The unique id of the job
+        :type job_id: `str`
+        :param file_name: The name of the output file the test file has been
+        saved as.
+        :type file_name: `str`
+        :param job_info: The validity information related to the job
+        :type job_info: `dict`[`str`, `str`]
+        :param response: Th response received from the http intermediary
+        :type response: `str`
+        """
+        self.update_test_files_info(
+            job_ids=[job_id],
+            jobs_info=[job_info],
+            file_names=[file_name]
+        )
+        self.update_responses([response])
 
     def update_test_files_info(
         self,
@@ -130,7 +803,7 @@ class PVResultsHandler(ResultsHandler):
     """
     def __init__(
         self,
-        results_holder: Results,
+        results_holder: PVResults,
         test_output_directory: str,
         save_files: bool = False
     ) -> None:
@@ -181,7 +854,8 @@ class PVResultsHandler(ResultsHandler):
     def handle_result(
         self,
         result: tuple[
-            list[dict[str, Any]], str, str, dict[str, str | None], str
+            list[dict[str, Any]], str, str, dict[str, str | None], str,
+            datetime
         ] | None
     ) -> None:
         """Method to handle the result from a simulation iteration
@@ -194,6 +868,7 @@ class PVResultsHandler(ResultsHandler):
         * a dict representing the job info
         * a string representing the response from the request
         :type result: `tuple`[ `list`[`dict`[`str`, `Any`]], `str`, `str`,
+        :class:`datetime`
         `dict`[`str`, `str`  |  `None`], `str` ] | `None`
         """
         self.queue.put(result)
@@ -211,23 +886,27 @@ class PVResultsHandler(ResultsHandler):
     def handle_item_from_queue(
         self,
         item: tuple[
-            list[dict[str, Any]], str, str, dict[str, str | None], str
+            list[dict[str, Any]], str, str, dict[str, str | None], str,
+            datetime
         ] | None
     ) -> None:
         """Method to handle saving the data when an item is take from the queue
 
         :param item: PV iteration data taken from the queue
         :type item: `tuple`[ `list`[`dict`[`str`, `Any`]], `str`, `str`,
+        :class:`datetime`
         `dict`[`str`, `str`  |  `None`], `str` ] | `None`
         """
         if item is None:
             return
-        self.results_holder.update_test_files_info(
-            job_ids=[item[2]],
-            jobs_info=[item[3]],
-            file_names=[item[1]]
+        self.results_holder.update_from_sim(
+            event_list=item[0],
+            job_id=item[2],
+            file_name=item[1],
+            job_info=item[3],
+            response=item[4],
+            time_completed=item[5]
         )
-        self.results_holder.update_responses([item[4]])
         if self.save_files:
             output_file_path = os.path.join(
                 self.test_output_directory,
@@ -301,7 +980,7 @@ class Test(ABC):
         )
         # set up requires attributes
         self.job_templates: list[Job] = []
-        self.results = Results()
+        self.results = self.set_results_holder()
         self.pv_file_inspector = PVFileInspector(harness_config)
         self.total_number_of_events: int
         self.delay_times: list[float]
@@ -309,6 +988,15 @@ class Test(ABC):
         self.set_test_rate()
         # prepare the test given inputs
         self.prepare_test()
+
+    @abstractmethod
+    def set_results_holder(self) -> PVResults | PVPerformanceResults:
+        """Abstract metho to return the results holder
+
+        :return: Returns a :class:`PVResults` object
+        :rtype: :class:`PVResults` | :class:`PVPerformanceResults`
+        """
+        return PVFunctionalResults()
 
     def _make_job_templates(self) -> None:
         """Method to make the template jobs from the generated tests files
@@ -449,6 +1137,8 @@ class Test(ABC):
             ),
             results_handler=results_handler
         )
+        # set the sim start time
+        results_handler.results_holder.time_start = datetime.now()
         await self.simulator.simulate()
 
     async def run_test(self) -> None:
@@ -552,6 +1242,9 @@ class FunctionalTest(Test):
             save_files=True,
             test_profile=test_profile
         )
+
+    def set_results_holder(self) -> PVResults:
+        return super().set_results_holder()
 
     def _get_sim_data(
         self,
@@ -682,6 +1375,9 @@ class PerformanceTest(Test):
             test_profile=test_profile
         )
 
+    def set_results_holder(self) -> PVPerformanceResults:
+        return PVResultsDataFrame()
+
     def _get_sim_data(
         self,
         jobs_to_send: list[Job]
@@ -739,6 +1435,29 @@ class PerformanceTest(Test):
         )
         self.shard = self.test_config.performance_options["shard"]
 
+    def get_all_simulation_data(self) -> None:
+        """Method to read and calculate al simulation data
+        """
+        self.get_pv_sim_data()
+        self.results.calc_all_results()
+
+    def get_pv_sim_data(self) -> None:
+        """Method to get the PV sim data from the grok endpoint and read into
+        results
+        """
+        # download grok file
+        grok_file_path = os.path.join(
+            self.harness_config.log_file_store,
+            "grok.txt"
+        )
+        download_file_to_path(
+            self.harness_config.pv_grok_exporter_url,
+            self.harness_config.log_file_store
+        )
+        self.results.get_and_read_grok_metrics(
+            grok_file_path
+        )
+
     def calc_results(self) -> None:
         """Method to calc the results after the test and save reports
         """
@@ -784,7 +1503,7 @@ class PerformanceTest(Test):
                     "Files Sent/s",
                 )
                 for time in range(
-                    len(self.results.responses)
+                    len(self.results)
                     // self.test_config.performance_options[
                         "num_files_per_sec"
                     ]
@@ -797,7 +1516,7 @@ class PerformanceTest(Test):
             + [
                 (time, 0, "Files Sent/s")
                 for time in range(
-                    len(self.results.responses)
+                    len(self.results)
                     // self.test_config.performance_options[
                         "num_files_per_sec"
                     ],

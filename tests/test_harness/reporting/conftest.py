@@ -1,4 +1,5 @@
 # pylint: disable=W0621
+# pylint: disable=C0301
 """Fixtures for reporting tests
 """
 import pytest
@@ -22,9 +23,8 @@ def validity_df() -> pd.DataFrame:
         ["job_5", "job_name", False, "MissingEdges", "file_5"],
     ]
     validity = pd.DataFrame(
-        data, columns=[
-            "JobId", "SequenceName", "Validity", "Category", "FileName"
-        ]
+        data,
+        columns=["JobId", "SequenceName", "Validity", "Category", "FileName"],
     )
     validity.set_index("JobId", inplace=True)
     return validity
@@ -403,7 +403,7 @@ def expected_html_string() -> str:
 def report_files_mapping(
     expected_results: pd.DataFrame,
     expected_junit_string: str,
-    expected_html_string: str
+    expected_html_string: str,
 ) -> dict[str, str | pd.DataFrame]:
     """Fixture providing a dictionary mapping file name to file
 
@@ -419,5 +419,5 @@ def report_files_mapping(
     return {
         "test.csv": expected_results,
         "test.xml": expected_junit_string,
-        "test.html": expected_html_string
+        "test.html": expected_html_string,
     }
