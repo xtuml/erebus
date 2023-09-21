@@ -247,12 +247,11 @@ class PVPerformanceResults(PVResults):
         """Abstract method to generate the failures and successes from the sim
 
         :return: Returns a dictionary of integers of the following fields:
-        * "th_failures" - The number of event failures given by the test
-        harness (i.e. the response received was not empty)
-        * "pv_failures" - The number of event failures in the PV groked logs
+        * "num_tests" - The number of events in the simulation
+        * "num_failures" - The number of event failures in the PV groked logs
         (i.e. did not register a time in all of the pv sim time fields)
-        * "pv_sccesses" - The number of event successes in the PV groked logs
-        (i.e. registered a time in all of the pv sim time fields)
+        * "num_errors" - The number of event failures given by the test
+        harness (i.e. the response received was not empty)
         :rtype: `dict`[`str`, `int`]
         """
 

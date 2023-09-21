@@ -30,6 +30,7 @@ from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_files
 )
 from test_harness.simulator.simulator_profile import Profile
+from test_harness.utils import clean_directories
 
 # get test config
 test_config_path = os.path.join(
@@ -353,9 +354,9 @@ class TestPVResultsDataFrame:
         results.results = results_dataframe
         results.create_response_time_fields()
         failures = results.calculate_failures()
-        assert failures["th_failures"] == 0
-        assert failures["pv_failures"] == 0
-        assert failures["pv_successes"] == 10
+        assert failures["num_errors"] == 0
+        assert failures["num_failures"] == 0
+        assert failures["num_tests"] == 10
 
     @staticmethod
     def test_calculate_failures_th_failures(
@@ -373,9 +374,9 @@ class TestPVResultsDataFrame:
         results.results = results_dataframe
         results.create_response_time_fields()
         failures = results.calculate_failures()
-        assert failures["th_failures"] == 1
-        assert failures["pv_failures"] == 0
-        assert failures["pv_successes"] == 10
+        assert failures["num_errors"] == 1
+        assert failures["num_failures"] == 0
+        assert failures["num_tests"] == 10
 
     @staticmethod
     def test_calculate_failures_pv_failures(
@@ -398,9 +399,9 @@ class TestPVResultsDataFrame:
         results.results = results_dataframe
         results.create_response_time_fields()
         failures = results.calculate_failures()
-        assert failures["th_failures"] == 0
-        assert failures["pv_failures"] == 1
-        assert failures["pv_successes"] == 9
+        assert failures["num_errors"] == 0
+        assert failures["num_failures"] == 1
+        assert failures["num_tests"] == 10
 
     @staticmethod
     def test_calc_end_times_no_nans(
@@ -997,7 +998,9 @@ def test_run_test_performance() -> None:
 
 
 @responses.activate
-def test_run_test_performance_calc_results() -> None:
+def test_run_test_performance_calc_results(
+    grok_exporter_string: str
+) -> None:
     """Tests :class:`PerformanceTests`.`calc_results`
     """
     harness_config = HarnessConfig(test_config_path)
@@ -1019,6 +1022,21 @@ def test_run_test_performance_calc_results() -> None:
         mock.post(
             url=harness_config.pv_send_url,
             repeat=True
+        )
+        responses.add(
+            responses.GET,
+            harness_config.pv_grok_exporter_url,
+            body=grok_exporter_string.encode("utf-8"),
+            status=200,
+            headers={
+                "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
+            }
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
         )
         responses.get(
             url=harness_config.log_urls["aer"]["getFileNames"],
@@ -1079,16 +1097,12 @@ def test_run_test_performance_calc_results() -> None:
         )
         asyncio.run(test.run_test())
         test.calc_results()
-        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
-        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
-        for file_name in [
-            "Basic_Stats.csv",
-            "PV_File_IO.csv",
-            "PV_File_IO.html"
-        ]:
-            os.remove(
-                os.path.join(harness_config.report_file_store, file_name)
-            )
+        clean_directories(
+            [
+                harness_config.report_file_store,
+                harness_config.log_file_store
+            ]
+        )
 
 
 @responses.activate

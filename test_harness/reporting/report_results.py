@@ -1,7 +1,7 @@
 """Methods to create junit report into html
 """
 from __future__ import annotations
-from typing import Any
+from typing import Any, Literal
 from abc import ABC, abstractmethod
 import pandas as pd
 from junit2htmlreport.parser import Junit
@@ -72,6 +72,125 @@ class TestPrint(ABC):
         :rtype: `tuple`[`int`, `int`, `int`]
         """
         return (0, 0, 0)
+
+
+class PerformanceTestCase(TestPrint):
+    """Sub class of :class:`TestPrint` to create xml
+    Test cases for a peformance test
+
+    :param name: The name of the test
+    :type name: `str`
+    :param results: The given results:
+    * 'num_tests'
+    * 'num_failures'
+    * 'num_errors'
+    :type results: `dict`[`str`, `int`]
+    """
+    def __init__(
+        self,
+        name: str,
+        results: dict[str, int]
+    ) -> None:
+        """Constructor method
+        """
+        super().__init__(
+            name=name
+        )
+        self.results = results
+        self.result = self.calc_result()
+
+    def count_tests(self) -> tuple[int, int, int]:
+        """Method to count the number of tests failures and errors
+
+        :return: Returns the tests failures and errors
+        :rtype: tuple[`int`, `int`, `int`]
+        """
+        return (
+            self.results["num_tests"],
+            self.results["num_failures"],
+            self.results["num_errors"]
+        )
+
+    def print_case(self, indent: int = 4, level: int = 0) -> str:
+        """Method to print the test case
+
+        :param indent: Indent used in the output, defaults to `4`
+        :type indent: `int`, optional
+        :param level: The level of indent the test case is on, defaults to `0`
+        :type level: `int`, optional
+        :return: Returns the string representation of the test case
+        :rtype: `str`
+        """
+        print_string = ""
+        indent_string = self.create_indent_string(indent * level)
+        print_string += indent_string
+        print_string += self.create_tag_start()
+        if self.result == "Pass":
+            print_string += ' />'
+            return print_string
+        # anything other than pass
+        next_level = level + 1
+        next_level_indent = self.create_indent_string(indent * next_level)
+        print_string += '>\n' + next_level_indent
+        failure_indent = self.create_indent_string(indent * (next_level + 1))
+        if self.result == "Fail":
+            print_string += (
+                '<failure message="The protocol verifier failed to process'
+                ' some '
+                'events" '
+                'type="PVError">\n'
+            )
+            print_string += failure_indent + (
+                f"{self.results['num_failures']}"
+                f" of {self.results['num_tests']} events failed to be"
+                " processed "
+                "correctly by the PV\n"
+            )
+            print_string += next_level_indent + (
+                '</failure>\n'
+            )
+        else:
+            print_string += (
+                '<error message="The Test Harness failed to successfully send '
+                'some events" '
+                'type="THError">\n'
+            )
+            print_string += failure_indent + (
+                f"{self.results['num_errors']}"
+                f" of {self.results['num_tests']} events failed to be sent "
+                "correctly by the Test Harness\n"
+            )
+            print_string += next_level_indent + "</error>\n"
+        print_string += indent_string + "</testcase>"
+        return print_string
+
+    def calc_result(self) -> Literal['Pass', 'Error', 'Fail']:
+        """Method to calculate the result of the test given the results
+
+        :return: Returns:
+        * "Pass"
+        * "Error"
+        * "Fail"
+        :rtype: :class:`Literal`[`'Pass'`, `'Error'`, `'Fail'`]
+        """
+        if self.results["num_failures"] + self.results["num_errors"] == 0:
+            return "Pass"
+        if self.results["num_errors"] > 0:
+            return "Error"
+        return "Fail"
+
+    def create_tag_start(self) -> str:
+        """Method to create the starting tag for the string representation of
+        the test case
+
+        :raises RuntimeError: Raises a :class:`RuntimeError` is there is no
+        parent
+        :return: Returns the test case starting tag
+        :rtype: `str`
+        """
+        if not self.parent:
+            raise RuntimeError("Cannot create tag without parent")
+        return f'<testcase name="{self.name}" classname="{self.parent.name}"'
 
 
 class TestCase(TestPrint):
@@ -236,13 +355,15 @@ class TestSuite(TestPrint):
     def __init__(
         self,
         name: str,
-        is_suites: bool = False
+        is_suites: bool = False,
+        properties: dict[str, Any] | None = None
     ) -> None:
         """Constructor method
         """
         super().__init__(name)
         self.children: list[TestCase | TestSuite] = []
         self.is_suites = is_suites
+        self.properties = properties
 
     def add_child(
         self,
@@ -282,6 +403,11 @@ class TestSuite(TestPrint):
         indent_string = self.create_indent_string(indent * level)
         print_string += indent_string
         print_string += self.create_tag()
+        if self.properties:
+            print_string += self.create_properties_string(
+                indent=indent,
+                level=level + 1
+            )
         print_string += "\n".join(
             child.print_case(indent=indent, level=level + 1)
             for child in self.children
@@ -322,6 +448,73 @@ class TestSuite(TestPrint):
             failures += child_failures
             errors += child_errors
         return tests, failures, errors
+
+    def create_properties_string(self, indent: int = 4, level: int = 0) -> str:
+        """Method to provide a string representation of the properties
+
+        :param indent: Indent used in the output, defaults to `4`
+        :type indent: `int`, optional
+        :param level: The level of indent the test case is on, defaults to `0`
+        :type level: `int`, optional
+        :return: Returns the string representation of the test suite
+        :rtype: `str`
+        """
+        indent_string = self.create_indent_string(indent * level)
+        sub_indent_string = self.create_indent_string(indent * (level + 1))
+        properties_string = indent_string + "<properties>\n"
+        properties_string += "".join(
+            sub_indent_string
+            + f'<property name="{name}" value="{value}"/>\n'
+            for name, value in self.properties.items()
+        )
+        properties_string += indent_string + "</properties>\n"
+        return properties_string
+
+
+def generate_performance_test_reports(
+    results: dict[str, int],
+    properties: dict[str, Any] | None = None
+) -> tuple[str, str]:
+    """Method to generate perfromance test:
+    * xml junit report
+    * html report based off the xml
+
+    :param results: The results of the test
+    :type results: `dict`[`str`, `int`]
+    :param properties: Extra properties to be written as results, defaults to
+    `None`
+    :type properties: `dict`[`str`, `Any`] | `None`, optional
+    :return: Returns a tuple of:
+    * html report string
+    * xml report string
+    :rtype: `tuple`[`str`, `str`]
+    """
+    suites = TestSuite(
+        name="Performance tests run",
+        is_suites=True,
+    )
+    if properties is None:
+        properties = {}
+    suite = TestSuite(
+        name="Performance test run",
+        properties={
+            **results,
+            **properties
+        }
+
+    )
+    suite.add_child(
+        PerformanceTestCase(
+            "Run Result",
+            results=results
+        )
+    )
+    suites.add_child(suite)
+    xml_string = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml_string += suites.print_case()
+    report = Junit(xmlstring=xml_string)
+    html_string = report.html()
+    return html_string, xml_string
 
 
 def generate_html_report_string(

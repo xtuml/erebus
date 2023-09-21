@@ -42,8 +42,10 @@ from test_harness.simulator.simulator import (
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
+from test_harness.reporting.report_results import (
+    generate_performance_test_reports
+)
 from test_harness.requests import send_get_request, download_file_to_path
-
 from .pvresults import PVResults
 from .pvresultshandler import PVResultsHandler
 from .pvperformanceresults import PVPerformanceResults
@@ -565,114 +567,38 @@ class PerformanceTest(Test):
         )
         download_file_to_path(
             self.harness_config.pv_grok_exporter_url,
-            self.harness_config.log_file_store,
+            grok_file_path
         )
-        self.results.get_and_read_grok_metrics(grok_file_path)
+        self.results.get_and_read_grok_metrics(
+            grok_file_path
+        )
+
+    def get_report_files_from_results(self) -> tuple[str, str]:
+        """Methodot get the reports from the results
+
+        :return: Returns a tuple of:
+        * html report string
+        * xml report string
+        :rtype: `tuple`[`str`, `str`]
+        """
+        html_report, xml_report = generate_performance_test_reports(
+            results=self.results.failures,
+            properties={
+                **self.results.end_times,
+                **self.results.full_averages
+            }
+        )
+        return html_report, xml_report
 
     def calc_results(self) -> None:
-        """Method to calc the results after the test and save reports"""
-        if any(
-            len(domain_coords) < 2
-            for domain_coords in self.pv_file_inspector.coords.values()
-        ):
-            logging.getLogger().warning(
-                "Cannot calculate results as not enough data points were "
-                "taken. The read timeout of io folder calculations may need "
-                "to be increased"
-            )
-            return
-        self.pv_file_inspector.calc_test_boundaries()
-        self.pv_file_inspector.normalise_coords()
-        num_jobs = len(self.jobs_to_send)
-        num_events = self.total_number_of_events
-        average_num_jobs_per_sec = (
-            num_jobs / self.pv_file_inspector.test_boundaries[2]
-        )
-        average_num_events_per_sec = (
-            num_events / self.pv_file_inspector.test_boundaries[2]
-        )
-        df_basic_results = pd.DataFrame.from_dict(
-            {
-                "num_jobs": num_jobs,
-                "num_events": num_events,
-                "average_jobs_per_sec": average_num_jobs_per_sec,
-                "average_events_per_sec": average_num_events_per_sec,
-                "reception_end_time": (
-                    self.pv_file_inspector.test_boundaries[3]
-                ),
-                "verifier_end_time": self.pv_file_inspector.test_boundaries[4],
-            },
-            orient="index",
-        )
-        df_basic_results.index.name = "Data Field"
-        df_pv_file_results = pd.DataFrame(
-            [
-                (
-                    time,
-                    self.test_config.performance_options["num_files_per_sec"],
-                    "Files Sent/s",
-                )
-                for time in range(
-                    len(self.results)
-                    // self.test_config.performance_options[
-                        "num_files_per_sec"
-                    ]
-                )
-            ]
-            + [
-                coord + ("AER Incoming\nFiles",)
-                for coord in self.pv_file_inspector.coords["aer"]
-            ]
-            + [
-                (time, 0, "Files Sent/s")
-                for time in range(
-                    len(self.results)
-                    // self.test_config.performance_options[
-                        "num_files_per_sec"
-                    ],
-                    self.pv_file_inspector.test_boundaries[2],
-                )
-            ]
-            + [
-                coord + ("Verifier Files",)
-                for coord in self.pv_file_inspector.coords["ver"]
-            ],
-            columns=["Time (s)", "Number", "Metric"],
-        )
-        df_pv_file_results = (
-            df_pv_file_results.groupby(["Time (s)", "Metric"])
-            .mean()
-            .reset_index()
-        )
-        # add verifier files pers second
-        verifier_files_per_second = (
-            df_pv_file_results.loc[
-                df_pv_file_results["Metric"] == "Verifier Files"
-            ]
-            .sort_values("Time (s)")
-            .reset_index(drop=True)
-        )
-        verifier_files_per_second["Number"] = verifier_files_per_second[
-            "Number"
-        ].diff()
-        verifier_files_per_second.loc[0, "Number"] = 0
-        verifier_files_per_second["Metric"] = "Verifier Files/s"
-        df_pv_file_results = pd.concat(
-            [df_pv_file_results, verifier_files_per_second], ignore_index=True
-        )
-        # filter out results that are greater than the calculated test end time
-        df_pv_file_results = df_pv_file_results[
-            (df_pv_file_results["Time (s)"])
-            <= self.pv_file_inspector.test_boundaries[2]
-        ]
-        df_pv_file_results.index.name = "Index"
-        # make figures
-        figure = self.make_figs(df_pv_file_results)
+        """Method to calc results and generate reports from the results
+        """
+        self.get_all_simulation_data()
+        html_report, xml_report = self.get_report_files_from_results()
         deliver_test_report_files(
             {
-                "Basic_Stats.csv": df_basic_results,
-                "PV_File_IO.csv": df_pv_file_results,
-                "PV_File_IO.html": figure,
+                "Report.xml": xml_report,
+                "Report.html": html_report,
             },
             output_directory=self.test_output_directory,
         )

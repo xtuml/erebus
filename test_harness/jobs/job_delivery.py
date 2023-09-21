@@ -119,6 +119,7 @@ async def send_payload_async(
                     response.text(),
                     timeout=200
                 )
+                awaited_response = ""
             except Exception as error:
                 awaited_response = handle_error_response(error)
             return awaited_response
