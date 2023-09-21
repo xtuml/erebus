@@ -13,7 +13,6 @@ import time
 import pytest
 import responses
 from aioresponses import aioresponses
-import pandas as pd
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier import (
@@ -175,7 +174,9 @@ def test_get_test_profile_no_file() -> None:
 
 
 @responses.activate
-def test_puml_files_performance_with_input_profile() -> None:
+def test_puml_files_performance_with_input_profile(
+    grok_exporter_string: str
+) -> None:
     """Tests method `puml_test_files` for a performance test using a profile
     """
     harness_config = HarnessConfig(test_config_path)
@@ -201,6 +202,15 @@ def test_puml_files_performance_with_input_profile() -> None:
             sim_time += 1
 
     with aioresponses() as mock:
+        responses.add(
+            responses.GET,
+            harness_config.pv_grok_exporter_url,
+            body=grok_exporter_string.encode("utf-8"),
+            status=200,
+            headers={
+                "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
+            }
+        )
         responses.get(
             url=harness_config.pv_clean_folders_url
         )
@@ -255,9 +265,8 @@ def test_puml_files_performance_with_input_profile() -> None:
         thread.join()
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
-            "Basic_Stats.csv",
-            "PV_File_IO.csv",
-            "PV_File_IO.html",
+            "Report.xml",
+            "Report.html"
         ]
         for file in files:
             file_in_files = file in expected_files
@@ -265,18 +274,9 @@ def test_puml_files_performance_with_input_profile() -> None:
                     file.replace("-", "").replace(".json", "")
                 ))
             assert file_in_files ^ is_uuid
-
-        results = pd.read_csv(os.path.join(
-            harness_config.report_file_store, "Basic_Stats.csv",
-        ), index_col="Data Field")
-        assert pytest.approx(results.loc["num_jobs", '0']) == 25
-        assert pytest.approx(results.loc["num_events", '0']) == 75
-        assert pytest.approx(results.loc["reception_end_time", '0']) == 3
-        assert pytest.approx(results.loc["verifier_end_time", '0']) == 3
-        assert pytest.approx(
-            results.loc["average_jobs_per_sec", '0']
-        ) == 25 / 3
-        assert pytest.approx(
-            results.loc["average_events_per_sec", '0']
-        ) == 75 / 3
-        clean_directories([harness_config.report_file_store])
+        clean_directories(
+            [
+                harness_config.report_file_store,
+                harness_config.log_file_store
+            ]
+        )
