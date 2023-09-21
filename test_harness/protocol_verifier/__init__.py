@@ -117,6 +117,8 @@ def puml_files_test(
         "Post processing results"
     )
     test.calc_results()
+    # save pv log files to output folder
+    test.save_log_files_to_test_output_directory()
     # clean directories ready for next test
     logging.getLogger().info(
         "Cleaning Test Harness and PV directories"

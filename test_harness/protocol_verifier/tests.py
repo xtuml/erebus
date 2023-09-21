@@ -10,10 +10,12 @@ from typing import Generator, Any
 from abc import ABC, abstractmethod
 from random import choice, choices
 import os
+import shutil
 import asyncio
 import logging
 import math
 from datetime import datetime
+import glob
 
 
 import matplotlib.pyplot as plt
@@ -288,6 +290,22 @@ class Test(ABC):
     @abstractmethod
     def calc_results(self) -> None:
         """Method to cal the results and save reports for the test"""
+
+    def save_log_files_to_test_output_directory(self) -> None:
+        """Method to copy all log files to the test output directory
+        """
+        files = glob.glob(
+            "*.*",
+            root_dir=self.harness_config.log_file_store
+        )
+        for file in files:
+            shutil.copy(
+                os.path.join(
+                    self.harness_config.log_file_store,
+                    file
+                ),
+                self.test_output_directory
+            )
 
     def clean_directories(self) -> None:
         """Method to clean up log and uml file store directories"""

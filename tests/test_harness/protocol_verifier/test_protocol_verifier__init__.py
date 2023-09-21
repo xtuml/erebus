@@ -118,7 +118,8 @@ def test_puml_files_test() -> None:
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
             "Results.csv", "Results.html", "Results.xml",
-            "Results_Aggregated.html"
+            "Results_Aggregated.html",
+            "Verifier.log", "Reception.log",
         ]
         for file in files:
             file_in_files = file in expected_files
@@ -265,6 +266,9 @@ def test_puml_files_performance_with_input_profile(
         thread.join()
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
+            "Verifier.log",
+            "Reception.log",
+            "grok.txt",
             "Report.xml",
             "Report.html",
             "EventsSentVSProcessed.html",

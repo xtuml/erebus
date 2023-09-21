@@ -687,7 +687,9 @@ class TestPVResultsHandler:
             attr = getattr(results, attr_name)
             assert len(attr) == 1
             assert attr[0] == item
-        files_to_remove = ["a_file_name"]
+        files_to_remove = [
+            "a_file_name",
+        ]
         for file_name in files_to_remove:
             path = os.path.join(harness_config.report_file_store, file_name)
             assert os.path.exists(path)
