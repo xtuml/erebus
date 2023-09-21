@@ -266,7 +266,10 @@ def test_puml_files_performance_with_input_profile(
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
             "Report.xml",
-            "Report.html"
+            "Report.html",
+            "EventsSentVSProcessed.html",
+            "ResponseAndQueueTime.html",
+            "AggregatedResults.csv"
         ]
         for file in files:
             file_in_files = file in expected_files

@@ -595,34 +595,75 @@ class PerformanceTest(Test):
         """
         self.get_all_simulation_data()
         html_report, xml_report = self.get_report_files_from_results()
+        # get events sent vs events processed figure
+        sent_vs_processed = self.make_fig_melt(
+            self.results.agg_results[[
+                "Time (s)",
+                "Events Sent (/s)",
+                "Events Processed (/s)",
+            ]],
+            x_col="Time (s)",
+            y_axis_name="Events/s",
+            color_group_name="Metric",
+        )
+        # get aggregated event response and queue times figure
+        reponse_vs_queue = self.make_fig_melt(
+            self.results.agg_results[[
+                "Time (s)",
+                "Queue Time (s)",
+                "Response Time (s)",
+            ]],
+            x_col="Time (s)",
+            y_axis_name="Time period (s)",
+            color_group_name="Metric"
+        )
+        # deliver the report files
         deliver_test_report_files(
             {
                 "Report.xml": xml_report,
                 "Report.html": html_report,
+                "EventsSentVSProcessed.html": sent_vs_processed,
+                "ResponseAndQueueTime.html": reponse_vs_queue,
+                "AggregatedResults.csv": self.results.agg_results
             },
             output_directory=self.test_output_directory,
         )
 
     @staticmethod
-    def make_figs(df_pv_file_results: pd.DataFrame) -> Figure:
-        """Method to generate a grouped bar chart from the test output
-        dataframe
+    def make_fig_melt(
+        df_un_melted: pd.DataFrame,
+        x_col: str,
+        y_axis_name: str,
+        color_group_name: str
+    ) -> Figure:
+        """Melt a dataframe identifying an x axis column to melt against. Plot
+        a line graph using an identifier y axis and color group columns.
+        The remaining column names (those no x_col) of the un-melted dataframe
+        will be used a color group names and the column cell values will be
+        used as y-axis values.
 
-        :param df_pv_file_results: Dataframe with columns:
-        * "Time (s)" - the simulation time of the entry - integer
-        * "Number" - the value of the given metric - float
-        * "Metric" - the identifier of the metric
-        :type df_pv_file_results: :class:`pd`.`DataFrame`
-        :return: Returns the plotly :class:`Figure` object
+        :param df_un_melted: The unmelted dataframe
+        :type df_un_melted: :class:`pd`.`DataFrame`
+        :param x_col: The column from the given dataframe to use as the x-axis
+        values
+        :type x_col: `str`
+        :param y_axis_name: The name given to the y axis
+        :type y_axis_name: `str`
+        :param color_group_name: The title for the key of the color groups
+        :type color_group_name: `str`
+        :return: Returns a plotly line figure
         :rtype: :class:`Figure`
         """
-        # first figure
-        fig = px.bar(
-            df_pv_file_results,
-            x="Time (s)",
-            y="Number",
-            color="Metric",
-            barmode="group",
+        melted_df = df_un_melted.melt(
+            id_vars=[x_col],
+            var_name=color_group_name,
+            value_name=y_axis_name
         )
-        fig.update_xaxes(dtick=1)
+        fig = px.line(
+            melted_df,
+            x=x_col,
+            y=y_axis_name,
+            color=color_group_name,
+            markers=True
+        )
         return fig
