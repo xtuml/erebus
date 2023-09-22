@@ -134,6 +134,18 @@ class HarnessApp(Flask):
             file_handler=handle_multiple_file_uploads
         )
 
+    def upload_test_files(self) -> Response:
+        """Function to handle the upload of test files to test file store
+
+        :return: 200 response if files uploaded successfully and
+        400 if unsuccessful
+        :rtype: :class:`Response`
+        """
+        return self.handle_multipart_file_upload(
+            save_file_dir_path=self.harness_config.test_file_store,
+            file_handler=handle_multiple_file_uploads
+        )
+
     def upload_profile(self) -> Response:
         """Function to handle the upload of a profile file
 
@@ -279,6 +291,11 @@ def create_app(
     @app.route("/upload/profile", methods=["POST"])
     def upload_profile() -> None:
         return app.upload_profile()
+
+    # route to upload profile
+    @app.route("/upload/test-files", methods=["POST"])
+    def upload_test_files() -> None:
+        return app.upload_test_files()
 
     # route to start
     @app.route("/startTest", methods=["POST"])

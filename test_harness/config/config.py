@@ -75,7 +75,15 @@ class HarnessConfig:
         ]["log_file_store"]
         self.log_file_store = self.calc_path(
             log_file_store_path,
-            "report_file_store"
+            "log_file_store"
+        )
+        # parse test filestore path
+        test_file_store_path = self.config_parser[
+            "non-default"
+        ]["test_file_store"]
+        self.test_file_store = self.calc_path(
+            test_file_store_path,
+            "test_file_store"
         )
         # parse config for request to server
         self.parse_requests_config()

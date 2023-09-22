@@ -45,7 +45,8 @@ def harness_test_manager(
         clean_directories([
             harness_config.uml_file_store,
             harness_config.profile_store,
-            harness_config.log_file_store
+            harness_config.log_file_store,
+            harness_config.test_file_store
         ])
         logging.getLogger().error(
             "Error was: %s; traceback to follow",

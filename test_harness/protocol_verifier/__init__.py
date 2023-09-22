@@ -1,5 +1,6 @@
 # pylint: disable=W0718
 # pylint: disable=R0801
+# pylint: disable=R0913
 """Full end to end process manager
 """
 import glob
@@ -10,7 +11,8 @@ import time
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.generate_test_files import (
-    generate_test_events_from_puml_files
+    generate_test_events_from_puml_files,
+    get_test_events_from_test_file_jsons
 )
 from test_harness.protocol_verifier.send_job_defs import send_job_defs_from_uml
 from test_harness.protocol_verifier.tests import (
@@ -38,6 +40,10 @@ def full_pv_test(
         harness_config.profile_store
     )
 
+    test_file_paths = get_test_file_paths(
+        harness_config.test_file_store
+    )
+
     puml_file_paths = get_puml_file_paths(
         harness_config.uml_file_store
     )
@@ -47,7 +53,8 @@ def full_pv_test(
         test_output_directory=test_output_directory,
         harness_config=harness_config,
         test_config=test_config,
-        profile=profile
+        profile=profile,
+        test_file_paths=test_file_paths
     )
 
 
@@ -56,7 +63,8 @@ def puml_files_test(
     test_output_directory: str,
     harness_config: HarnessConfig,
     test_config: TestConfig,
-    profile: Profile | None = None
+    profile: Profile | None = None,
+    test_file_paths: list[str] | None = None
 ) -> None:
     """Method to perform and end to end test
 
@@ -68,8 +76,10 @@ def puml_files_test(
     :type harness_config: :class:`HarnessConfig`
     :param test_config: The config for the specific test
     :type test_config: :class:`TestConfig`
-    :param profile: Profile created from an uploaded file, deafults to `None`
-    :rtype: :class:`Profile` | `None`, optional
+    :param profile: Profile created from an uploaded file, defults to `None`
+    :type profile: :class:`Profile` | `None`, optional
+    :param test_file_paths: list of test file paths, defults to `None`
+    :type test_file_paths: `list`[`str`] | `None`, optional
     """
     # choose test from test config and run test
     test_class = (
@@ -83,10 +93,15 @@ def puml_files_test(
         )
 
     # generate the test files with the test config
-    test_events = generate_test_events_from_puml_files(
-        puml_file_paths,
-        test_config
-    )
+    if test_file_paths:
+        test_events = get_test_events_from_test_file_jsons(
+            test_file_paths=test_file_paths
+        )
+    else:
+        test_events = generate_test_events_from_puml_files(
+            puml_file_paths,
+            test_config
+        )
 
     # send job definitions to pv
     send_job_defs_from_uml(
@@ -179,3 +194,40 @@ def get_test_profile(
     profile = Profile()
     profile.load_raw_profile_from_file_path(profile_paths[0])
     return profile
+
+
+def get_test_file_paths(
+    test_file_store_path: str
+) -> list[str] | None:
+    """Method to return the paths of the uploaded test file if there are any
+
+    :param test_file_store_path: The path of the test file store
+    :type test_file_store_path: `str`
+    :return: Returns a list of test file paths or `None` if none exist in the
+    given store path
+    :rtype: `list`[`str`] | `None`
+    """
+    test_file_paths = get_all_file_paths_in_folder(
+        test_file_store_path
+    )
+    if test_file_paths:
+        return test_file_paths
+    return None
+
+
+def get_all_file_paths_in_folder(
+    folder_path: str
+) -> list[str]:
+    """Method to get all file paths in a given folder
+
+    :param folder_path: The path of the folder
+    :type folder_path: `str`
+    :return: Returns the list of file paths
+    :rtype: `list`[`str`]
+    """
+    file_paths = [
+        os.path.join(folder_path, file_name)
+        for file_name in
+        glob.glob("*.*", root_dir=folder_path)
+    ]
+    return file_paths
