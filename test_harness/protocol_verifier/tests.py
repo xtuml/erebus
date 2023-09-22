@@ -314,6 +314,7 @@ class Test(ABC):
                 self.harness_config.uml_file_store,
                 self.harness_config.log_file_store,
                 self.harness_config.profile_store,
+                self.harness_config.test_file_store
             ]
         )
         try:
