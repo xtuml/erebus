@@ -1,3 +1,5 @@
+# flake8: noqa
+# noqa: E501
 # pylint: disable=R0902
 # pylint: disable=R0913
 # pylint: disable=W0221
@@ -5,29 +7,50 @@
 # pylint: disable=W0613
 # pylint: disable=C0302
 # pylint: disable=C0114
-from typing import Any
+from typing import Any, Optional, TypedDict
+import functools
 
+import dataset
 import numpy as np
 import pandas as pd
+import dask.dataframe as dd
 import scipy.stats as sps
+from sqlalchemy import Column, Text, String
 
 from .pvperformanceresults import (
     PVPerformanceResults,
-    AveragesDict,
     FailuresDict,
+    AveragesDict,
 )
 
 
-class PVResultsDataFrame(PVPerformanceResults):
+class PVResultsDaskDataFrame(PVPerformanceResults):
     """Sub class of :class:`PVPerformanceResults: to get perfromance results
-    using a pandas dataframe as the results holder.
+    using a dask dataframe as the results holder.
     """
 
     def __init__(
         self,
+        # TODO figure out why the mode=memory&cache=shared query params are being ignored
+        sqlite_address="sqlite:///tmp.db?mode=memory&cache=shared",
     ) -> None:
         """Constructor method"""
+        self.sqlite_address = sqlite_address
+        self.create_results_holder()
+        self._results: Optional[dd.DataFrame] = None
         super().__init__()
+
+    @property
+    def results(self) -> dd.DataFrame:
+        if self._results is not None:
+            return self._results
+        return dd.read_sql_table(
+            "results", self.sqlite_address, index_col="id"
+        )
+
+    @results.setter
+    def results(self, results: dd.DataFrame) -> None:
+        self._results = results
 
     def __len__(self) -> int:
         """The length of the results
@@ -38,8 +61,22 @@ class PVResultsDataFrame(PVPerformanceResults):
         return len(self.results)
 
     def create_results_holder(self) -> None:
-        """Creates the results holder as pandas DataFrame"""
-        self.results = pd.DataFrame(columns=self.data_fields)
+        """Required by the abstract class but not needed here"""
+        # """Creates the results holder as pandas DataFrame"""
+        # self.results = pd.DataFrame(columns=self.data_fields)
+        # with dataset.connect(self.sqlite_address) as db:
+        #     # db.create_table("results", self.data_fields)
+        #     table: dataset.Table = db.create_table("results", 'id')
+
+        #     # TODO instead do this at some point when we receive the first piece of data
+        #     table.create_column('id', db.types.bigint, primary_key=True)
+        #     for field in self.data_fields:
+        #         table.create_column(field, db.types.string)
+
+        # with dataset.connect(self.sqlite_address) as db:
+        #     t: dataset.Table = db.get_table('results')
+        #     assert t.columns, t.columns
+        #     # db.create_table("results", self.data_fields)
 
     def create_event_result_row(self, event_id: str) -> None:
         """Method to create a row in the results holder based on an
@@ -48,7 +85,8 @@ class PVResultsDataFrame(PVPerformanceResults):
         :param event_id: Unique event id
         :type event_id: `str`
         """
-        self.results.loc[event_id] = None
+        # return NotImplemented
+        # self.results.loc[event_id] = None
 
     def update_event_results_with_event_id(
         self, event_id: str, update_values: dict[str, Any]
@@ -61,9 +99,10 @@ class PVResultsDataFrame(PVPerformanceResults):
         :param update_values: Arbitrary named update values
         :type update_values: `dict`[`str`, `Any`]
         """
-        self.results.loc[event_id, list(update_values.keys())] = list(
-            update_values.values()
-        )
+
+        with dataset.connect(self.sqlite_address) as db:
+            t: dataset.Table = db["results"]
+            t.upsert({"event_id": event_id, **update_values}, ["event_id"])
 
     def update_event_results_with_job_id(
         self, job_id: str, update_values: dict[str, Any]
@@ -76,9 +115,10 @@ class PVResultsDataFrame(PVPerformanceResults):
         :param update_values: Arbitrary named update values
         :type update_values: `dict`[`str`, `Any`]
         """
-        self.results.loc[
-            self.results["job_id"] == job_id, list(update_values.keys())
-        ] = list(update_values.values())
+        with dataset.connect(self.sqlite_address) as db:
+            t: dataset.Table = db["results"]
+            t.create_column("event_id", db.types.string)
+            t.upsert({"job_id": job_id, **update_values}, ["job_id"])
 
     def create_response_time_fields(self) -> None:
         """Method used to create response fields in the results holder
@@ -89,22 +129,25 @@ class PVResultsDataFrame(PVPerformanceResults):
         self.results["full_response_time"] = (
             self.results["AEOSVDC_end"] - self.results["time_sent"]
         )
-        self.results["full_response_time"].clip(lower=0, inplace=True)
+        self.results["full_response_time"] = self.results[
+            "full_response_time"
+        ].clip(lower=0)
         self.results["queue_time"] = (
             self.results["AER_start"] - self.results["time_sent"]
         )
-        self.results["queue_time"].clip(lower=0, inplace=True)
+        self.results["queue_time"] = self.results["queue_time"].clip(lower=0)
 
     def calculate_failures(self) -> FailuresDict:
         """Method to generate the failures and successes from the sim
 
         :return: Returns a dictionary of integers of the following fields:
-        * "num_tests" - The number of events in the simulation
-        * "num_failures" - The number of event failures in the PV groked logs
-        (i.e. did not register a time in all of the pv sim time fields)
-        * "num_errors" - The number of event failures given by the test
+        * "th_failures" - The number of event failures given by the test
         harness (i.e. the response received was not empty)
-        :rtype: `dict`[`str`, `int`]
+        * "pv_failures" - The number of event failures in the PV groked logs
+        (i.e. did not register a time in all of the pv sim time fields)
+        * "pv_sccesses" - The number of event successes in the PV groked logs
+        (i.e. registered a time in all of the pv sim time fields)
+        :rtype: `FailuresDict`
         """
         th_failures = len(self.results[self.results["response"] != ""])
         pv_failures = (
@@ -153,20 +196,24 @@ class PVResultsDataFrame(PVPerformanceResults):
         being picked up by AER
         * "average_response_time" - The average time an event is sent and then
         fully processed by the PV stack
-        :rtype: `dict`[`str`, `float`]
+        :rtype: `AveragesDict`
         """
         if self.end_times is None:
             raise ValueError("self.end_times has not been defined")
         return {
             "average_sent_per_sec": (
-                self.results["time_sent"].count() / self.end_times["th_end"]
+                self.results["time_sent"].count().compute()
+                / self.end_times["th_end"]
             ),
             "average_processed_per_sec": (
-                self.results["AEOSVDC_end"].count() / self.end_times["pv_end"]
+                self.results["AEOSVDC_end"].count().compute()
+                / self.end_times["pv_end"]
             ),
-            "average_queue_time": np.nanmean(self.results["queue_time"]),
+            "average_queue_time": np.nanmean(
+                self.results["queue_time"].compute()
+            ),
             "average_response_time": np.nanmean(
-                self.results["full_response_time"]
+                self.results["full_response_time"].compute()
             ),
         }
 
