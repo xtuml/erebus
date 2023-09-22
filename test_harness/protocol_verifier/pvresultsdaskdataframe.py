@@ -7,20 +7,18 @@
 # pylint: disable=W0613
 # pylint: disable=C0302
 # pylint: disable=C0114
-from typing import Any, Optional, TypedDict
-import functools
+from typing import Any, Optional
 
+import dask.dataframe as dd
 import dataset
 import numpy as np
 import pandas as pd
-import dask.dataframe as dd
 import scipy.stats as sps
-from sqlalchemy import Column, Text, String
 
 from .pvperformanceresults import (
-    PVPerformanceResults,
-    FailuresDict,
     AveragesDict,
+    FailuresDict,
+    PVPerformanceResults,
 )
 
 
@@ -42,6 +40,12 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
 
     @property
     def results(self) -> dd.DataFrame:
+        """This property returns the results holder as a dask dataframe.
+        If the results holder is not created, it will create it on the fly
+
+        :return: The results holder
+        :rtype: `dask.dataframe.DataFrame`
+        """
         if self._results is not None:
             return self._results
         return dd.read_sql_table(

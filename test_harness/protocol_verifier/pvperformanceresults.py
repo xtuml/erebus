@@ -120,7 +120,7 @@ class PVPerformanceResults(PVResults):
         response: str,
         time_completed: datetime,
         file_name: str = "",
-        job_info: dict[str, str] = {},
+        job_info: dict[str, str] | None = None,
     ) -> None:
         """Method used to do an update when receiving data output
         from the simulation
@@ -135,6 +135,8 @@ class PVPerformanceResults(PVResults):
         :param time_completed: The time the request was completed at
         :type time_completed: :class:`datetime`
         """
+        if job_info is None:
+            job_info = {}
         for event in event_list:
             self.add_first_event_data(
                 event_id=event["eventId"],
