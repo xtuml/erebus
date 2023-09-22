@@ -412,7 +412,8 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
             "Results.csv", "Results.html", "Results.xml",
-            "Results_Aggregated.html"
+            "Results_Aggregated.html",
+            "Verifier.log", "Reception.log"
         ]
         for file in files:
             file_in_files = file in expected_files
