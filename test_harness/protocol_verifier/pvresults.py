@@ -37,12 +37,13 @@ class PVResults(ABC):
     @abstractmethod
     def update_from_sim(
         self,
+        *,
         event_list: list[dict],
         job_id: str,
-        file_name: str,
-        job_info: dict[str, str],
         response: str,
         time_completed: datetime,
+        file_name: str,
+        job_info: dict[str, str],
     ) -> None:
         """Abstract method used to do an update when receiving data output
         from the simulation

@@ -5,13 +5,40 @@
 # pylint: disable=W0613
 # pylint: disable=C0302
 # pylint: disable=C0114
-from typing import Any, TextIO
+import os
 from abc import abstractmethod
 from datetime import datetime
+from typing import Any, TextIO, TypedDict
+
 import pandas as pd
 from prometheus_client.parser import text_fd_to_metric_families
 
 from .pvresults import PVResults
+
+
+class AveragesDict(TypedDict):
+    """Dictionary of averages"""
+
+    average_sent_per_sec: float
+    average_processed_per_sec: float
+    average_queue_time: float
+    average_response_time: float
+
+
+class FailuresDict(TypedDict):
+    """Dictionary of failures and successes"""
+
+    num_tests: int
+    num_failures: int
+    """
+    This represents when the test harness successfully send a file but the PV
+    fails in processing.
+    """
+
+    num_errors: int
+    """
+    This represents when the test harness fails to send a file to PV.
+    """
 
 
 class PVPerformanceResults(PVResults):
@@ -41,8 +68,8 @@ class PVPerformanceResults(PVResults):
         super().__init__()
         self.create_results_holder()
         self.end_times: dict[str, float] | None = None
-        self.failures: dict[str, int] | None = None
-        self.full_averages: dict[str, float] | None = None
+        self.failures: FailuresDict | None = None
+        self.full_averages: AveragesDict | None = None
         self.agg_results: pd.DataFrame | None = None
 
     @abstractmethod
@@ -90,9 +117,10 @@ class PVPerformanceResults(PVResults):
         self,
         event_list: list[dict],
         job_id: str,
-        response: bool,
+        response: str,
         time_completed: datetime,
-        **kwargs
+        file_name: str = "",
+        job_info: dict[str, str] | None = None,
     ) -> None:
         """Method used to do an update when receiving data output
         from the simulation
@@ -107,6 +135,8 @@ class PVPerformanceResults(PVResults):
         :param time_completed: The time the request was completed at
         :type time_completed: :class:`datetime`
         """
+        if job_info is None:
+            job_info = {}
         for event in event_list:
             self.add_first_event_data(
                 event_id=event["eventId"],
@@ -136,6 +166,8 @@ class PVPerformanceResults(PVResults):
         :type time_completed: :class:`datetime`
         """
         self.create_event_result_row(event_id)
+        if self.time_start is None:
+            raise ValueError("self.time_start has not been defined")
         time_sent_sim_time = (time_completed - self.time_start).total_seconds()
 
         update_values = {
@@ -153,7 +185,7 @@ class PVPerformanceResults(PVResults):
         timestamp: str,
         event_id: str | None = None,
         job_id: str | None = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Method to update the results holder field with results from PV logs
         that are a timestamp string and coverting the reading to sim time
@@ -177,6 +209,11 @@ class PVPerformanceResults(PVResults):
         if event_id:
             self.update_event_results_with_event_id(event_id, update_value)
         else:
+            if job_id is None:
+                raise ValueError(
+                    "Job id has not been specified, at least one "
+                    "of event_id or job_id must be specified"
+                )
             self.update_event_results_with_job_id(job_id, update_value)
 
     def convert_pv_time_string(self, pv_time_str: str) -> float:
@@ -188,10 +225,12 @@ class PVPerformanceResults(PVResults):
         :rtype: `float`
         """
         date_time = datetime.strptime(pv_time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        if self.time_start is None:
+            raise ValueError("self.time_start has not been defined")
         sim_time = (date_time - self.time_start).total_seconds()
         return sim_time
 
-    def get_and_read_grok_metrics(self, file_path: str) -> None:
+    def get_and_read_grok_metrics(self, file_path: str | os.PathLike) -> None:
         """Opens a file and reads a groked file as a stream into the results
         holder
 
@@ -243,7 +282,7 @@ class PVPerformanceResults(PVResults):
         """
 
     @abstractmethod
-    def calculate_failures(self) -> dict[str, int]:
+    def calculate_failures(self) -> FailuresDict:
         """Abstract method to generate the failures and successes from the sim
 
         :return: Returns a dictionary of integers of the following fields:
@@ -268,7 +307,7 @@ class PVPerformanceResults(PVResults):
         """
 
     @abstractmethod
-    def calc_full_averages(self) -> dict[str, float]:
+    def calc_full_averages(self) -> AveragesDict:
         """Averages calculated in the data
 
         :return: Returns the dictionary of the following full avergaes of the
@@ -286,7 +325,7 @@ class PVPerformanceResults(PVResults):
 
     @abstractmethod
     def calculate_aggregated_results_dataframe(
-        self, time_window: int = 1
+        self, time_window: float | int = 1
     ) -> pd.DataFrame:
         """Abstract method to calculate the following aggregated results
         within bins of the specified time window in seconds. The dataframe has
@@ -304,7 +343,7 @@ class PVPerformanceResults(PVResults):
         when it is fully processed not when it is sent.
         :param time_window: The time window to use for aggregations, defaults
         to `1`
-        :type time_window: `int`, optional
+        :type time_window: `float | int`, optional
         :return: Returns a dataframe of the aggeragted results
         :rtype: :class:`pd`.`DataFrame`
         """
