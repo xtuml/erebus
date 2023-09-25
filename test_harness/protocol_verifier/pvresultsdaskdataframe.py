@@ -7,6 +7,7 @@
 # pylint: disable=W0613
 # pylint: disable=C0302
 # pylint: disable=C0114
+# pylint: disable=W0511
 from typing import Any, Optional
 
 import dask.dataframe as dd
