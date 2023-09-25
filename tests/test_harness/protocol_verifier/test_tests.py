@@ -11,6 +11,7 @@ import glob
 from datetime import datetime
 from io import StringIO
 from typing import Iterable
+from tempfile import NamedTemporaryFile
 
 import responses
 from aioresponses import aioresponses
@@ -24,36 +25,33 @@ from test_harness.protocol_verifier.tests import (
     FunctionalTest,
     PVResultsHandler,
     PVFunctionalResults,
-    PVResultsDataFrame
+)
+from test_harness.protocol_verifier.pvresultsdataframe import (
+    PVResultsDataFrame,
 )
 from test_harness.protocol_verifier.generate_test_files import (
-    generate_test_events_from_puml_files
+    generate_test_events_from_puml_files,
 )
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.utils import clean_directories
 
 # get test config
 test_config_path = os.path.join(
-    Path(__file__).parent.parent,
-    "config/test_config.config"
+    Path(__file__).parent.parent, "config/test_config.config"
 )
 
 # get path of tests uml file
 test_file_path = os.path.join(
-    Path(__file__).parent.parent / "test_files",
-    "test_uml_job_def.puml"
+    Path(__file__).parent.parent / "test_files", "test_uml_job_def.puml"
 )
 
 
 # grok file path
-grok_file = (
-    Path(__file__).parent.parent / "test_files" / "grok_file.txt"
-)
+grok_file = Path(__file__).parent.parent / "test_files" / "grok_file.txt"
 
 
 def check_numpy_expected_vs_actual(
-    expected_iterable: Iterable[float],
-    actual_iterable: Iterable[float]
+    expected_iterable: Iterable[float], actual_iterable: Iterable[float]
 ) -> None:
     """Method to check iterable of floats for equivalency
 
@@ -62,10 +60,7 @@ def check_numpy_expected_vs_actual(
     :param actual_iterable: Actual iterable
     :type actual_iterable: :class:`Iterable`[`float`]
     """
-    for expected, actual in zip(
-        expected_iterable,
-        actual_iterable
-    ):
+    for expected, actual in zip(expected_iterable, actual_iterable):
         if np.isnan(expected):
             assert np.isnan(actual)
         else:
@@ -73,28 +68,22 @@ def check_numpy_expected_vs_actual(
 
 
 class TestPVResultsDataFrame:
-    """Group of tests for :class:`PVResultsDataFrame`
-    """
+    """Group of tests for :class:`PVResultsDataFrame`"""
+
     @staticmethod
     def test_create_results_holder() -> None:
-        """Tests :class:`PVResultsDataFrame`.`create_results_holder`
-        """
+        """Tests :class:`PVResultsDataFrame`.`create_results_holder`"""
         results = PVResultsDataFrame()
         assert isinstance(results.results, pd.DataFrame)
 
     @staticmethod
     def test_create_event_result_row() -> None:
-        """Tests :class:`PVResultsDataFrame`.`create_event_result_row`
-        """
+        """Tests :class:`PVResultsDataFrame`.`create_event_result_row`"""
         results = PVResultsDataFrame()
         results.create_event_result_row("event_id")
         assert len(results.results) == 1
         assert "event_id" in results.results.index
-        assert (
-            set(
-                results.data_fields
-            ) == set(results.results.columns)
-        )
+        assert set(results.data_fields) == set(results.results.columns)
         for col in results.results.columns:
             assert pd.isnull(results.results.loc["event_id", col])
 
@@ -106,10 +95,7 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.create_event_result_row("event_id")
         results.update_event_results_with_event_id(
-            "event_id",
-            {
-                "job_id": "job_id"
-            }
+            "event_id", {"job_id": "job_id"}
         )
         assert results.results.loc["event_id", "job_id"] == "job_id"
 
@@ -121,23 +107,17 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.create_event_result_row("event_id")
         results.update_event_results_with_event_id(
-            "event_id",
-            {
-                "job_id": "job_id"
-            }
+            "event_id", {"job_id": "job_id"}
         )
         results.update_event_results_with_job_id(
-            "job_id",
-            {
-                "response": "a response"
-            }
+            "job_id", {"response": "a response"}
         )
         assert results.results.loc["event_id", "response"] == "a response"
 
     @staticmethod
     def test_add_first_event_data(
         start_time: datetime,
-        event_job_response_time_dicts: list[dict[str, str | datetime]]
+        event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`add_first_event_data`
 
@@ -151,14 +131,11 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.time_start = start_time
         for event_job_response_time_dict in event_job_response_time_dicts:
-            results.add_first_event_data(
-                **event_job_response_time_dict
-            )
+            results.add_first_event_data(**event_job_response_time_dict)
             event_id = event_job_response_time_dict["event_id"]
             job_id = event_job_response_time_dict["job_id"]
             time_sent = (
-                event_job_response_time_dict["time_completed"]
-                - start_time
+                event_job_response_time_dict["time_completed"] - start_time
             ).total_seconds()
             response = event_job_response_time_dict["response"]
             assert event_id in results.results.index
@@ -169,7 +146,7 @@ class TestPVResultsDataFrame:
     @staticmethod
     def test_update_from_sim(
         start_time: datetime,
-        event_job_response_time_dicts: list[dict[str, str | datetime]]
+        event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`update_from_sim`
 
@@ -189,12 +166,7 @@ class TestPVResultsDataFrame:
         response = "a response"
         results = PVResultsDataFrame()
         results.time_start = start_time
-        results.update_from_sim(
-            events,
-            job_id,
-            response,
-            time_completed
-        )
+        results.update_from_sim(events, job_id, response, time_completed)
         assert len(results.results) == 3
         assert set(results.results["job_id"]) == set(["job_id"])
         assert set(results.results["response"]) == set(["a response"])
@@ -208,7 +180,7 @@ class TestPVResultsDataFrame:
     @staticmethod
     def test_update_pv_sim_time_field(
         start_time: datetime,
-        event_job_response_time_dicts: list[dict[str, str | datetime]]
+        event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`update_pv_sim_time_field`
 
@@ -222,15 +194,13 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.time_start = start_time
         for event_job_response_time_dict in event_job_response_time_dicts:
-            results.add_first_event_data(
-                **event_job_response_time_dict
-            )
+            results.add_first_event_data(**event_job_response_time_dict)
             results.update_pv_sim_time_field(
                 "AER_start",
                 event_job_response_time_dict["time_completed"].strftime(
-                    '%Y-%m-%dT%H:%M:%S.%fZ'
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
                 ),
-                event_job_response_time_dict["event_id"]
+                event_job_response_time_dict["event_id"],
             )
         for _, row in results.results.iterrows():
             assert row["time_sent"] == row["AER_start"]
@@ -238,7 +208,7 @@ class TestPVResultsDataFrame:
     @staticmethod
     def test_read_groked_string(
         start_time: datetime,
-        event_job_response_time_dicts: list[dict[str, str | datetime]]
+        event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`update_read_groked_string`
 
@@ -252,7 +222,7 @@ class TestPVResultsDataFrame:
         groked_string_io = StringIO(
             "# TYPE grok_exporter_lines_matching_total counter\n"
             'grok_exporter_lines_matching_total{metric="svdc_event_received"}'
-            ' 15\n'
+            " 15\n"
             "# TYPE reception_event_received counter\n"
             'reception_event_received{event_id="205d5d7e-4eb7-4b8a-a638-'
             '1bd0a2ae6497",timestamp="2023-09-04T10:40:37.456217Z"} 1\n'
@@ -260,31 +230,26 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.time_start = start_time
         for event_job_response_time_dict in event_job_response_time_dicts:
-            results.add_first_event_data(
-                **event_job_response_time_dict
-            )
+            results.add_first_event_data(**event_job_response_time_dict)
         results.read_groked_string_io(groked_string_io)
         assert not pd.isnull(
             results.results.loc[
-                "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497",
-                "AER_start"
+                "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497", "AER_start"
             ]
         )
-        assert all(pd.isnull(
-            results.results.loc[
-                (
-                    results.results.index
-                    != "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497"
-                ),
-                "AER_start"
-            ]
-        ))
-        for col in results.data_fields[-3:]:
-            assert all(
-                pd.isnull(
-                    results.results[col]
-                )
+        assert all(
+            pd.isnull(
+                results.results.loc[
+                    (
+                        results.results.index
+                        != "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497"
+                    ),
+                    "AER_start",
+                ]
             )
+        )
+        for col in results.data_fields[-3:]:
+            assert all(pd.isnull(results.results[col]))
 
     @staticmethod
     def test_get_and_read_grok_metrics(
@@ -303,22 +268,14 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.time_start = start_time
         for event_job_response_time_dict in event_job_response_time_dicts:
-            results.add_first_event_data(
-                **event_job_response_time_dict
-            )
-        results.get_and_read_grok_metrics(
-            grok_file
-        )
+            results.add_first_event_data(**event_job_response_time_dict)
+        results.get_and_read_grok_metrics(grok_file)
         for col in results.data_fields[-4:]:
-            assert all(
-                ~pd.isnull(
-                    results.results[col]
-                )
-            )
+            assert all(~pd.isnull(results.results[col]))
 
     @staticmethod
     def test_create_response_time_fields(
-        results_dataframe: pd.DataFrame
+        results_dataframe: pd.DataFrame,
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`create_respone_time_fields`
 
@@ -329,19 +286,20 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.results = results_dataframe
         results.create_response_time_fields()
-        assert len(set(
-            ["full_response_time", "queue_time"]
-        ).difference(set(results.results.columns))) == 0
-        assert all(
-            results.results["full_response_time"] == 4.0
+        assert (
+            len(
+                set(["full_response_time", "queue_time"]).difference(
+                    set(results.results.columns)
+                )
+            )
+            == 0
         )
-        assert all(
-            results.results["queue_time"] == 1.0
-        )
+        assert all(results.results["full_response_time"] == 4.0)
+        assert all(results.results["queue_time"] == 1.0)
 
     @staticmethod
     def test_calculate_failures_no_failures(
-        results_dataframe: pd.DataFrame
+        results_dataframe: pd.DataFrame,
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`calculate_failures` with no
         failures
@@ -360,7 +318,7 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calculate_failures_th_failures(
-        results_dataframe: pd.DataFrame
+        results_dataframe: pd.DataFrame,
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`calculate_failures` with a th
         failure
@@ -380,7 +338,7 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calculate_failures_pv_failures(
-        results_dataframe: pd.DataFrame
+        results_dataframe: pd.DataFrame,
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`calculate_failures` with a pv
         failure
@@ -390,12 +348,9 @@ class TestPVResultsDataFrame:
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
         results = PVResultsDataFrame()
-        results_dataframe.loc["event_0", [
-            "AER_start",
-            "AER_end",
-            "AEOSVDC_start",
-            "AEOSVDC_end"
-        ]] = None
+        results_dataframe.loc[
+            "event_0", ["AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"]
+        ] = None
         results.results = results_dataframe
         results.create_response_time_fields()
         failures = results.calculate_failures()
@@ -404,9 +359,7 @@ class TestPVResultsDataFrame:
         assert failures["num_tests"] == 10
 
     @staticmethod
-    def test_calc_end_times_no_nans(
-        results_dataframe: pd.DataFrame
-    ) -> None:
+    def test_calc_end_times_no_nans(results_dataframe: pd.DataFrame) -> None:
         """Tests :class:`PVResultsDataFrame`.`calc_end_times` with no nan
         entries
 
@@ -423,9 +376,7 @@ class TestPVResultsDataFrame:
         assert end_times["aer_end"] == 11.0
 
     @staticmethod
-    def test_calc_end_times_nans(
-        results_dataframe: pd.DataFrame
-    ) -> None:
+    def test_calc_end_times_nans(results_dataframe: pd.DataFrame) -> None:
         """Tests :class:`PVResultsDataFrame`.`calc_end_times` with nan
         entries
 
@@ -443,9 +394,7 @@ class TestPVResultsDataFrame:
         assert end_times["aer_end"] == 11.0
 
     @staticmethod
-    def test_calc_full_averages(
-        results_dataframe: pd.DataFrame
-    ) -> None:
+    def test_calc_full_averages(results_dataframe: pd.DataFrame) -> None:
         """Tests :class:`PVResultsDataFrame`.`calc_full_averages`
 
         :param results_dataframe: Fixture providing a results dataframe with
@@ -464,7 +413,7 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calculate_aggregated_results_dataframe(
-        results_dataframe: pd.DataFrame
+        results_dataframe: pd.DataFrame,
     ) -> None:
         """Tests
         :class:`PVResultsDataFrame`.`calculate_aggregated_results_dataframe`
@@ -477,10 +426,8 @@ class TestPVResultsDataFrame:
         results.results = results_dataframe
         results.create_response_time_fields()
         results.end_times = results.calc_end_times()
-        aggregated_results = (
-            results.calculate_aggregated_results_dataframe(
-                time_window=1
-            )
+        aggregated_results = results.calculate_aggregated_results_dataframe(
+            time_window=1
         )
         assert len(aggregated_results) == 13
         for time_floor_val, time_val in enumerate(
@@ -490,34 +437,25 @@ class TestPVResultsDataFrame:
         expected_agg_sent_per_second = [1.0] * 10 + [0.0] * 3
         check_numpy_expected_vs_actual(
             expected_agg_sent_per_second,
-            aggregated_results["Events Sent (/s)"]
+            aggregated_results["Events Sent (/s)"],
         )
-        expected_agg_events_per_second = (
-            [0.0] * 4 + [1.0] * 8 + [2.0]
-        )
+        expected_agg_events_per_second = [0.0] * 4 + [1.0] * 8 + [2.0]
         check_numpy_expected_vs_actual(
             expected_agg_events_per_second,
-            aggregated_results["Events Processed (/s)"]
+            aggregated_results["Events Processed (/s)"],
         )
-        expected_agg_full_response_time = (
-            [np.nan] * 4 + [4.0] * 9
-        )
+        expected_agg_full_response_time = [np.nan] * 4 + [4.0] * 9
         check_numpy_expected_vs_actual(
             expected_agg_full_response_time,
-            aggregated_results["Response Time (s)"]
+            aggregated_results["Response Time (s)"],
         )
-        expected_agg_queue_time = (
-            [np.nan] + [1.0] * 10 + [np.nan] * 2
-        )
+        expected_agg_queue_time = [np.nan] + [1.0] * 10 + [np.nan] * 2
         check_numpy_expected_vs_actual(
-            expected_agg_queue_time,
-            aggregated_results["Queue Time (s)"]
+            expected_agg_queue_time, aggregated_results["Queue Time (s)"]
         )
 
     @staticmethod
-    def test_calc_all_results(
-        results_dataframe: pd.DataFrame
-    ) -> None:
+    def test_calc_all_results(results_dataframe: pd.DataFrame) -> None:
         """Tests :class:`PVResultsDataFrame`.`calc_all_results`
 
         :param results_dataframe: Fixture providing a results dataframe with
@@ -534,30 +472,26 @@ class TestPVResultsDataFrame:
 
 
 class TestPVResultsHandler:
-    """Group of tests for :class:`PVResultsHandler`
-    """
+    """Group of tests for :class:`PVResultsHandler`"""
+
     @staticmethod
     def test___enter__() -> None:
-        """Tests :class:`PVResultsHandler`.`__enter__`
-        """
+        """Tests :class:`PVResultsHandler`.`__enter__`"""
         harness_config = HarnessConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
-            results,
-            harness_config.report_file_store
+            results, harness_config.report_file_store
         )
         results_handler.__enter__()
         assert results_handler.daemon_thread.is_alive()
 
     @staticmethod
     def test___exit__() -> None:
-        """Tests :class:`PVResultsHandler`.`__exit__`
-        """
+        """Tests :class:`PVResultsHandler`.`__exit__`"""
         harness_config = HarnessConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
-            results,
-            harness_config.report_file_store
+            results, harness_config.report_file_store
         )
         results_handler.__enter__()
         results_handler.__exit__(None, None, None)
@@ -566,13 +500,13 @@ class TestPVResultsHandler:
 
     @staticmethod
     def test___exit___error() -> None:
-        """Tests :class:`PVResultsHandler`.`__exit__` when an error is thrown
+        """Tests
+        :class:`PVResultsHandler`.`__exit__` when an error is thrown
         """
         harness_config = HarnessConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
-            results,
-            harness_config.report_file_store
+            results, harness_config.report_file_store
         )
         results_handler.__enter__()
         with pytest.raises(RuntimeError) as e_info:
@@ -588,22 +522,17 @@ class TestPVResultsHandler:
         harness_config = HarnessConfig(test_config_path)
         results = PVFunctionalResults()
         with pytest.raises(RuntimeError) as e_info:
-            with PVResultsHandler(
-                results,
-                harness_config.report_file_store
-            ):
+            with PVResultsHandler(results, harness_config.report_file_store):
                 raise RuntimeError("An error")
         assert e_info.value.args[0] == "An error"
 
     @staticmethod
     def test_handle_result() -> None:
-        """Tests :class:`PVResultsHandler`.`handle_result`
-        """
+        """Tests :class:`PVResultsHandler`.`handle_result`"""
         harness_config = HarnessConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
-            results,
-            harness_config.report_file_store
+            results, harness_config.report_file_store
         )
         assert results_handler.queue.qsize() == 0
         object_in_queue = {}
@@ -619,32 +548,20 @@ class TestPVResultsHandler:
         harness_config = HarnessConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
-            results,
-            harness_config.report_file_store
+            results, harness_config.report_file_store
         )
-        job_info = {
-            "info": "some_info"
-        }
-        named_items = [
-            "a_file_name",
-            "jobId",
-            job_info,
-            "",
-            None
-        ]
+        job_info = {"info": "some_info"}
+        named_items = ["a_file_name", "jobId", job_info, "", None]
         attributes = [
             "file_names",
             "job_ids",
             "jobs_info",
             "responses",
-            "time_completed"
+            "time_completed",
         ]
         result_item = ([{}],) + tuple(named_items)
         results_handler.handle_item_from_queue(result_item)
-        for attr_name, item in zip(
-            attributes[:-1],
-            named_items[:-1]
-        ):
+        for attr_name, item in zip(attributes[:-1], named_items[:-1]):
             attr = getattr(results, attr_name)
             assert len(attr) == 1
             assert attr[0] == item
@@ -657,33 +574,20 @@ class TestPVResultsHandler:
         harness_config = HarnessConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
-            results,
-            harness_config.report_file_store,
-            save_files=True
+            results, harness_config.report_file_store, save_files=True
         )
-        job_info = {
-            "info": "some_info"
-        }
-        named_items = [
-            "a_file_name",
-            "jobId",
-            job_info,
-            "",
-            None
-        ]
+        job_info = {"info": "some_info"}
+        named_items = ["a_file_name", "jobId", job_info, "", None]
         attributes = [
             "file_names",
             "job_ids",
             "jobs_info",
             "responses",
-            "time_completed"
+            "time_completed",
         ]
         result_item = ([{}],) + tuple(named_items)
         results_handler.handle_item_from_queue(result_item)
-        for attr_name, item in zip(
-            attributes[:-1],
-            named_items[:-1]
-        ):
+        for attr_name, item in zip(attributes[:-1], named_items[:-1]):
             attr = getattr(results, attr_name)
             assert len(attr) == 1
             assert attr[0] == item
@@ -693,41 +597,27 @@ class TestPVResultsHandler:
         for file_name in files_to_remove:
             path = os.path.join(harness_config.report_file_store, file_name)
             assert os.path.exists(path)
-            os.remove(
-                path
-            )
-        assert not glob.glob(
-            "*.*", root_dir=harness_config.report_file_store
-        )
+            os.remove(path)
+        assert not glob.glob("*.*", root_dir=harness_config.report_file_store)
 
 
 def test_send_test_files_functional() -> None:
-    """Tests :class:`FunctionalTest`.`send_test_files`
-    """
+    """Tests :class:`FunctionalTest`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        }
-    })
+    test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
-        [test_file_path],
-        test_config=test_config
+        [test_file_path], test_config=test_config
     )
     with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url
-        )
+        mock.post(url=harness_config.pv_send_url)
         test = FunctionalTest(
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
         )
         with PVResultsHandler(
-            test.results,
-            test.test_output_directory,
-            test.save_files
+            test.results, test.test_output_directory, test.save_files
         ) as pv_results_handler:
             asyncio.run(test.send_test_files(pv_results_handler))
         assert len(test.results.responses) == 1
@@ -735,75 +625,55 @@ def test_send_test_files_functional() -> None:
 
 @responses.activate
 def test_run_test_functional() -> None:
-    """Tests :class:`FunctionalTest`.`run_test`
-    """
+    """Tests :class:`FunctionalTest`.`run_test`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        }
-    })
+    test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
-        [test_file_path],
-        test_config=test_config
+        [test_file_path], test_config=test_config
     )
     with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url
-        )
+        mock.post(url=harness_config.pv_send_url)
         responses.get(
             url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
+            json={"fileNames": ["Reception.log"]},
         )
         responses.post(
             url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         responses.get(
             url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
+            json={"fileNames": ["Verifier.log"]},
         )
         responses.post(
             url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         mock.get(
             url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
         mock.get(
             url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
         test = FunctionalTest(
             test_file_generators=test_events,
             test_config=test_config,
-            harness_config=harness_config
+            harness_config=harness_config,
         )
         asyncio.run(test.run_test())
         assert len(test.results.responses) == 1
         assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
         assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
         assert all(
-            coord == (1, 2)
-            for coord in test.pv_file_inspector.coords["aer"]
+            coord == (1, 2) for coord in test.pv_file_inspector.coords["aer"]
         )
         assert all(
-            coord == (1, 2)
-            for coord in test.pv_file_inspector.coords["ver"]
+            coord == (1, 2) for coord in test.pv_file_inspector.coords["ver"]
         )
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
@@ -811,60 +681,45 @@ def test_run_test_functional() -> None:
 
 @responses.activate
 def test_calc_results_functional():
-    """Tests :class:`FunctionalTest`.`calc_results`
-    """
+    """Tests :class:`FunctionalTest`.`calc_results`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
-        [test_file_path],
-        test_config=test_config
+        [test_file_path], test_config=test_config
     )
     with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
+        mock.post(url=harness_config.pv_send_url, repeat=True)
         responses.get(
             url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
+            json={"fileNames": ["Reception.log"]},
         )
         responses.post(
             url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         responses.get(
             url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
+            json={"fileNames": ["Verifier.log"]},
         )
         responses.post(
             url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         mock.get(
             url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
         mock.get(
             url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
         test = FunctionalTest(
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-            test_output_directory=harness_config.report_file_store
+            test_output_directory=harness_config.report_file_store,
         )
         asyncio.run(test.run_test())
         test.calc_results()
@@ -880,151 +735,125 @@ def test_calc_results_functional():
 
 
 def test_send_test_files_performance() -> None:
-    """Tests :class:`PerformanceTests`.`send_test_files`
-    """
+    """Tests :class:`PerformanceTests`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        },
-        "performance_options": {
-            "num_files_per_sec": 30,
-            "total_jobs": 20
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
         }
-    })
+    )
     test_events = generate_test_events_from_puml_files(
-        [test_file_path],
-        test_config=test_config
+        [test_file_path], test_config=test_config
     )
     with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        test = PerformanceTest(
-            test_file_generators=test_events,
-            test_config=test_config,
-            harness_config=harness_config,
-            test_output_directory=harness_config.report_file_store
-        )
+        mock.post(url=harness_config.pv_send_url, repeat=True)
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
+            test = PerformanceTest(
+                test_file_generators=test_events,
+                test_config=test_config,
+                harness_config=harness_config,
+                test_output_directory=harness_config.report_file_store,
+            )
 
-        with PVResultsHandler(
-            test.results,
-            test.test_output_directory,
-            test.save_files
-        ) as pv_results_handler:
-            asyncio.run(test.send_test_files(pv_results_handler))
-        assert len(test.results) == 60
+            with PVResultsHandler(
+                test.results, test.test_output_directory, test.save_files
+            ) as pv_results_handler:
+                asyncio.run(test.send_test_files(pv_results_handler))
+            assert len(test.results) == 60
 
 
 @responses.activate
 def test_run_test_performance() -> None:
-    """Tests :class:`PerformanceTests`.`run_tests`
-    """
+    """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        },
-        "performance_options": {
-            "num_files_per_sec": 30,
-            "total_jobs": 20
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
         }
-    })
+    )
     test_events = generate_test_events_from_puml_files(
-        [test_file_path],
-        test_config=test_config
+        [test_file_path], test_config=test_config
     )
     with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
+        mock.post(url=harness_config.pv_send_url, repeat=True)
         responses.get(
             url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
+            json={"fileNames": ["Reception.log"]},
         )
         responses.post(
             url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         responses.get(
             url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
+            json={"fileNames": ["Verifier.log"]},
         )
         responses.post(
             url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         mock.get(
             url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
         mock.get(
             url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
-        test = PerformanceTest(
-            test_file_generators=test_events,
-            test_config=test_config,
-            harness_config=harness_config,
-        )
-        asyncio.run(test.run_test())
-        assert len(test.results) == 60
-        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
-        assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-        assert all(
-            coord == (1, 2)
-            for coord in test.pv_file_inspector.coords["aer"]
-        )
-        assert all(
-            coord == (1, 2)
-            for coord in test.pv_file_inspector.coords["ver"]
-        )
-        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
-        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
+            test = PerformanceTest(
+                test_file_generators=test_events,
+                test_config=test_config,
+                harness_config=harness_config,
+            )
+            asyncio.run(test.run_test())
+            assert len(test.results) == 60
+            assert (
+                test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+            )
+            assert (
+                test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
+            )
+            assert all(
+                coord == (1, 2)
+                for coord in test.pv_file_inspector.coords["aer"]
+            )
+            assert all(
+                coord == (1, 2)
+                for coord in test.pv_file_inspector.coords["ver"]
+            )
+            os.remove(
+                os.path.join(harness_config.log_file_store, "Reception.log")
+            )
+            os.remove(
+                os.path.join(harness_config.log_file_store, "Verifier.log")
+            )
 
 
 @responses.activate
-def test_run_test_performance_calc_results(
-    grok_exporter_string: str
-) -> None:
-    """Tests :class:`PerformanceTests`.`calc_results`
-    """
+def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
+    """Tests :class:`PerformanceTests`.`calc_results`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        },
-        "performance_options": {
-            "num_files_per_sec": 30,
-            "total_jobs": 20
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
         }
-    })
+    )
     test_events = generate_test_events_from_puml_files(
-        [test_file_path],
-        test_config=test_config
+        [test_file_path], test_config=test_config
     )
     with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
+        mock.post(url=harness_config.pv_send_url, repeat=True)
         responses.add(
             responses.GET,
             harness_config.pv_grok_exporter_url,
@@ -1032,42 +861,30 @@ def test_run_test_performance_calc_results(
             status=200,
             headers={
                 "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
-            }
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
             },
         )
         responses.get(
             url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
+            json={"fileNames": ["Reception.log"]},
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={"fileNames": ["Reception.log"]},
         )
         responses.post(
             url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         responses.get(
             url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
+            json={"fileNames": ["Verifier.log"]},
         )
         responses.post(
             url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
-        payload_aer = {
-                "num_files": 2,
-                "t": 0
-            }
-        payload_ver = {
-                "num_files": 0,
-                "t": 0
-            }
+        payload_aer = {"num_files": 2, "t": 0}
+        payload_ver = {"num_files": 0, "t": 0}
 
         def callback_aer(*args, **kwargs) -> None:
             if payload_ver["num_files"] == 20:
@@ -1083,208 +900,185 @@ def test_run_test_performance_calc_results(
             url=harness_config.io_urls["aer"],
             payload=payload_aer,
             repeat=True,
-            callback=callback_aer
+            callback=callback_aer,
         )
         mock.get(
             url=harness_config.io_urls["ver"],
             payload=payload_ver,
             repeat=True,
-            callback=callback_ver
+            callback=callback_ver,
         )
-        test = PerformanceTest(
-            test_file_generators=test_events,
-            test_config=test_config,
-            harness_config=harness_config,
-            test_output_directory=harness_config.report_file_store
-        )
-        asyncio.run(test.run_test())
-        test.calc_results()
-        clean_directories(
-            [
-                harness_config.report_file_store,
-                harness_config.log_file_store
-            ]
-        )
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
+            test = PerformanceTest(
+                test_file_generators=test_events,
+                test_config=test_config,
+                harness_config=harness_config,
+                test_output_directory=harness_config.report_file_store,
+            )
+            asyncio.run(test.run_test())
+            test.calc_results()
+            clean_directories(
+                [
+                    harness_config.report_file_store,
+                    harness_config.log_file_store,
+                ]
+            )
 
 
 @responses.activate
 def test_run_test_performance_profile_job_batch() -> None:
-    """Tests :class:`PerformanceTests`.`run_tests`
-    """
+    """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        },
-        "performance_options": {
-            "num_files_per_sec": 30,
-            "total_jobs": 20
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
         }
-    })
-    test_events = generate_test_events_from_puml_files(
-        [test_file_path],
-        test_config=test_config
     )
-    profile = Profile(pd.DataFrame(
-            [
-                [0, 30],
-                [1, 30],
-                [2, 30]
-            ],
-            columns=["Time", "Number"]
-        )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    profile = Profile(
+        pd.DataFrame([[0, 30], [1, 30], [2, 30]], columns=["Time", "Number"])
     )
     with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
+        mock.post(url=harness_config.pv_send_url, repeat=True)
         responses.get(
             url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
+            json={"fileNames": ["Reception.log"]},
         )
         responses.post(
             url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         responses.get(
             url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
+            json={"fileNames": ["Verifier.log"]},
         )
         responses.post(
             url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         mock.get(
             url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
         mock.get(
             url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
-        test = PerformanceTest(
-            test_file_generators=test_events,
-            test_config=test_config,
-            harness_config=harness_config,
-            test_profile=profile
-        )
-        asyncio.run(test.run_test())
-        assert len(test.results) == 60
-        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
-        assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-        assert all(
-            coord == (1, 2)
-            for coord in test.pv_file_inspector.coords["aer"]
-        )
-        assert all(
-            coord == (1, 2)
-            for coord in test.pv_file_inspector.coords["ver"]
-        )
-        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
-        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
+            test = PerformanceTest(
+                test_file_generators=test_events,
+                test_config=test_config,
+                harness_config=harness_config,
+                test_profile=profile,
+            )
+            asyncio.run(test.run_test())
+            assert len(test.results) == 60
+            assert (
+                test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+            )
+            assert (
+                test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
+            )
+            assert all(
+                coord == (1, 2)
+                for coord in test.pv_file_inspector.coords["aer"]
+            )
+            assert all(
+                coord == (1, 2)
+                for coord in test.pv_file_inspector.coords["ver"]
+            )
+            os.remove(
+                os.path.join(harness_config.log_file_store, "Reception.log")
+            )
+            os.remove(
+                os.path.join(harness_config.log_file_store, "Verifier.log")
+            )
 
 
 @responses.activate
 def test_run_test_performance_profile_shard() -> None:
-    """Tests :class:`PerformanceTests`.`run_tests`
-    """
+    """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        },
-        "performance_options": {
-            "num_files_per_sec": 30,
-            "total_jobs": 20,
-            "shard": True
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {
+                "num_files_per_sec": 30,
+                "total_jobs": 20,
+                "shard": True,
+            },
         }
-    })
-    test_events = generate_test_events_from_puml_files(
-        [test_file_path],
-        test_config=test_config
     )
-    profile = Profile(pd.DataFrame(
-            [
-                [0, 30],
-                [1, 30],
-                [2, 30]
-            ],
-            columns=["Time", "Number"]
-        )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    profile = Profile(
+        pd.DataFrame([[0, 30], [1, 30], [2, 30]], columns=["Time", "Number"])
     )
     with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
+        mock.post(url=harness_config.pv_send_url, repeat=True)
         responses.get(
             url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
+            json={"fileNames": ["Reception.log"]},
         )
         responses.post(
             url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         responses.get(
             url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
+            json={"fileNames": ["Verifier.log"]},
         )
         responses.post(
             url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
+            body=b"test log",
         )
         mock.get(
             url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
         mock.get(
             url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
+            payload={"num_files": 2, "t": 1},
+            repeat=True,
         )
-        test = PerformanceTest(
-            test_file_generators=test_events,
-            test_config=test_config,
-            harness_config=harness_config,
-            test_profile=profile
-        )
-        asyncio.run(test.run_test())
-        assert len(test.results) == 60
-        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
-        assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-        assert all(
-            coord == (1, 2)
-            for coord in test.pv_file_inspector.coords["aer"]
-        )
-        assert all(
-            coord == (1, 2)
-            for coord in test.pv_file_inspector.coords["ver"]
-        )
-        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
-        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
+            test = PerformanceTest(
+                test_file_generators=test_events,
+                test_config=test_config,
+                harness_config=harness_config,
+                test_profile=profile,
+            )
+            asyncio.run(test.run_test())
+            assert len(test.results) == 60
+            assert (
+                test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+            )
+            assert (
+                test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
+            )
+            assert all(
+                coord == (1, 2)
+                for coord in test.pv_file_inspector.coords["aer"]
+            )
+            assert all(
+                coord == (1, 2)
+                for coord in test.pv_file_inspector.coords["ver"]
+            )
+            os.remove(
+                os.path.join(harness_config.log_file_store, "Reception.log")
+            )
+            os.remove(
+                os.path.join(harness_config.log_file_store, "Verifier.log")
+            )
