@@ -5,6 +5,7 @@
 # pylint: disable=W0613
 # pylint: disable=C0302
 # pylint: disable=C0114
+# pylint: disable=C0103
 from typing import Any
 
 import numpy as np
