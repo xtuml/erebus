@@ -67,10 +67,34 @@ class TestPVResultsDaskDataFrame:
     #     assert isinstance(results.results, pd.DaskDataFrame)
 
     @staticmethod
+    def test_reading_tables_from_the_same_db() -> None:
+        """
+        Tests that the table_name argument points data into different tables
+        of the same database.
+        """
+
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results1 = PVResultsDaskDataFrame(
+                f"sqlite:///{db_file.name}", table_name="table1"
+            )
+            results2 = PVResultsDaskDataFrame(
+                f"sqlite:///{db_file.name}", table_name="table2"
+            )
+            results1.update_event_results_with_event_id(
+                "event_id1", {"job_id": "foo"}
+            )
+            results2.update_event_results_with_event_id(
+                "event_id2", {"job_id": "bar"}
+            )
+            assert len(results1.results) == 1
+            assert len(results2.results) == 1
+
+    @staticmethod
     def test_create_event_result_row() -> None:
         """Tests :class:`PVResultsDaskDataFrame`.`create_event_result_row`"""
-        results = PVResultsDaskDataFrame()
-        results.create_event_result_row("event_id")
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results.create_event_result_row("event_id")
         # TODO consider what I need to test here, there's no great need to
         # implement this function, and it causes more complication than
         # benefits
@@ -337,13 +361,14 @@ class TestPVResultsDaskDataFrame:
         pv results and th results
         :type results_dataframe: :class:`pd`.`DaskDataFrame`
         """
-        results = PVResultsDaskDataFrame()
-        results.results = dd.from_pandas(results_dataframe, npartitions=1)
-        results.create_response_time_fields()
-        failures = results.calculate_failures()
-        assert failures["num_errors"] == 0
-        assert failures["num_failures"] == 0
-        assert failures["num_tests"] == 10
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results.results = dd.from_pandas(results_dataframe, npartitions=1)
+            results.create_response_time_fields()
+            failures = results.calculate_failures()
+            assert failures["num_errors"] == 0
+            assert failures["num_failures"] == 0
+            assert failures["num_tests"] == 10
 
     @staticmethod
     def test_calculate_failures_th_failures(
@@ -356,14 +381,15 @@ class TestPVResultsDaskDataFrame:
         pv results and th results
         :type results_dataframe: :class:`pd`.`DaskDataFrame`
         """
-        results = PVResultsDaskDataFrame()
-        results_dataframe.loc["event_0", "response"] = "error response"
-        results.results = dd.from_pandas(results_dataframe, npartitions=1)
-        results.create_response_time_fields()
-        failures = results.calculate_failures()
-        assert failures["num_errors"] == 1
-        assert failures["num_failures"] == 0
-        assert failures["num_tests"] == 10
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results_dataframe.loc["event_0", "response"] = "error response"
+            results.results = dd.from_pandas(results_dataframe, npartitions=1)
+            results.create_response_time_fields()
+            failures = results.calculate_failures()
+            assert failures["num_errors"] == 1
+            assert failures["num_failures"] == 0
+            assert failures["num_tests"] == 10
 
     @staticmethod
     def test_calculate_failures_pv_failures(
@@ -376,16 +402,18 @@ class TestPVResultsDaskDataFrame:
         pv results and th results
         :type results_dataframe: :class:`pd`.`DaskDataFrame`
         """
-        results = PVResultsDaskDataFrame()
-        results_dataframe.loc[
-            "event_0", ["AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"]
-        ] = None
-        results.results = dd.from_pandas(results_dataframe, npartitions=1)
-        results.create_response_time_fields()
-        failures = results.calculate_failures()
-        assert failures["num_errors"] == 0
-        assert failures["num_failures"] == 1
-        assert failures["num_tests"] == 10
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results_dataframe.loc[
+                "event_0",
+                ["AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"],
+            ] = None
+            results.results = dd.from_pandas(results_dataframe, npartitions=1)
+            results.create_response_time_fields()
+            failures = results.calculate_failures()
+            assert failures["num_errors"] == 0
+            assert failures["num_failures"] == 1
+            assert failures["num_tests"] == 10
 
     @staticmethod
     def test_calc_end_times_no_nans(results_dataframe: pd.DataFrame) -> None:
@@ -396,13 +424,14 @@ class TestPVResultsDaskDataFrame:
         pv results and th results
         :type results_dataframe: :class:`pd`.`DaskDataFrame`
         """
-        results = PVResultsDaskDataFrame()
-        results.results = dd.from_pandas(results_dataframe, npartitions=1)
-        results.create_response_time_fields()
-        end_times = results.calc_end_times()
-        assert end_times["th_end"] == 9.0
-        assert end_times["pv_end"] == 13.0
-        assert end_times["aer_end"] == 11.0
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results.results = dd.from_pandas(results_dataframe, npartitions=1)
+            results.create_response_time_fields()
+            end_times = results.calc_end_times()
+            assert end_times["th_end"] == 9.0
+            assert end_times["pv_end"] == 13.0
+            assert end_times["aer_end"] == 11.0
 
     @staticmethod
     def test_calc_end_times_nans(results_dataframe: pd.DataFrame) -> None:
@@ -413,14 +442,15 @@ class TestPVResultsDaskDataFrame:
         pv results and th results
         :type results_dataframe: :class:`pd`.`DaskDataFrame`
         """
-        results = PVResultsDaskDataFrame()
-        results_dataframe.loc["event_9", "AEOSVDC_end"] = None
-        results.results = dd.from_pandas(results_dataframe, npartitions=1)
-        results.create_response_time_fields()
-        end_times = results.calc_end_times()
-        assert end_times["th_end"] == 9.0
-        assert end_times["pv_end"] == 12.0
-        assert end_times["aer_end"] == 11.0
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results_dataframe.loc["event_9", "AEOSVDC_end"] = None
+            results.results = dd.from_pandas(results_dataframe, npartitions=1)
+            results.create_response_time_fields()
+            end_times = results.calc_end_times()
+            assert end_times["th_end"] == 9.0
+            assert end_times["pv_end"] == 12.0
+            assert end_times["aer_end"] == 11.0
 
     @staticmethod
     def test_calc_full_averages(results_dataframe: pd.DataFrame) -> None:
@@ -430,15 +460,16 @@ class TestPVResultsDaskDataFrame:
         pv results and th results
         :type results_dataframe: :class:`pd`.`DaskDataFrame`
         """
-        results = PVResultsDaskDataFrame()
-        results.results = dd.from_pandas(results_dataframe, npartitions=1)
-        results.create_response_time_fields()
-        results.end_times = results.calc_end_times()
-        averages = results.calc_full_averages()
-        assert averages["average_sent_per_sec"] == 10 / 9
-        assert averages["average_processed_per_sec"] == 10 / 13.0
-        assert averages["average_queue_time"] == 1.0
-        assert averages["average_response_time"] == 4.0
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results.results = dd.from_pandas(results_dataframe, npartitions=1)
+            results.create_response_time_fields()
+            results.end_times = results.calc_end_times()
+            averages = results.calc_full_averages()
+            assert averages["average_sent_per_sec"] == 10 / 9
+            assert averages["average_processed_per_sec"] == 10 / 13.0
+            assert averages["average_queue_time"] == 1.0
+            assert averages["average_response_time"] == 4.0
 
     @staticmethod
     def test_calculate_aggregated_results_dataframe(
@@ -451,37 +482,38 @@ class TestPVResultsDaskDataFrame:
         pv results and th results
         :type results_dataframe: :class:`pd`.`DaskDataFrame`
         """
-        results = PVResultsDaskDataFrame()
-        results.results = dd.from_pandas(results_dataframe, npartitions=1)
-        results.create_response_time_fields()
-        results.end_times = results.calc_end_times()
-        aggregated_results = results.calculate_aggregated_results_dataframe(
-            time_window=1
-        )
-        assert len(aggregated_results) == 13
-        for time_floor_val, time_val in enumerate(
-            aggregated_results["Time (s)"]
-        ):
-            assert time_val == time_floor_val + 0.5
-        expected_agg_sent_per_second = [1.0] * 10 + [0.0] * 3
-        check_numpy_expected_vs_actual(
-            expected_agg_sent_per_second,
-            aggregated_results["Events Sent (/s)"],
-        )
-        expected_agg_events_per_second = [0.0] * 4 + [1.0] * 8 + [2.0]
-        check_numpy_expected_vs_actual(
-            expected_agg_events_per_second,
-            aggregated_results["Events Processed (/s)"],
-        )
-        expected_agg_full_response_time = [np.nan] * 4 + [4.0] * 9
-        check_numpy_expected_vs_actual(
-            expected_agg_full_response_time,
-            aggregated_results["Response Time (s)"],
-        )
-        expected_agg_queue_time = [np.nan] + [1.0] * 10 + [np.nan] * 2
-        check_numpy_expected_vs_actual(
-            expected_agg_queue_time, aggregated_results["Queue Time (s)"]
-        )
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results.results = dd.from_pandas(results_dataframe, npartitions=1)
+            results.create_response_time_fields()
+            results.end_times = results.calc_end_times()
+            aggregated_results = (
+                results.calculate_aggregated_results_dataframe(time_window=1)
+            )
+            assert len(aggregated_results) == 13
+            for time_floor_val, time_val in enumerate(
+                aggregated_results["Time (s)"]
+            ):
+                assert time_val == time_floor_val + 0.5
+            expected_agg_sent_per_second = [1.0] * 10 + [0.0] * 3
+            check_numpy_expected_vs_actual(
+                expected_agg_sent_per_second,
+                aggregated_results["Events Sent (/s)"],
+            )
+            expected_agg_events_per_second = [0.0] * 4 + [1.0] * 8 + [2.0]
+            check_numpy_expected_vs_actual(
+                expected_agg_events_per_second,
+                aggregated_results["Events Processed (/s)"],
+            )
+            expected_agg_full_response_time = [np.nan] * 4 + [4.0] * 9
+            check_numpy_expected_vs_actual(
+                expected_agg_full_response_time,
+                aggregated_results["Response Time (s)"],
+            )
+            expected_agg_queue_time = [np.nan] + [1.0] * 10 + [np.nan] * 2
+            check_numpy_expected_vs_actual(
+                expected_agg_queue_time, aggregated_results["Queue Time (s)"]
+            )
 
     @staticmethod
     def test_calc_all_results(results_dataframe: pd.DataFrame) -> None:
@@ -491,10 +523,11 @@ class TestPVResultsDaskDataFrame:
         pv results and th results
         :type results_dataframe: :class:`pd`.`DaskDataFrame`
         """
-        results = PVResultsDaskDataFrame()
-        results.results = dd.from_pandas(results_dataframe, npartitions=1)
-        results.calc_all_results()
-        assert results.end_times is not None
-        assert results.failures is not None
-        assert results.full_averages is not None
-        assert results.agg_results is not None
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            results = PVResultsDaskDataFrame(f"sqlite:///{db_file.name}")
+            results.results = dd.from_pandas(results_dataframe, npartitions=1)
+            results.calc_all_results()
+            assert results.end_times is not None
+            assert results.failures is not None
+            assert results.full_averages is not None
+            assert results.agg_results is not None

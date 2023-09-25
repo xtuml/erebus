@@ -17,7 +17,6 @@ import math
 from datetime import datetime
 import glob
 
-
 import matplotlib.pyplot as plt
 import flatdict
 import pandas as pd
@@ -45,12 +44,13 @@ from test_harness.simulator.simulator_profile import Profile
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
 from test_harness.reporting.report_results import (
-    generate_performance_test_reports
+    generate_performance_test_reports,
 )
 from test_harness.requests import send_get_request, download_file_to_path
 from .pvresults import PVResults
 from .pvresultshandler import PVResultsHandler
 from .pvperformanceresults import PVPerformanceResults
+# from .pvresultsdaskdataframe import PVResultsDaskDataFrame
 from .pvresultsdataframe import PVResultsDataFrame
 from .pvfunctionalresults import PVFunctionalResults
 
@@ -109,10 +109,8 @@ class Test(ABC):
         self.sim_data_generator: Generator[SimDatum, Any, None] | None = None
         if save_files and not test_output_directory:
             logging.getLogger().warning(
-                (
-                    "Save files has been set but there is not output directory"
-                    " for tests"
-                )
+                "Save files has been set but there is not output directory"
+                " for tests"
             )
         self.save_files = (
             save_files if save_files and test_output_directory else False
@@ -292,19 +290,12 @@ class Test(ABC):
         """Method to cal the results and save reports for the test"""
 
     def save_log_files_to_test_output_directory(self) -> None:
-        """Method to copy all log files to the test output directory
-        """
-        files = glob.glob(
-            "*.*",
-            root_dir=self.harness_config.log_file_store
-        )
+        """Method to copy all log files to the test output directory"""
+        files = glob.glob("*.*", root_dir=self.harness_config.log_file_store)
         for file in files:
             shutil.copy(
-                os.path.join(
-                    self.harness_config.log_file_store,
-                    file
-                ),
-                self.test_output_directory
+                os.path.join(self.harness_config.log_file_store, file),
+                self.test_output_directory,
             )
 
     def clean_directories(self) -> None:
@@ -314,7 +305,7 @@ class Test(ABC):
                 self.harness_config.uml_file_store,
                 self.harness_config.log_file_store,
                 self.harness_config.profile_store,
-                self.harness_config.test_file_store
+                self.harness_config.test_file_store,
             ]
         )
         try:
@@ -328,9 +319,11 @@ class Test(ABC):
             )
             if not response_tuple[0]:
                 logging.getLogger().warning(
-                    "There was an error with the request to clean up PV"
-                    "folders"
-                    " for next test with request response: %s",
+                    (
+                        "There was an error with the request to clean up PV"
+                        "folders"
+                        " for next test with request response: %s"
+                    ),
                     response_tuple[2].text,
                 )
         except ReadTimeout:
@@ -413,7 +406,8 @@ class FunctionalTest(Test):
         return self.job_templates
 
     def set_test_rate(self) -> None:
-        """Method to set the test interval at the default value of 0.1 seconds
+        """Method to set the test interval at the default value of 0.1
+        seconds
         """
         self.interval = 0.1
         self.shard = False
@@ -511,8 +505,11 @@ class PerformanceTest(Test):
             save_files=False,
             test_profile=test_profile,
         )
+    # TODO: implement function
+    # def set_results_holder(self) -> PVResultsDaskDataFrame:
+    #     return PVResultsDaskDataFrame()
 
-    def set_results_holder(self) -> PVPerformanceResults:
+    def set_results_holder(self) -> PVResultsDataFrame:
         return PVResultsDataFrame()
 
     def _get_sim_data(
@@ -585,12 +582,9 @@ class PerformanceTest(Test):
             self.harness_config.log_file_store, "grok.txt"
         )
         download_file_to_path(
-            self.harness_config.pv_grok_exporter_url,
-            grok_file_path
+            self.harness_config.pv_grok_exporter_url, grok_file_path
         )
-        self.results.get_and_read_grok_metrics(
-            grok_file_path
-        )
+        self.results.get_and_read_grok_metrics(grok_file_path)
 
     def get_report_files_from_results(self) -> tuple[str, str]:
         """Methodot get the reports from the results
@@ -604,37 +598,40 @@ class PerformanceTest(Test):
             results=self.results.failures,
             properties={
                 **self.results.end_times,
-                **self.results.full_averages
-            }
+                **self.results.full_averages,
+            },
         )
         return html_report, xml_report
 
     def calc_results(self) -> None:
-        """Method to calc results and generate reports from the results
-        """
+        """Method to calc results and generate reports from the results"""
         self.get_all_simulation_data()
         html_report, xml_report = self.get_report_files_from_results()
         # get events sent vs events processed figure
         sent_vs_processed = self.make_fig_melt(
-            self.results.agg_results[[
-                "Time (s)",
-                "Events Sent (/s)",
-                "Events Processed (/s)",
-            ]],
+            self.results.agg_results[
+                [
+                    "Time (s)",
+                    "Events Sent (/s)",
+                    "Events Processed (/s)",
+                ]
+            ],
             x_col="Time (s)",
             y_axis_name="Events/s",
             color_group_name="Metric",
         )
         # get aggregated event response and queue times figure
         reponse_vs_queue = self.make_fig_melt(
-            self.results.agg_results[[
-                "Time (s)",
-                "Queue Time (s)",
-                "Response Time (s)",
-            ]],
+            self.results.agg_results[
+                [
+                    "Time (s)",
+                    "Queue Time (s)",
+                    "Response Time (s)",
+                ]
+            ],
             x_col="Time (s)",
             y_axis_name="Time period (s)",
-            color_group_name="Metric"
+            color_group_name="Metric",
         )
         # deliver the report files
         deliver_test_report_files(
@@ -643,7 +640,7 @@ class PerformanceTest(Test):
                 "Report.html": html_report,
                 "EventsSentVSProcessed.html": sent_vs_processed,
                 "ResponseAndQueueTime.html": reponse_vs_queue,
-                "AggregatedResults.csv": self.results.agg_results
+                "AggregatedResults.csv": self.results.agg_results,
             },
             output_directory=self.test_output_directory,
         )
@@ -653,7 +650,7 @@ class PerformanceTest(Test):
         df_un_melted: pd.DataFrame,
         x_col: str,
         y_axis_name: str,
-        color_group_name: str
+        color_group_name: str,
     ) -> Figure:
         """Melt a dataframe identifying an x axis column to melt against. Plot
         a line graph using an identifier y axis and color group columns.
@@ -674,15 +671,13 @@ class PerformanceTest(Test):
         :rtype: :class:`Figure`
         """
         melted_df = df_un_melted.melt(
-            id_vars=[x_col],
-            var_name=color_group_name,
-            value_name=y_axis_name
+            id_vars=[x_col], var_name=color_group_name, value_name=y_axis_name
         )
         fig = px.line(
             melted_df,
             x=x_col,
             y=y_axis_name,
             color=color_group_name,
-            markers=True
+            markers=True,
         )
         return fig

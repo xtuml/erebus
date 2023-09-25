@@ -10,6 +10,7 @@ import shutil
 import threading
 import time
 import json
+from tempfile import NamedTemporaryFile
 
 import pytest
 import responses
@@ -275,14 +276,16 @@ def test_puml_files_performance_with_input_profile(
         profile.load_raw_profile_from_file_path(test_csv_file_path_1)
         thread = threading.Thread(target=update_payload, args=[3], daemon=True)
         thread.start()
-        puml_files_test(
-            puml_file_paths=[test_file_path],
-            test_output_directory=harness_config.report_file_store,
-            harness_config=harness_config,
-            test_config=test_config,
-            profile=profile
-        )
-        thread.join()
+        with NamedTemporaryFile(suffix='.db') as db_file:
+            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
+            puml_files_test(
+                puml_file_paths=[test_file_path],
+                test_output_directory=harness_config.report_file_store,
+                harness_config=harness_config,
+                test_config=test_config,
+                profile=profile
+            )
+            thread.join()
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
             "Verifier.log",

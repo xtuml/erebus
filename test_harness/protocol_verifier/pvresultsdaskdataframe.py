@@ -9,6 +9,8 @@
 # pylint: disable=C0114
 # pylint: disable=W0511
 from typing import Any, Optional
+import os
+import logging
 
 import dask.dataframe as dd
 import dataset
@@ -23,18 +25,48 @@ from .pvperformanceresults import (
 )
 
 
+logger = logging.getLogger()
+
+
 class PVResultsDaskDataFrame(PVPerformanceResults):
     """Sub class of :class:`PVPerformanceResults: to get perfromance results
     using a dask dataframe as the results holder.
     """
+    data_field_data_type = {
+        "event_id": 'str',
+        "job_id": 'str',
+        "time_sent": 'float',
+        "response": 'str',
+        "AER_start": 'float',
+        "AER_end": 'float',
+        "AEOSVDC_start": 'float',
+        "AEOSVDC_end": 'float',
+        "full_response_time": 'float',
+        "queue_time": 'float'
+    }
 
     def __init__(
         self,
         # TODO figure out why the mode=memory&cache=shared query params are being ignored
-        sqlite_address="sqlite:///tmp.db?mode=memory&cache=shared",
+        sqlite_address: str | None = None,
+        table_name: str = "results",
     ) -> None:
         """Constructor method"""
-        self.sqlite_address = sqlite_address
+        if sqlite_address is None:
+            logger.info("Using PV_RESULTS_DB_ADDRESS database address")
+            try:
+                self.sqlite_address = os.environ["PV_RESULTS_DB_ADDRESS"]
+            except KeyError as error:
+                logger.error(
+                    "PV_RESULTS_DB_ADDRESS environment variable is not set and"
+                    " is required when no sqlite database address is specified"
+                    " for PVResultsDaskDataFrame."
+                )
+                raise error
+        else:
+            self.sqlite_address = sqlite_address
+        
+        self.table_name = table_name
         self.create_results_holder()
         self._results: Optional[dd.DataFrame] = None
         super().__init__()
@@ -50,7 +82,15 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
         if self._results is not None:
             return self._results
         return dd.read_sql_table(
-            "results", self.sqlite_address, index_col="id"
+            self.table_name, self.sqlite_address, index_col="id",
+            meta=dd.from_pandas(pd.DataFrame(
+                {
+                    key: pd.Series(dtype=value)
+                    for key, value in self.data_field_data_type.items()
+                }
+            ),
+            npartitions=1
+            )
         )
 
     @results.setter
@@ -78,10 +118,13 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
         #     for field in self.data_fields:
         #         table.create_column(field, db.types.string)
 
-        # with dataset.connect(self.sqlite_address) as db:
-        #     t: dataset.Table = db.get_table('results')
-        #     assert t.columns, t.columns
-        #     # db.create_table("results", self.data_fields)
+        with dataset.connect(self.sqlite_address) as database:
+            table: dataset.Table = database.get_table(self.table_name)
+            for column, dtype in self.data_field_data_type.items():
+                table.create_column(
+                    name=column,
+                    type=database.types.string if dtype == 'str' else database.types.float
+                ) 
 
     def create_event_result_row(self, event_id: str) -> None:
         """Method to create a row in the results holder based on an
@@ -106,7 +149,7 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
         """
 
         with dataset.connect(self.sqlite_address) as database:
-            table: dataset.Table = database["results"]
+            table: dataset.Table = database[self.table_name]
             table.upsert({"event_id": event_id, **update_values}, ["event_id"])
 
     def update_event_results_with_job_id(
@@ -121,7 +164,7 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
         :type update_values: `dict`[`str`, `Any`]
         """
         with dataset.connect(self.sqlite_address) as database:
-            table: dataset.Table = database["results"]
+            table: dataset.Table = database[self.table_name]
             table.create_column("event_id", database.types.string)
             table.upsert({"job_id": job_id, **update_values}, ["job_id"])
 
