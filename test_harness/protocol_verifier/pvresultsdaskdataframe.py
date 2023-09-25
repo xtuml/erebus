@@ -106,8 +106,8 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
         """
 
         with dataset.connect(self.sqlite_address) as database:
-            t: dataset.Table = database["results"]
-            t.upsert({"event_id": event_id, **update_values}, ["event_id"])
+            table: dataset.Table = database["results"]
+            table.upsert({"event_id": event_id, **update_values}, ["event_id"])
 
     def update_event_results_with_job_id(
         self, job_id: str, update_values: dict[str, Any]
@@ -121,9 +121,9 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
         :type update_values: `dict`[`str`, `Any`]
         """
         with dataset.connect(self.sqlite_address) as database:
-            t: dataset.Table = database["results"]
-            t.create_column("event_id", database.types.string)
-            t.upsert({"job_id": job_id, **update_values}, ["job_id"])
+            table: dataset.Table = database["results"]
+            table.create_column("event_id", database.types.string)
+            table.upsert({"job_id": job_id, **update_values}, ["job_id"])
 
     def create_response_time_fields(self) -> None:
         """Method used to create response fields in the results holder
