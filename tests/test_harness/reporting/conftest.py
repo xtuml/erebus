@@ -1,4 +1,5 @@
 # pylint: disable=W0621
+# pylint: disable=C0301
 """Fixtures for reporting tests
 """
 import pytest
@@ -22,9 +23,8 @@ def validity_df() -> pd.DataFrame:
         ["job_5", "job_name", False, "MissingEdges", "file_5"],
     ]
     validity = pd.DataFrame(
-        data, columns=[
-            "JobId", "SequenceName", "Validity", "Category", "FileName"
-        ]
+        data,
+        columns=["JobId", "SequenceName", "Validity", "Category", "FileName"],
     )
     validity.set_index("JobId", inplace=True)
     return validity
@@ -403,7 +403,7 @@ def expected_html_string() -> str:
 def report_files_mapping(
     expected_results: pd.DataFrame,
     expected_junit_string: str,
-    expected_html_string: str
+    expected_html_string: str,
 ) -> dict[str, str | pd.DataFrame]:
     """Fixture providing a dictionary mapping file name to file
 
@@ -419,5 +419,185 @@ def report_files_mapping(
     return {
         "test.csv": expected_results,
         "test.xml": expected_junit_string,
-        "test.html": expected_html_string
+        "test.html": expected_html_string,
     }
+
+
+@pytest.fixture
+def pass_performance_results() -> dict[str, int]:
+    """Fixture to provide performance test results
+
+    :return: The results
+    :rtype: `dict`[`str`, `int`]
+    """
+    return {
+        "num_tests": 5,
+        "num_failures": 0,
+        "num_errors": 0
+    }
+
+
+@pytest.fixture
+def expected_performance_xml_pass() -> str:
+    """Expected xml for a pass
+
+    :return: The xml string
+    :rtype: `str`
+    """
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<testsuites name="Performance tests run" tests="5" failures="0"'
+        ' errors="0">\n'
+        '    <testsuite name="Performance test run" tests="5" failures="0"'
+        ' errors="0">\n'
+        '        <properties>\n'
+        '            <property name="num_tests" value="5"/>\n'
+        '            <property name="num_failures" value="0"/>\n'
+        '            <property name="num_errors" value="0"/>\n'
+        '        </properties>\n'
+        '        <testcase name="Run Result" classname="Performance test run"'
+        ' />\n'
+        '    </testsuite>\n'
+        '</testsuites>'
+    )
+
+
+@pytest.fixture
+def fail_performance_results() -> dict[str, int]:
+    """Fixture to provide performance test results with a fail
+
+    :return: The results
+    :rtype: `dict`[`str`, `int`]
+    """
+    return {
+        "num_tests": 5,
+        "num_failures": 1,
+        "num_errors": 0
+    }
+
+
+@pytest.fixture
+def expected_performance_xml_fail() -> str:
+    """Expected xml for a fail
+
+    :return: The xml string
+    :rtype: `str`
+    """
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<testsuites name="Performance tests run" tests="5" failures="1"'
+        ' errors="0">\n'
+        '    <testsuite name="Performance test run" tests="5" failures="1"'
+        ' errors="0">\n'
+        '        <properties>\n'
+        '            <property name="num_tests" value="5"/>\n'
+        '            <property name="num_failures" value="1"/>\n'
+        '            <property name="num_errors" value="0"/>\n'
+        '        </properties>\n'
+        '        <testcase name="Run Result" classname="Performance test'
+        ' run">\n'
+        '            <failure message="The protocol verifier failed to process'
+        ' some events" type="PVError">\n'
+        '                1 of 5 events failed to be processed correctly by the'
+        ' PV\n'
+        '            </failure>\n'
+        '        </testcase>\n'
+        '    </testsuite>\n'
+        '</testsuites>'
+    )
+
+
+@pytest.fixture
+def error_performance_results() -> dict[str, int]:
+    """Fixture to provide performance test results with a error
+
+    :return: The results
+    :rtype: `dict`[`str`, `int`]
+    """
+    return {
+        "num_tests": 5,
+        "num_failures": 1,
+        "num_errors": 1
+    }
+
+
+@pytest.fixture
+def expected_performance_xml_error() -> str:
+    """Expected xml for an error
+
+    :return: The xml string
+    :rtype: `str`
+    """
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<testsuites name="Performance tests run" tests="5" failures="1"'
+        ' errors="1">\n'
+        '    <testsuite name="Performance test run" tests="5" failures="1"'
+        ' errors="1">\n'
+        '        <properties>\n'
+        '            <property name="num_tests" value="5"/>\n'
+        '            <property name="num_failures" value="1"/>\n'
+        '            <property name="num_errors" value="1"/>\n'
+        '        </properties>\n'
+        '        <testcase name="Run Result" classname="Performance test'
+        ' run">\n'
+        '            <error message="The Test Harness failed to successfully'
+        ' send some events" type="THError">\n'
+        '                1 of 5 events failed to be sent correctly by the Test'
+        ' Harness\n'
+        '            </error>\n'
+        '        </testcase>\n'
+        '    </testsuite>\n'
+        '</testsuites>'
+    )
+
+
+@pytest.fixture
+def performance_junit_properties() -> dict[str, float]:
+    """Extra properties for the junit xml
+
+    :return: Dictionary of properties
+    :rtype: `dict`[`str`, `float`]
+    """
+    return {
+        "th_end_time": 20.0,
+        "aer_end_time": 30.0,
+        "pv_end_time": 40.0,
+        "average_sent_per_sec": 12.0,
+        "average_processed_per_sec": 12.0,
+        "average_queue_time": 1.0,
+        "average_response_time": 1.0
+    }
+
+
+@pytest.fixture
+def expected_performance_xml_properties() -> str:
+    """Expected xml for with extra properties
+
+    :return: The xml string
+    :rtype: `str`
+    """
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<testsuites name="Performance tests run" tests="5" failures="0"'
+        ' errors="0">\n'
+        '    <testsuite name="Performance test run" tests="5" failures="0"'
+        ' errors="0">\n'
+        '        <properties>\n'
+        '            <property name="num_tests" value="5"/>\n'
+        '            <property name="num_failures" value="0"/>\n'
+        '            <property name="num_errors" value="0"/>\n'
+        '            <property name="th_end_time" value="20.0"/>\n'
+        '            <property name="aer_end_time" value="30.0"/>\n'
+        '            <property name="pv_end_time" value="40.0"/>\n'
+        '            <property name="average_sent_per_sec" value="12.0"/>\n'
+        '            <property name="average_processed_per_sec"'
+        ' value="12.0"/>\n'
+        '            <property name="average_queue_time" value="1.0"/>\n'
+        '            <property name="average_response_time" value="1.0"/>\n'
+        '        </properties>\n'
+        '        <testcase name="Run Result" classname="Performance test run"'
+        ' />\n'
+        '    </testsuite>\n'
+        '</testsuites>'
+    )

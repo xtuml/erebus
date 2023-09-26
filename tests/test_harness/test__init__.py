@@ -21,6 +21,10 @@ test_config_path = os.path.join(
 input_resources = Path(__file__).parent / "test_files"
 # get uml_file_store in tests folder
 output_resources = Path(__file__).parent / "uml_file_store"
+# test file output resource
+test_file_output_resources = Path(__file__).parent / "test_file_store"
+# get profile file store
+output_profile_resources = Path(__file__).parent / "profile_store"
 
 
 def get_file_data(
@@ -181,8 +185,8 @@ def test_shared_file_name(client: FlaskClient) -> None:
 def test_successful_upload(client: FlaskClient) -> None:
     """Test a successful upload of multiple files
 
-    :param client: _description_
-    :type client: FlaskClient
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
     """
     data = get_multi_file_data(
         [
@@ -211,6 +215,57 @@ def test_successful_upload(client: FlaskClient) -> None:
     os.remove(os.path.join(output_resources, "test_uml_2.puml"))
 
 
+def test_upload_profile_two_profiles(client: FlaskClient) -> None:
+    """Test an unsuccessful upload of two profiles
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    data = get_multi_file_data(
+        [
+            ("file1", "test_profile.csv", None),
+            ("file2", "test_profile_2.csv", None),
+        ]
+    )
+
+    response = post_multi_form_data(
+        client,
+        data,
+        "/upload/profile"
+    )
+    assert response.data == (
+        b"More than two files uploaded. A single file is required\n"
+    )
+    assert response.status_code == 400
+
+
+def test_upload_profile_successful(client: FlaskClient) -> None:
+    """Test a successful upload of a profile
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    data = get_multi_file_data(
+        [
+            ("file1", "test_profile.csv", None)
+        ]
+    )
+
+    response = post_multi_form_data(
+        client,
+        data,
+        "/upload/profile"
+    )
+    assert response.data == b"Files uploaded successfully\n"
+    assert response.status_code == 200
+
+    assert file_content_compare(
+       os.path.join(input_resources, "test_profile.csv"),
+       os.path.join(output_profile_resources, "test_profile.csv"),
+    )
+    os.remove(os.path.join(output_profile_resources, "test_profile.csv"))
+
+
 def test_create_output_directory_does_not_exist() -> None:
     """Tests `create_test_output_directory` when the output directory does not
     exist
@@ -230,3 +285,41 @@ def test_create_output_directory_does_not_exist() -> None:
     assert directory_path == expected_path
     assert os.path.exists(expected_path)
     os.rmdir(directory_path)
+
+
+def test_successful_test_files_upload(client: FlaskClient) -> None:
+    """Test a successful upload of multiple files for the endpoint
+    `/upload/test-files`
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    data = get_multi_file_data(
+        [
+            ("file1", "test_uml_1_events.json", None),
+            ("file2", "test_uml_2_events.json", None)
+        ]
+    )
+
+    response = post_multi_form_data(
+        client,
+        data,
+        "/upload/test-files"
+    )
+    assert response.data == b"Files uploaded successfully\n"
+    assert response.status_code == 200
+
+    assert file_content_compare(
+       os.path.join(input_resources, "test_uml_1_events.json"),
+       os.path.join(test_file_output_resources, "test_uml_1_events.json"),
+    )
+    os.remove(os.path.join(
+        test_file_output_resources, "test_uml_1_events.json"
+    ))
+    assert file_content_compare(
+       os.path.join(input_resources, "test_uml_2_events.json"),
+       os.path.join(test_file_output_resources, "test_uml_2_events.json"),
+    )
+    os.remove(os.path.join(
+        test_file_output_resources, "test_uml_2_events.json"
+    ))

@@ -7,7 +7,7 @@ import pytest
 from aioresponses import aioresponses
 
 
-from test_harness.process_manager.calc_pv_finish import pv_inspector_io
+from test_harness.protocol_verifier.calc_pv_finish import pv_inspector_io
 
 
 logging.basicConfig(level=logging.INFO)

@@ -11,6 +11,14 @@ Let people know what your project can do specifically. Provide context and add a
 ## Installation and Image Build
 ***
 
+### Quickstart
+On MacOS, you can run the test harness with:
+```sh
+ssh-add --apple-use-keychain ~/.ssh/id_rsa # Add your private key used for SSH to apple keychain
+docker compose up --build
+```
+NOTE: If the above doesn't work, check that you can access gitlab via git without user interaction (e.g. if you've added your SSH key to the apple keychain).
+
 ### <b>Pre-requisites</b>
 To install and build this project one must have the following pre-requisites:
 * python 3.11 (https://docs.python.org/3/whatsnew/3.11.html) and pip (or other python package manager) be installed on the machine that will be hosting the Test Harness (installation only)
@@ -18,6 +26,7 @@ To install and build this project one must have the following pre-requisites:
     * https://gitlab.com/smartdcs1/cdsdt/test-event-generator
     * https://github.com/xtuml/plus2json 
 * Docker installed on the machine (build only)
+
 
 ### <b>Installation</b>
 The project can be installed on the machine by choosing the project root directory as the working directory and running the following sequence of commands (it is recommended that a python virtual environment is set up so as not to pollute the main install):
@@ -227,13 +236,62 @@ The flask service can be run in two ways:
     INFO:werkzeug:Press CTRL+C to quit
     ```
 #### <b>Running a Test</b>
-A test is run in two stages once the Flask service is running:
+A test can be run with the four following stages (`/startTest` endpoint must be run after all the others) once the Flask service is running (two are optional endpoints that may or may not be used):
 * Upload of UML files - PUML files that are the graphical representation of a Job Definition must be uploaded before a test can begin. This can be done by sending a POST request with the PUML file/s attached that are needed for the test to the endpoint `/uploadUML`. An example using `curl` is given below:
     
     ```
     curl --location --request POST 'http://127.0.0.1:8800/uploadUML' --form 'file1=@"ANDFork_ANDFork_a.puml"'
     ```
     This should receive a 200 OK response with the following body text `Files uploaded successfully`
+
+* (OPTIONAL) A profile for a performance test can be uploaded as well in the form of a CSV file. The profile provides specific points (given in seconds) in simulation time where the number of test files sent per second is described. The csv must have the following headers in the following order: "Time", "Number". The Test Harness will linearly interpolate between these times to a discretisation of 1 second and will calculate how many test files are sent within that second. The end-point is called `/upload/profile` and is of mime type `multipart/form`. However only one file can be uploaded toherwise the Test Harness will raise an error and not run. An example usage is shown below:
+    ```
+    curl --location --request POST 'http://127.0.0.1:8800/upload/profile' --form 'file1=@"test_profile.csv"'
+    ```
+
+* (OPTIONAL) Test job event files can also be uploaded rather than producing them from the puml file given (note the test files uploaded must correspond to the PUML uploaded otherwise failures of the PV are guarenteed). A test file uploaded must have the following form:
+    ```
+    {
+        "job_file": <list of jsons of PV events>,
+        "job_name": <string denoting name of job>,
+        "SequenceType": <string denoting the type of sequence for functional tests>,
+        "validity": <boolean indicating if the job file is should pass or fail in the PV>
+    }
+    ```
+    An example file is shown below:
+    ```
+    {
+        "job_file": [
+            {
+                "jobId": "4f57f033-03e9-468c-b3b4-c144af8a3e20",
+                "jobName": "test_uml_1",
+                "eventType": "A",
+                "eventId": "8628fdb6-48e7-4eab-9c9d-95bcbe48b7d0",
+                "timestamp": "2023-09-21T14:35:09.728704Z",
+                "applicationName": "default_application_name"
+            },
+            {
+                "jobId": "4f57f033-03e9-468c-b3b4-c144af8a3e20",
+                "jobName": "test_uml_1",
+                "eventType": "B",
+                "eventId": "ad46fae5-4970-4e7d-90d2-eb23d83f63ec",
+                "timestamp": "2023-09-21T14:35:09.728783Z",
+                "applicationName": "default_application_name",
+                "previousEventIds": [
+                    "8628fdb6-48e7-4eab-9c9d-95bcbe48b7d0"
+                ]
+            }
+        ],
+        "job_name": "test_uml_1",
+        "sequence_type": "ValidSols",
+        "validity": true
+    }    
+    ```
+    The endpoint `/upload/test-files` allows the upload of multiple test files and is of mime type `multipart/form`. An example curl request is shown below:
+    ```
+    curl --location --request POST 'http://127.0.0.1:8800/upload/test-files' --form 'file1=@"test_uml_1_events.json"'
+    ``` 
+
 * Start Tests Once all files required for the test have been uploaded to the harness the test can be started by sending a POST request with the JSON test data attached (must use header `'Content-Type: application/json'`) to the endpoint `/startTest`.
 
     The JSON can contain (but does not have to) the following fields:
@@ -244,6 +302,7 @@ A test is run in two stages once the Flask service is running:
     ```
     curl -X POST -d '{"TestName": "A_perfomance_test", "TestConfig":{"event_gen_options":{"invalid":false}, "type":"Performance", "performance_options": {"num_files_per_sec":10, "total_jobs":100}}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
     ```
+
 ### <b>CLI Tool</b>
 Functionality has been provided to use the Test Harness as a CLI tool.
 

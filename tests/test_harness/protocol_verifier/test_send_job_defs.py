@@ -9,7 +9,7 @@ import pytest
 
 from test_harness.config.config import HarnessConfig
 from test_harness.utils import create_file_io_file_name_tuple
-from test_harness.process_manager.send_job_defs import (
+from test_harness.protocol_verifier.send_job_defs import (
     send_job_defs_from_file_io_file_name_tuples,
     send_job_defs_from_uml
 )

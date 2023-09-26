@@ -53,6 +53,14 @@ class HarnessConfig:
             uml_file_store_path,
             "uml_file_store"
         )
+        # parse uml file store
+        profile_store_path = self.config_parser[
+            "non-default"
+        ]["profile_store"]
+        self.profile_store = self.calc_path(
+            profile_store_path,
+            "profile_store"
+        )
         # parse report filestore path
         report_file_store_path = self.config_parser[
             "non-default"
@@ -67,7 +75,15 @@ class HarnessConfig:
         ]["log_file_store"]
         self.log_file_store = self.calc_path(
             log_file_store_path,
-            "report_file_store"
+            "log_file_store"
+        )
+        # parse test filestore path
+        test_file_store_path = self.config_parser[
+            "non-default"
+        ]["test_file_store"]
+        self.test_file_store = self.calc_path(
+            test_file_store_path,
+            "test_file_store"
         )
         # parse config for request to server
         self.parse_requests_config()
@@ -151,6 +167,9 @@ class HarnessConfig:
                 ]["ver_get_file_names_url"]
             }
         }
+        self.pv_grok_exporter_url = self.config_parser[
+            "non-default"
+        ]["pv_grok_exporter_url"]
 
     @staticmethod
     def calc_path(

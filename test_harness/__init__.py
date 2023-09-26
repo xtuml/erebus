@@ -74,11 +74,16 @@ class HarnessApp(Flask):
         )
         self.test_to_run = {}
 
-    def upload_uml_files(self) -> Response:
-        """Function to handle the upload of UML files
+    def handle_multipart_file_upload(
+            self,
+            save_file_dir_path: str,
+            file_handler: Callable[[list[FileStorage]], Response]
+    ) -> Response:
+        """Function to handle the upload of files
 
-        :return: 200 response if files uploaded successfully and
-        400 if unsuccessful
+        :param save_file_dir_path: The path to save the file to
+        :type save_file_dir_path: `str`
+        :return: Return the response
         :rtype: :class:`Response`
         """
         # requests must be of type multipart/form-data
@@ -111,13 +116,47 @@ class HarnessApp(Flask):
                 "At least two of the uploaded files share the same filename\n",
                 400
             )
+        response = file_handler(
+            uploaded_files,
+            save_file_dir_path
+        )
+        return response
 
-        for uploaded_file in uploaded_files:
-            handle_uploaded_file(
-                uploaded_file, self.harness_config.uml_file_store
-            )
+    def upload_uml_files(self) -> Response:
+        """Function to handle the upload of UML files
 
-        return make_response("Files uploaded successfully\n", 200)
+        :return: 200 response if files uploaded successfully and
+        400 if unsuccessful
+        :rtype: :class:`Response`
+        """
+        return self.handle_multipart_file_upload(
+            save_file_dir_path=self.harness_config.uml_file_store,
+            file_handler=handle_multiple_file_uploads
+        )
+
+    def upload_test_files(self) -> Response:
+        """Function to handle the upload of test files to test file store
+
+        :return: 200 response if files uploaded successfully and
+        400 if unsuccessful
+        :rtype: :class:`Response`
+        """
+        return self.handle_multipart_file_upload(
+            save_file_dir_path=self.harness_config.test_file_store,
+            file_handler=handle_multiple_file_uploads
+        )
+
+    def upload_profile(self) -> Response:
+        """Function to handle the upload of a profile file
+
+        :return: 200 response if file uploaded successfully and
+        400 if unsuccessful
+        :rtype: :class:`Response`
+        """
+        return self.handle_multipart_file_upload(
+            save_file_dir_path=self.harness_config.profile_store,
+            file_handler=handle_single_file_upload
+        )
 
     def start_test(self) -> Response:
         """Function to handle starting a test
@@ -248,12 +287,66 @@ def create_app(
         app
     )
 
+    # route to upload profile
+    @app.route("/upload/profile", methods=["POST"])
+    def upload_profile() -> None:
+        return app.upload_profile()
+
+    # route to upload profile
+    @app.route("/upload/test-files", methods=["POST"])
+    def upload_test_files() -> None:
+        return app.upload_test_files()
+
     # route to start
     @app.route("/startTest", methods=["POST"])
     def start_test() -> None:
         return app.start_test()
 
     return app
+
+
+def handle_single_file_upload(
+    uploaded_files: list[FileStorage],
+    save_file_dir_path: str
+) -> Response:
+    """Handler for a single file upload using multipart
+
+    :param uploaded_files: The list of files uploaded
+    :type uploaded_files: `list`[:class:`FileStorage`]
+    :param save_file_dir_path: The path of the directory to save files to
+    :type save_file_dir_path: `str`
+    :return: Rerturns a response
+    :rtype: :class:`Response`
+    """
+    if len(uploaded_files) > 1:
+        return make_response(
+            "More than two files uploaded. A single file is required\n",
+            400
+        )
+    return handle_multiple_file_uploads(
+        uploaded_files,
+        save_file_dir_path
+    )
+
+
+def handle_multiple_file_uploads(
+    uploaded_files: list[FileStorage],
+    save_file_dir_path: str
+) -> Response:
+    """Handler for a multiple file uploads using multipart
+
+    :param uploaded_files: The list of files uploaded
+    :type uploaded_files: `list`[:class:`FileStorage`]
+    :param save_file_dir_path: The path of the directory to save files to
+    :type save_file_dir_path: `str`
+    :return: Rerturns a response
+    :rtype: :class:`Response`
+    """
+    for uploaded_file in uploaded_files:
+        handle_uploaded_file(
+            uploaded_file, save_file_dir_path
+        )
+    return make_response("Files uploaded successfully\n", 200)
 
 
 def handle_uploaded_file(file: FileStorage, save_file_dir_path: str) -> None:

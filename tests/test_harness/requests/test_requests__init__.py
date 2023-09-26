@@ -2,6 +2,8 @@
 """Testing __init__.py
 """
 from io import BytesIO
+from pathlib import Path
+import os
 
 import responses
 
@@ -10,8 +12,12 @@ from test_harness.requests import (
     build_upload_file_tuples,
     post_sync_file_bytes_in_form,
     send_json_post_request,
-    send_get_request
+    send_get_request,
+    download_file_to_path
 )
+
+# download folder path for tests
+download_folder_path = Path(__file__).parent
 
 
 def check_build_upload(
@@ -252,3 +258,27 @@ def test_send_get_request_404() -> None:
     assert not response[0]
     assert response[1] == 3
     assert response[2].status_code == 404
+
+
+@responses.activate
+def test_download_file_to_path() -> None:
+    """Test for `download_file_to_path` with 200 ok response
+    """
+    test_string = "test"
+    url = 'http://mockserver.com/getgrok'
+    responses.add(
+        responses.GET,
+        url,
+        body=test_string.encode("utf-8"),
+        status=200,
+        headers={
+            "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
+        }
+    )
+    download_file_path = download_folder_path / "test_file"
+    download_file_to_path(
+        url,
+        str(download_file_path)
+    )
+    assert os.path.exists(download_file_path)
+    os.remove(download_file_path)

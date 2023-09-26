@@ -1,3 +1,4 @@
+# pylint: disable=R0801
 """Tests for __init__.py
 """
 
@@ -12,7 +13,6 @@ from aioresponses import aioresponses
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.process_manager import (
-    puml_files_test,
     harness_test_manager
 )
 from test_harness.utils import clean_directories
@@ -32,85 +32,6 @@ test_file_path = os.path.join(
 uuid4hex = re.compile(
             '[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z', re.I
         )
-
-
-@responses.activate
-def test_puml_files_test() -> None:
-    """Tests method `puml_test_files`
-    """
-    harness_config = HarnessConfig(test_config_path)
-    test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        }
-    })
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
-        )
-        puml_files_test(
-            puml_file_paths=[test_file_path],
-            test_output_directory=harness_config.report_file_store,
-            harness_config=harness_config,
-            test_config=test_config
-        )
-        files = glob.glob("*.*", root_dir=harness_config.report_file_store)
-        expected_files = [
-            "Results.csv", "Results.html", "Results.xml",
-            "Results_Aggregated.html"
-        ]
-        for file in files:
-            file_in_files = file in expected_files
-            is_uuid = bool(uuid4hex.match(
-                    file.replace("-", "").replace(".json", "")
-                ))
-            assert any([file_in_files, is_uuid])
-
-        clean_directories([harness_config.report_file_store])
 
 
 @responses.activate
@@ -176,7 +97,8 @@ def test_harness_test_manager_uml_exists() -> None:
     files = glob.glob("*.*", root_dir=harness_config.report_file_store)
     expected_files = [
         "Results.csv", "Results.html", "Results.xml",
-        "Results_Aggregated.html"
+        "Results_Aggregated.html",
+        "Verifier.log", "Reception.log",
     ]
     for file in files:
         file_in_files = file in expected_files
