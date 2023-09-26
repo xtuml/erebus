@@ -89,7 +89,7 @@ The following extra arguments to the `docker run` command must be provided:
 
 ### <b>Test Harness</b>
 #### <b>Pre-requisites</b>
-To deploy the test harness one must have at least read access to this repositroy and read access of `registry.gitlab.com/smartdcs1/cdsdt/test-harness` container repository so as to be able to obtain `registry.gitlab.com/smartdcs1/cdsdt/test-harness:MuninP2S1-midstage`.
+To deploy the test harness one must have at least read access to this repositroy and read access of `registry.gitlab.com/smartdcs1/cdsdt/test-harness` container repository so as to be able to obtain `registry.gitlab.com/smartdcs1/cdsdt/test-harness:1.0.0`.
 #### <b>Deployment</b>
 The Test Harness can be deployed simply by cloning this repository and navigating to the `deployment` directory from the project root. One can then run the following command:
 
@@ -109,7 +109,7 @@ To change default values of these files a parameter can be copied under the `[no
 * General config
     * `requests_max_retries` - The number of times a synchronous request will retry to get the correct response before providing the wrong response. Defaults to `5`
     * `requests_timeout` - The timeout in seconds of a sychronous request. Defaults to `10`
-    * `max_files_in_memory` - The number of job files that are allowed to sit in the memory at any one time. Defaults to `10000`
+    * `max_files_in_memory` (deprecated) - The number of job files that are allowed to sit in the memory at any one time. Defaults to `10000`
 * folder file io tracking
     * `aer_io_url` - The http url of the endpoint that responds with the number of files currently in aer incoming. Defaults to `http://host.docker.internal:9000/ioTracking/aer-incoming`
     * `ver_io_url` - The http url of the endpoint that responds with the number of files currently in verifier processed. Defaults to `http://host.docker.internal:9000/ioTracking/verifier-processed`
@@ -129,6 +129,7 @@ To change default values of these files a parameter can be copied under the `[no
     * `pv_finish_interval` - The amount of time thats is required for the Verifier logs to not have updated so that the Test Harness can finish the test. Defaults to `30`. It is recommended that this value be greater than the value of the fields (of the PV config) `MaximumJobTime` and `JobCompletePeriod`
 * `pv_clean_folders_url` - The url of the endpoint that requests are sent to that clean the PV folders of all files relating to a test. Defaults to `http://host.docker.internal:9000/io/cleanup-test`
 * `pv_clean_folders_read_timeout` - The amount of time to wait for a read timeout when cleaning the Protocol Verifier folders after a test. Defaults to `300` (seconds). It is recommended to set this value reasonably large for tests with a large amount of files.
+* `pv_grok_exporter_url` - The url of the endpoint that a request is sent to to obtain the grok parsed output of the PV log files. `http://host.docker.internal:9144/metrics`
 ***
 ## Usage
 ***
@@ -156,9 +157,9 @@ The fields within the json and yaml file are as follows:
     `"StackedSolutions"` | `"MissingEvents"` | `"MissingEdges"` | `"GhostEvents"` | `"SpyEvents"` | `"XORConstraintBreaks"` | `"ANDConstraintBreaks"`
     ] : `list`[`str`] - A list of the invalid solutions to include if `invalid` is set to `True`
 * `performance_options`: `dict` - Options for a perfomance test is `type` is set to `"Performance"`. This option contains the folloing sub-fields: 
-    * `num_files_per_sec`: `int` `>= 0` - The number of files to send per second to the PV. If used in conjuction with `shard` set to `True` this will send single Events files at the prescribed rate
-    * `shard`: `True` | `False` : `bool` - Boolean value indicating whether to shard job sequences into single event files and send them separately
-    * `total_jobs`: `int` `>= 0` - The total number of separate jobs to use in the performance test.
+    * `num_files_per_sec`: `int` `>= 0` - A uniform rate of the number of events to produce per second for sending to the PV when no profile has been uploaded (when they are sent will depend on whether the events are all sent as a batched job or if they are sharded into single event files using the `shard` option). If used in conjuction with `shard` set to `True` this will send single Events files at the prescribed rate
+    * `shard`: `True` | `False` : `bool` - Boolean value indicating whether to shard job sequences into single event files (`True`) or send them in their relevant job batches (`False`)
+    * `total_jobs`: `int` `>= 0` - The total number of separate jobs to use in the performance test if no profile has been uploaded.
 
 #### <b>Example Json test config</b>
 ```

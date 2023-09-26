@@ -65,7 +65,7 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
                 raise error
         else:
             self.sqlite_address = sqlite_address
-        
+
         self.table_name = table_name
         self.create_results_holder()
         self._results: Optional[dd.DataFrame] = None
@@ -124,7 +124,7 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
                 table.create_column(
                     name=column,
                     type=database.types.string if dtype == 'str' else database.types.float
-                ) 
+                )
 
     def create_event_result_row(self, event_id: str) -> None:
         """Method to create a row in the results holder based on an
