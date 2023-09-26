@@ -1,0 +1,17 @@
+[MESSAGES CONTROL]
+disable=
+    invalid-name,
+    redefined-outer-name,
+    undefined-loop-variable,
+    too-many-instance-attributes,
+    dangerous-default-value,
+    fixme,
+    no-else-return,
+    missing-function-docstring,
+    attribute-defined-outside-init,
+    broad-exception-caught,
+    consider-using-with,
+    import-error,
+    deprecated-method,
+    useless-parent-delegation,
+    raise-missing-from,
