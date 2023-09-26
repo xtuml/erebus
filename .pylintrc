@@ -15,3 +15,4 @@ disable=
     deprecated-method,
     useless-parent-delegation,
     raise-missing-from,
+    duplicate-code,
