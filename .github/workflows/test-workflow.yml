@@ -9,7 +9,7 @@ jobs:
   sast:
     uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
   python-linting:
-    uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
+    uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@remove_unused_update_python
 
   run-tests:
     runs-on: ubuntu-latest
