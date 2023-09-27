@@ -88,7 +88,8 @@ async def delayed_send_payload(
 async def send_payload_async(
     file: io.BytesIO,
     file_name: str,
-    url: str = "http://host.docker.internal:9000/upload/events"
+    url: str = "http://host.docker.internal:9000/upload/events",
+    session: aiohttp.ClientSession | None = None
 ) -> str:
     """Method to asynchronously send a payload
 
@@ -101,6 +102,8 @@ async def send_payload_async(
     :type url: `str`, optional
     :return: The response from the post request
     :rtype: `str`
+    :param session: The session for HTTP requests, defaults to `None`
+    :type session: `aiohttp`.`ClientSession` | `None`, optional
     """
     form_data = aiohttp.FormData()
     form_data.add_field(
@@ -109,6 +112,20 @@ async def send_payload_async(
         filename=file_name,
         content_type='application/octet-stream'
     )
+    if session is not None:
+        async with session.post(
+            url,
+            data=form_data(),
+        ) as response:
+            try:
+                awaited_response = await asyncio.wait_for(
+                    response.text(),
+                    timeout=200
+                )
+                awaited_response = ""
+            except Exception as error:
+                awaited_response = handle_error_response(error)
+            return awaited_response
     async with aiohttp.ClientSession() as session:
         async with session.post(
             url,
