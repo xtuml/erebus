@@ -277,6 +277,22 @@ class Test(ABC):
             results_handler.results_holder.time_start = datetime.now()
             await self.simulator.simulate()
 
+    async def stop_test(self) -> None:
+        """Method to stop the test after a a certain amount of time if all the
+        events have been sent
+
+        :raises RuntimeError: Raises a :class:`RuntimeError` when the test has
+        timed out
+        """
+        await asyncio.sleep(
+            self.harness_config.pv_test_timeout + self.delay_times[-1]
+        )
+        raise RuntimeError(
+            "Protocol Verifier failed to finish within the test timeout of "
+            f"{self.harness_config.pv_test_timeout} seconds.\nResults will "
+            "be calculated at this point"
+        )
+
     async def run_test(self) -> None:
         """Asynchronous method to run the test"""
         with PVResultsHandler(
@@ -288,6 +304,7 @@ class Test(ABC):
                 await asyncio.gather(
                     self.send_test_files(results_handler=pv_results_handler),
                     self.pv_file_inspector.run_pv_file_inspector(),
+                    self.stop_test()
                 )
             except RuntimeError as error:
                 logging.getLogger().info(msg=str(error))

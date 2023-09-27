@@ -113,6 +113,12 @@ class HarnessConfig:
                 "non-default"
             ]["pv_clean_folders_read_timeout"]
         )
+        # test timeout
+        self.pv_test_timeout = int(
+            self.config_parser[
+                "non-default"
+            ]["pv_test_timeout"]
+        )
 
     def parse_requests_config(self) -> None:
         """Method to parse requests to pv server config

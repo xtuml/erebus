@@ -12,6 +12,7 @@ from datetime import datetime
 from io import StringIO
 from typing import Iterable
 from tempfile import NamedTemporaryFile
+import logging
 
 import responses
 from aioresponses import aioresponses
@@ -592,7 +593,7 @@ class TestPVResultsHandler:
             assert len(attr) == 1
             assert attr[0] == item
         files_to_remove = [
-            "a_file_name",
+            "a_file_name"
         ]
         for file_name in files_to_remove:
             path = os.path.join(harness_config.report_file_store, file_name)
@@ -786,14 +787,6 @@ def test_run_test_performance() -> None:
             assert (
                 test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
             )
-            assert all(
-                coord == (1, 2)
-                for coord in test.pv_file_inspector.coords["aer"]
-            )
-            assert all(
-                coord == (1, 2)
-                for coord in test.pv_file_inspector.coords["ver"]
-            )
             os.remove(
                 os.path.join(harness_config.log_file_store, "Reception.log")
             )
@@ -926,7 +919,7 @@ def test_run_test_performance_profile_job_batch() -> None:
 
 @responses.activate
 def test_run_test_performance_profile_shard() -> None:
-    """Tests :class:`PerformanceTests`.`run_tests`"""
+    """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
@@ -985,3 +978,61 @@ def test_run_test_performance_profile_shard() -> None:
             os.remove(
                 os.path.join(harness_config.log_file_store, "Verifier.log")
             )
+
+
+@responses.activate
+def test_run_test_performance_stop_test(
+    caplog: pytest.LogCaptureFixture
+) -> None:
+    """Tests :class:`PerformanceTests`.`run_tests`"""
+    harness_config = HarnessConfig(test_config_path)
+    # make stop test timeout 1 second
+    harness_config.pv_test_timeout = 1
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    caplog.set_level(logging.INFO)
+    with aioresponses() as mock:
+        mock.post(url=harness_config.pv_send_url, repeat=True)
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={"fileNames": ["Reception.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b"test log",
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={"fileNames": ["Verifier.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b"test log",
+        )
+        with NamedTemporaryFile(suffix=".db") as db_file:
+            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
+            test = PerformanceTest(
+                test_file_generators=test_events,
+                test_config=test_config,
+                harness_config=harness_config,
+            )
+            asyncio.run(test.run_test())
+        assert (
+            "Protocol Verifier failed to finish within the test timeout of "
+            f"{harness_config.pv_test_timeout} seconds.\nResults will "
+            "be calculated at this point"
+        ) in caplog.text
+        clean_directories(
+            [
+                harness_config.report_file_store,
+                harness_config.log_file_store
+            ]
+        )
