@@ -7,8 +7,6 @@ import os
 import glob
 import re
 import shutil
-import threading
-import time
 import json
 from tempfile import NamedTemporaryFile
 
@@ -113,22 +111,6 @@ def test_puml_files_test() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b'test log',
         )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
-        )
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
@@ -209,19 +191,6 @@ def test_puml_files_performance_with_input_profile(
             "invalid": False
         }
     })
-    payload = {
-        "num_files": 0,
-        "t": 0
-    }
-
-    def update_payload(end_time: int) -> None:
-        sim_time = 0
-        while sim_time < end_time:
-            time.sleep(2)
-            payload["num_files"] += 1
-            payload["t"] += 1
-            sim_time += 1
-
     with aioresponses() as mock:
         responses.add(
             responses.GET,
@@ -262,20 +231,8 @@ def test_puml_files_performance_with_input_profile(
             url=harness_config.log_urls["ver"]["getFile"],
             body=b'test log',
         )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload=payload,
-            repeat=True
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload=payload,
-            repeat=True
-        )
         profile = Profile()
         profile.load_raw_profile_from_file_path(test_csv_file_path_1)
-        thread = threading.Thread(target=update_payload, args=[3], daemon=True)
-        thread.start()
         with NamedTemporaryFile(suffix='.db') as db_file:
             os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
             puml_files_test(
@@ -285,7 +242,6 @@ def test_puml_files_performance_with_input_profile(
                 test_config=test_config,
                 profile=profile
             )
-            thread.join()
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
             "Verifier.log",
@@ -388,22 +344,6 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
         responses.post(
             url=harness_config.log_urls["ver"]["getFile"],
             body=b'test log',
-        )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
         )
         puml_files_test(
             puml_file_paths=[test_uml_1_path],
