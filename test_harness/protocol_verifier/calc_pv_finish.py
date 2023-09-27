@@ -358,11 +358,6 @@ class PVFileInspector:
     ) -> None:
         """Method to run the pv file inspector and update attributes
         """
-        await handle_coords_request(
-            coords=self.coords,
-            urls=self.harness_config.io_urls,
-            read_timeout=self.harness_config.io_read_timeout
-        )
         gathered_futures = asyncio.gather(
             pv_finish_inspector_logs(
                 file_names=self.file_names,
@@ -370,14 +365,6 @@ class PVFileInspector:
                 interval_time=self.harness_config.log_calc_interval_time,
                 required_time_interval=self.harness_config.pv_finish_interval,
                 log_file_store_path=self.harness_config.log_file_store
-            ),
-            pv_inspector_io(
-                coords=self.coords,
-                urls=self.harness_config.io_urls,
-                io_calc_interval_time=(
-                    self.harness_config.io_calc_interval_time
-                ),
-                read_timeout=self.harness_config.io_read_timeout
             )
         )
         await gathered_futures

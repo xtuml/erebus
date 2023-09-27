@@ -650,16 +650,6 @@ def test_run_test_functional() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
         test = FunctionalTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -669,12 +659,6 @@ def test_run_test_functional() -> None:
         assert len(test.results.responses) == 1
         assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
         assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-        assert all(
-            coord == (1, 2) for coord in test.pv_file_inspector.coords["aer"]
-        )
-        assert all(
-            coord == (1, 2) for coord in test.pv_file_inspector.coords["ver"]
-        )
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
 
@@ -704,16 +688,6 @@ def test_calc_results_functional():
         responses.post(
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
-        )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
         )
         test = FunctionalTest(
             test_file_generators=test_events,
@@ -797,16 +771,6 @@ def test_run_test_performance() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
         with NamedTemporaryFile(suffix=".db") as db_file:
             os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
             test = PerformanceTest(
@@ -883,31 +847,6 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        payload_aer = {"num_files": 2, "t": 0}
-        payload_ver = {"num_files": 0, "t": 0}
-
-        def callback_aer(*args, **kwargs) -> None:
-            if payload_ver["num_files"] == 20:
-                payload_aer["num_files"] = 0
-            payload_aer["t"] += 1
-
-        def callback_ver(url, **kwargs) -> None:
-            if payload_ver["num_files"] < 20 and payload_ver["t"] > 0:
-                payload_ver["num_files"] += 10
-            payload_ver["t"] += 1
-
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload=payload_aer,
-            repeat=True,
-            callback=callback_aer,
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload=payload_ver,
-            repeat=True,
-            callback=callback_ver,
-        )
         with NamedTemporaryFile(suffix=".db") as db_file:
             os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
             test = PerformanceTest(
@@ -961,16 +900,6 @@ def test_run_test_performance_profile_job_batch() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
         with NamedTemporaryFile(suffix=".db") as db_file:
             os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
             test = PerformanceTest(
@@ -986,14 +915,6 @@ def test_run_test_performance_profile_job_batch() -> None:
             )
             assert (
                 test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-            )
-            assert all(
-                coord == (1, 2)
-                for coord in test.pv_file_inspector.coords["aer"]
-            )
-            assert all(
-                coord == (1, 2)
-                for coord in test.pv_file_inspector.coords["ver"]
             )
             os.remove(
                 os.path.join(harness_config.log_file_store, "Reception.log")
@@ -1042,16 +963,6 @@ def test_run_test_performance_profile_shard() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={"num_files": 2, "t": 1},
-            repeat=True,
-        )
         with NamedTemporaryFile(suffix=".db") as db_file:
             os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
             test = PerformanceTest(
@@ -1067,14 +978,6 @@ def test_run_test_performance_profile_shard() -> None:
             )
             assert (
                 test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-            )
-            assert all(
-                coord == (1, 2)
-                for coord in test.pv_file_inspector.coords["aer"]
-            )
-            assert all(
-                coord == (1, 2)
-                for coord in test.pv_file_inspector.coords["ver"]
             )
             os.remove(
                 os.path.join(harness_config.log_file_store, "Reception.log")

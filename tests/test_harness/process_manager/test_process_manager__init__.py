@@ -72,22 +72,6 @@ def test_harness_test_manager_uml_exists() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b'test log',
         )
-        mock.get(
-            url=harness_config.io_urls["aer"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
-        )
-        mock.get(
-            url=harness_config.io_urls["ver"],
-            payload={
-                "num_files": 2,
-                "t": 1
-            },
-            repeat=True
-        )
         success, _ = harness_test_manager(
             harness_config=harness_config,
             test_config=test_config,
