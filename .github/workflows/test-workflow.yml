@@ -8,6 +8,8 @@ on:
 jobs:
   sast:
     uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
+  secret-detection:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/SecretDetection.yml@main
   python-linting:
     uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
 
