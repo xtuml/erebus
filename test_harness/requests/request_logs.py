@@ -126,7 +126,7 @@ def get_log_files_raw_bytes(
     url_get_file: str,
     already_received_file_names: list[str] | None = None
 ) -> dict[str, bytes]:
-    """Method to get log files raw bytes from server
+    """Method to get log files raw bytes from server. Catches EOF errors.
 
     :param url_log_file_names: The url endpoint to get the log file names
     :type url_log_file_names: `str`
@@ -173,7 +173,7 @@ def get_log_files_strings_from_log_files_bytes(
                 raw_bytes=raw_bytes,
                 is_gzip=".gz" in file_name
             )
-        except gzip.BadGzipFile:
+        except (gzip.BadGzipFile, EOFError):
             logging.getLogger().warning(
                 "gzip log file '%s' was found to be invalid", file_name
             )
