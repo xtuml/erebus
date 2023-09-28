@@ -29,6 +29,7 @@ class PVResultsDataFrame(PVPerformanceResults):
     ) -> None:
         """Constructor method"""
         super().__init__()
+        self.job_id_event_id_map: dict[str, set[str]] = {}
 
     def __len__(self) -> int:
         """The length of the results
@@ -38,9 +39,16 @@ class PVResultsDataFrame(PVPerformanceResults):
         """
         return len(self.results)
 
+    def create_final_results_holder(self) -> None:
+        self.results = pd.DataFrame.from_dict(self.results, orient="index")
+        for new_col in self.data_fields[3:]:
+            if new_col not in self.results.columns:
+                self.results[new_col] = np.nan
+
     def create_results_holder(self) -> None:
         """Creates the results holder as pandas DataFrame"""
-        self.results = pd.DataFrame(columns=self.data_fields)
+        # self.results = pd.DataFrame(columns=self.data_fields)
+        self.results = {}
 
     def create_event_result_row(self, event_id: str) -> None:
         """Method to create a row in the results holder based on an
@@ -49,7 +57,8 @@ class PVResultsDataFrame(PVPerformanceResults):
         :param event_id: Unique event id
         :type event_id: `str`
         """
-        self.results.loc[event_id] = None
+        self.results[event_id] = {}
+        # self.results.loc[event_id] = None
 
     def update_event_results_with_event_id(
         self, event_id: str, update_values: dict[str, Any]
@@ -62,9 +71,16 @@ class PVResultsDataFrame(PVPerformanceResults):
         :param update_values: Arbitrary named update values
         :type update_values: `dict`[`str`, `Any`]
         """
-        self.results.loc[event_id, list(update_values.keys())] = list(
-            update_values.values()
-        )
+        if event_id not in self.results:
+            return
+        self.results[event_id] = {
+            **self.results[event_id],
+            **update_values
+        }
+        if "job_id" in update_values:
+            if update_values["job_id"] not in self.job_id_event_id_map:
+                self.job_id_event_id_map[update_values["job_id"]] = set()
+            self.job_id_event_id_map[update_values["job_id"]].add(event_id)
 
     def update_event_results_with_job_id(
         self, job_id: str, update_values: dict[str, Any]
@@ -77,9 +93,12 @@ class PVResultsDataFrame(PVPerformanceResults):
         :param update_values: Arbitrary named update values
         :type update_values: `dict`[`str`, `Any`]
         """
-        self.results.loc[
-            self.results["job_id"] == job_id, list(update_values.keys())
-        ] = list(update_values.values())
+        if job_id in self.job_id_event_id_map:
+            for event_id in self.job_id_event_id_map[job_id]:
+                self.results[event_id] = {
+                    **self.results[event_id],
+                    **update_values
+                }
 
     def create_response_time_fields(self) -> None:
         """Method used to create response fields in the results holder
@@ -220,14 +239,14 @@ class PVResultsDataFrame(PVPerformanceResults):
         )
         # get aggregated full response time
         aggregated_full_response_time = sps.binned_statistic(
-            self.results["AEOSVDC_end"],
+            self.results["time_sent"],
             self.results["full_response_time"],
             bins=time_range,
             statistic=np.nanmean,
         ).statistic
         # get aggregated time in queue
         aggregated_queue_time = sps.binned_statistic(
-            self.results["AER_start"],
+            self.results["time_sent"],
             self.results["queue_time"],
             bins=time_range,
             statistic=np.nanmean,

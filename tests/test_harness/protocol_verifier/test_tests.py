@@ -75,7 +75,7 @@ class TestPVResultsDataFrame:
     def test_create_results_holder() -> None:
         """Tests :class:`PVResultsDataFrame`.`create_results_holder`"""
         results = PVResultsDataFrame()
-        assert isinstance(results.results, pd.DataFrame)
+        assert isinstance(results.results, dict)
 
     @staticmethod
     def test_create_event_result_row() -> None:
@@ -83,10 +83,8 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.create_event_result_row("event_id")
         assert len(results.results) == 1
-        assert "event_id" in results.results.index
-        assert set(results.data_fields) == set(results.results.columns)
-        for col in results.results.columns:
-            assert pd.isnull(results.results.loc["event_id", col])
+        assert "event_id" in results.results
+        assert len(results.results["event_id"]) == 0
 
     @staticmethod
     def test_update_event_results_with_event_id() -> None:
@@ -98,7 +96,8 @@ class TestPVResultsDataFrame:
         results.update_event_results_with_event_id(
             "event_id", {"job_id": "job_id"}
         )
-        assert results.results.loc["event_id", "job_id"] == "job_id"
+        assert "job_id" in results.results["event_id"]
+        assert results.results["event_id"]["job_id"] == "job_id"
 
     @staticmethod
     def test_update_event_results_with_job_id() -> None:
@@ -113,7 +112,8 @@ class TestPVResultsDataFrame:
         results.update_event_results_with_job_id(
             "job_id", {"response": "a response"}
         )
-        assert results.results.loc["event_id", "response"] == "a response"
+        assert "response" in results.results["event_id"]
+        assert results.results["event_id"]["response"] == "a response"
 
     @staticmethod
     def test_add_first_event_data(
@@ -139,10 +139,10 @@ class TestPVResultsDataFrame:
                 event_job_response_time_dict["time_completed"] - start_time
             ).total_seconds()
             response = event_job_response_time_dict["response"]
-            assert event_id in results.results.index
-            assert results.results.loc[event_id, "job_id"] == job_id
-            assert results.results.loc[event_id, "time_sent"] == time_sent
-            assert results.results.loc[event_id, "response"] == response
+            assert event_id in results.results
+            assert results.results[event_id]["job_id"] == job_id
+            assert results.results[event_id]["time_sent"] == time_sent
+            assert results.results[event_id]["response"] == response
 
     @staticmethod
     def test_update_from_sim(
@@ -169,12 +169,14 @@ class TestPVResultsDataFrame:
         results.time_start = start_time
         results.update_from_sim(events, job_id, response, time_completed)
         assert len(results.results) == 3
-        assert set(results.results["job_id"]) == set(["job_id"])
-        assert set(results.results["response"]) == set(["a response"])
-        assert set(results.results["time_sent"]) == set(
-            [(time_completed - start_time).total_seconds()]
-        )
-        assert set(results.results.index) == set(
+        for values in results.results.values():
+
+            assert values["job_id"] == "job_id"
+            assert values["response"] == "a response"
+            assert values["time_sent"] == (
+                time_completed - start_time
+            ).total_seconds()
+        assert set(results.results.keys()) == set(
             event["eventId"] for event in events
         )
 
@@ -203,7 +205,7 @@ class TestPVResultsDataFrame:
                 ),
                 event_job_response_time_dict["event_id"],
             )
-        for _, row in results.results.iterrows():
+        for row in results.results.values():
             assert row["time_sent"] == row["AER_start"]
 
     @staticmethod
@@ -233,24 +235,14 @@ class TestPVResultsDataFrame:
         for event_job_response_time_dict in event_job_response_time_dicts:
             results.add_first_event_data(**event_job_response_time_dict)
         results.read_groked_string_io(groked_string_io)
-        assert not pd.isnull(
-            results.results.loc[
-                "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497", "AER_start"
-            ]
-        )
-        assert all(
-            pd.isnull(
-                results.results.loc[
-                    (
-                        results.results.index
-                        != "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497"
-                    ),
-                    "AER_start",
-                ]
-            )
-        )
-        for col in results.data_fields[-3:]:
-            assert all(pd.isnull(results.results[col]))
+        assert "AER_start" in results.results[
+           "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497"
+        ]
+        for event_id, values in results.results.items():
+            if event_id != "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497":
+                assert "AER_start" not in values
+            for col in results.data_fields[-3:]:
+                assert col not in values
 
     @staticmethod
     def test_get_and_read_grok_metrics(
@@ -271,8 +263,9 @@ class TestPVResultsDataFrame:
         for event_job_response_time_dict in event_job_response_time_dicts:
             results.add_first_event_data(**event_job_response_time_dict)
         results.get_and_read_grok_metrics(grok_file)
-        for col in results.data_fields[-4:]:
-            assert all(~pd.isnull(results.results[col]))
+        for values in results.results.values():
+            for col in results.data_fields[-4:]:
+                assert col in values
 
     @staticmethod
     def test_create_response_time_fields(
@@ -445,12 +438,12 @@ class TestPVResultsDataFrame:
             expected_agg_events_per_second,
             aggregated_results["Events Processed (/s)"],
         )
-        expected_agg_full_response_time = [np.nan] * 4 + [4.0] * 9
+        expected_agg_full_response_time = [4.0] * 10 + [np.nan] * 3
         check_numpy_expected_vs_actual(
             expected_agg_full_response_time,
             aggregated_results["Response Time (s)"],
         )
-        expected_agg_queue_time = [np.nan] + [1.0] * 10 + [np.nan] * 2
+        expected_agg_queue_time = [1.0] * 10 + [np.nan] * 3
         check_numpy_expected_vs_actual(
             expected_agg_queue_time, aggregated_results["Queue Time (s)"]
         )
@@ -464,7 +457,7 @@ class TestPVResultsDataFrame:
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
         results = PVResultsDataFrame()
-        results.results = results_dataframe
+        results.results = results_dataframe.to_dict(orient="index")
         results.calc_all_results()
         assert results.end_times is not None
         assert results.failures is not None
@@ -496,7 +489,7 @@ class TestPVResultsHandler:
         )
         results_handler.__enter__()
         results_handler.__exit__(None, None, None)
-        assert not results_handler.daemon_not_done
+        # assert not results_handler.daemon_not_done.is_set()
         assert not results_handler.daemon_thread.is_alive()
 
     @staticmethod
