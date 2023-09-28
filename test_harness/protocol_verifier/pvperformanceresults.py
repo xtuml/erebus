@@ -66,11 +66,18 @@ class PVPerformanceResults(PVResults):
     ) -> None:
         """Constructor method"""
         super().__init__()
+        self.results = None
         self.create_results_holder()
         self.end_times: dict[str, float] | None = None
         self.failures: FailuresDict | None = None
         self.full_averages: AveragesDict | None = None
         self.agg_results: pd.DataFrame | None = None
+
+    @abstractmethod
+    def create_final_results_holder(self) -> None:
+        """Abstract method to create the final results holder once all results
+        have been added
+        """
 
     @abstractmethod
     def create_results_holder(self) -> None:
@@ -265,6 +272,7 @@ class PVPerformanceResults(PVResults):
         defaults to `1.0`
         :type agg_time_window: `float`, optional
         """
+        self.create_final_results_holder()
         self.create_response_time_fields()
         self.end_times = self.calc_end_times()
         self.failures = self.calculate_failures()

@@ -5,6 +5,7 @@
 # pylint: disable=C0103
 # pylint: disable=R0801
 # pylint: disable=W0511
+# pylint: disable=E0110
 """Tests for tests.py
 """
 from pathlib import Path
