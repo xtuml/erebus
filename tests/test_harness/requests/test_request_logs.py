@@ -1,6 +1,8 @@
 # pylint: disable=R0913
 """Tests for request_logs.py
 """
+import logging
+
 import pytest
 import responses
 from responses import matchers
@@ -474,3 +476,25 @@ def test_get_log_files(
     )
     assert log_files[file_name] == file_string
     assert log_files[file_name_gzipped] == file_string
+
+
+def test_get_log_files_strings_from_log_files_bytes(
+    file_raw_bytes_gzipped: bytes,
+    caplog: pytest.LogCaptureFixture
+) -> None:
+    """Tests `get_log_files_strings_from_log_files_bytes` when there is no end
+    of file
+
+    :param file_raw_bytes_gzipped: Fixture providing bytes for a gzipped file
+    :type file_raw_bytes_gzipped: `bytes`
+    :param caplog: Fixture to capture logs
+    :type caplog: :class:`pytest`.`LogCaptureFixture`
+    """
+    corrupted_file = file_raw_bytes_gzipped[:-2]
+    caplog.set_level(logging.WARNING)
+    get_log_files_strings_from_log_files_bytes(
+        {"corrupted_file.gz": corrupted_file}
+    )
+    assert (
+        "gzip log file 'corrupted_file.gz' was found to be invalid"
+    ) in caplog.text
