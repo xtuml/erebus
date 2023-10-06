@@ -1,12 +1,14 @@
 # pylint: disable=R0911
 """Methods to analyse logs
 """
+from typing import TextIO, Any, Generator
+
 import pandas as pd
+from pygrok import Grok
 
 
 def logs_validity_df_to_results(
-    log_string: str,
-    validity_df: pd.DataFrame
+    log_string: str, validity_df: pd.DataFrame
 ) -> pd.DataFrame:
     """Method to obtain a test results dataframe from a string representing
     the Protocol Verifier "Verifier.log"
@@ -26,16 +28,11 @@ def logs_validity_df_to_results(
     # get pv results
     pv_results_df = parse_log_string_to_pv_results_dataframe(log_string)
     # get test results
-    results_df = get_job_id_failure_successes(
-        pv_results_df,
-        validity_df
-    )
+    results_df = get_job_id_failure_successes(pv_results_df, validity_df)
     return results_df
 
 
-def parse_log_string_to_pv_results_dataframe(
-    log_string: str
-) -> pd.DataFrame:
+def parse_log_string_to_pv_results_dataframe(log_string: str) -> pd.DataFrame:
     """Method to parse verifier log string into a dataframe
 
     :param log_string: log file string
@@ -76,23 +73,21 @@ def parse_log_string_to_pv_results_dataframe(
     # concatenate datframes
     results_df = pd.concat(
         [svdc_job_success_df, svdc_job_failed_df, aeo_job_failed_df],
-        sort=False
+        sort=False,
     )
     # aggregate results by job id
     cols = list(results_df.columns)
     # if JobId not in columns update
     if "JobId" not in cols:
         results_df["JobId"] = None
-    results_df = results_df.groupby("JobId").agg({
-        col: list
-        for col in cols
-        if col != "JobId"
-    })
+    results_df = results_df.groupby("JobId").agg(
+        {col: list for col in cols if col != "JobId"}
+    )
     return results_df
 
 
 def column_data_string_to_header_cell_dict(
-    data_string: str
+    data_string: str,
 ) -> tuple[str, str]:
     """Method to create a header and cell value from a string of data from logs
 
@@ -108,9 +103,7 @@ def column_data_string_to_header_cell_dict(
     return header, cell
 
 
-def line_split_to_dict(
-    line_split: list[str]
-) -> dict[str, str]:
+def line_split_to_dict(line_split: list[str]) -> dict[str, str]:
     """Method to create a dict of header and value in a split line
 
     :param line_split: The line split into header value strings
@@ -126,8 +119,7 @@ def line_split_to_dict(
 
 
 def get_job_id_failure_successes(
-    data_frame_pv_results_df: pd.DataFrame,
-    job_id_validity_df: pd.DataFrame
+    data_frame_pv_results_df: pd.DataFrame, job_id_validity_df: pd.DataFrame
 ) -> pd.DataFrame:
     """Method to check parsed Protocol Verifier results against the validity
     of job ids to provide results of "Pass", "Fail" and
@@ -150,21 +142,16 @@ def get_job_id_failure_successes(
     :rtype: :class:`pd.DataFrame`
     """
     data_frame_result = job_id_validity_df.merge(
-        data_frame_pv_results_df,
-        how='left',
-        left_index=True,
-        right_index=True
+        data_frame_pv_results_df, how="left", left_index=True, right_index=True
     )
     data_frame_result["TestResult"] = data_frame_result.apply(
-        lambda x: check_test_result(x["Validity"], x["PVResult"]),
-        axis=1
+        lambda x: check_test_result(x["Validity"], x["PVResult"]), axis=1
     )
     return data_frame_result
 
 
 def check_test_result(
-    validity: bool,
-    pv_results: list[bool] | None | float
+    validity: bool, pv_results: list[bool] | None | float
 ) -> str:
     """Method to check the PV result against validity of the job
 
@@ -189,3 +176,62 @@ def check_test_result(
     if any(pv_results):
         return "Inconclusive|SVDC Success|Notified Failure"
     return "Pass"
+
+
+def grok_line_priority(
+    line: str, grok_priorities: list[Grok]
+) -> dict[str, str | Any] | None:
+    """Method to get a grok match (if there is one) from a line given a list
+    of grok patterns in order of their priority
+
+    :param line: The line to attempt to match
+    :type line: `str`
+    :param grok_priorities: List of grok patterns to match in priority order
+    :type grok_priorities: `list`[:class:`Grok`]
+    :return: Returns a dictionary that relates to the grok match patterns given
+    :rtype: `dict`[`str`, `str` | `Any`] | `None`
+    """
+    for grok in grok_priorities:
+        grok_match = grok.match(line)
+        if grok_match:
+            return grok_match
+    return grok_match
+
+
+def yield_grok_metrics_from_file_buffer(
+    file_buffer: TextIO, grok_priorities: list[Grok]
+) -> Generator[dict[str, str | Any], Any, None]:
+    """Method to generate grok matches (if there are any) from a file buffer
+    given a list of grok patterns in order of their priority
+
+    :param file_buffer: The file buffer to find matches in
+    :type file_buffer: :class:`TextIO`
+    :param grok_priorities: List of grok patterns to match in priority order
+    :type grok_priorities: `list`[:class:`Grok`]
+    :yield: Yields dictionaries that relate to the grok match patterns given
+    :rtype: :class:`Generator`[`dict`[`str`, `str` | `Any`], `Any`, `None`]
+    """
+    for line in file_buffer:
+        grok_match = grok_line_priority(line, grok_priorities)
+        if grok_match:
+            yield grok_match
+
+
+def yield_grok_metrics_from_files(
+    file_paths: list[str], grok_priorities: list[Grok]
+) -> Generator[dict[str, str | Any], Any, None]:
+    """Method to generate grok matches (if there are any) from a list of file
+    paths given a list of grok patterns in order of their priority
+
+    :param file_paths: _description_
+    :type file_paths: list[str]
+    :param grok_priorities: List of grok patterns to match in priority order
+    :type grok_priorities: `list`[:class:`Grok`]
+    :yield: Yields dictionaries that relate to the grok match patterns given
+    :rtype: :class:`Generator`[`dict`[`str`, `str` | `Any`], `Any`, `None`]
+    """
+    for file in file_paths:
+        with open(file, "r", encoding="utf-8") as file_buffer:
+            yield from yield_grok_metrics_from_file_buffer(
+                file_buffer, grok_priorities
+            )

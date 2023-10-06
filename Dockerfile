@@ -1,4 +1,4 @@
-FROM python:slim-bullseye
+FROM python:3.11-slim-bullseye
 
 # install pre-requisites and setup folders
 RUN apt-get update && yes "yes" | apt-get upgrade && \

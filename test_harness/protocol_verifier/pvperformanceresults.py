@@ -12,7 +12,9 @@ from typing import Any, TextIO, TypedDict
 
 import pandas as pd
 from prometheus_client.parser import text_fd_to_metric_families
+from pygrok import Grok
 
+from test_harness.reporting.log_analyser import yield_grok_metrics_from_files
 from .pvresults import PVResults
 
 
@@ -50,6 +52,11 @@ class PVPerformanceResults(PVResults):
         "aeordering_events_processed_total": "AEOSVDC_start",
         "svdc_job_success_total": "AEOSVDC_end",
         "svdc_job_failed_total": "AEOSVDC_end",
+        "reception_event_received": "AER_start",
+        "reception_event_written": "AER_end",
+        "aeordering_events_processed": "AEOSVDC_start",
+        "svdc_job_success": "AEOSVDC_end",
+        "svdc_job_failed": "AEOSVDC_end",
     }
     data_fields = [
         "job_id",
@@ -59,6 +66,23 @@ class PVPerformanceResults(PVResults):
         "AER_end",
         "AEOSVDC_start",
         "AEOSVDC_end",
+    ]
+    verifier_grok_priority_patterns = [
+        Grok(
+            "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} %{WORD:field} :"
+            " JobId = %{UUID} : EventId = %{UUID:event_id} : "
+            "EventType = %{WORD}"
+        ),
+        Grok(
+            "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} %{WORD:field} :"
+            " JobId = %{UUID:job_id}"
+        ),
+    ]
+    reception_grok_priority_patterns = [
+        Grok(
+            "%{TIMESTAMP_ISO8601:timestamp} %{WORD:field} :"
+            " EventId = %{UUID:event_id}"
+        )
     ]
 
     def __init__(
@@ -262,6 +286,49 @@ class PVPerformanceResults(PVResults):
                 self.update_pv_sim_time_field(
                     field=self.pv_grok_map[name], **sample.labels
                 )
+
+    def add_results_from_log_files(
+        self, file_paths: list[str], grok_priority_patterns: list[Grok]
+    ) -> None:
+        """Method to add results to Results holder for a given list of file
+        paths looking for a list of grok patterns in order of priority
+
+        :param file_paths: List of log file paths
+        :type file_paths: `list`[`str`]
+        :param grok_priority_patterns: List of :class:`Grok` patterns in
+        priority order
+        :type grok_priority_patterns: `list`[:class:`Grok`]
+        """
+        for result in yield_grok_metrics_from_files(
+            file_paths=file_paths, grok_priorities=grok_priority_patterns
+        ):
+            if result["field"] in self.pv_grok_map:
+                result["field"] = self.pv_grok_map[result["field"]]
+                self.update_pv_sim_time_field(**result)
+
+    def add_verifier_results_from_log_files(
+        self, file_paths: list[str]
+    ) -> None:
+        """Method to add results from verifier log files
+
+        :param file_paths: List of log file paths
+        :type file_paths: `list`[`str`]
+        """
+        self.add_results_from_log_files(
+            file_paths, self.verifier_grok_priority_patterns
+        )
+
+    def add_reception_results_from_log_files(
+        self, file_paths: list[str]
+    ) -> None:
+        """Method to add results from reception log files
+
+        :param file_paths: List of log file paths
+        :type file_paths: `list`[`str`]
+        """
+        self.add_results_from_log_files(
+            file_paths, self.reception_grok_priority_patterns
+        )
 
     def calc_all_results(self, agg_time_window: float = 1.0) -> None:
         """Method to calculate al aggregated results. Data aggregations happen
