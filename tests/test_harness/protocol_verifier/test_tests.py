@@ -2,6 +2,7 @@
 # pylint: disable=R0801
 # pylint: disable=C2801
 # pylint: disable=C0302
+# pylint: disable=R0904
 """Tests for tests.py
 """
 from pathlib import Path
@@ -13,12 +14,14 @@ from io import StringIO
 from typing import Iterable
 from tempfile import NamedTemporaryFile
 import logging
+from copy import deepcopy
 
 import responses
 from aioresponses import aioresponses
 import pandas as pd
 import pytest
 import numpy as np
+from pygrok import Grok
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.tests import (
@@ -34,12 +37,15 @@ from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_files,
 )
 from test_harness.simulator.simulator_profile import Profile
-from test_harness.utils import clean_directories
+from test_harness.utils import clean_directories, check_dict_equivalency
 
 # get test config
 test_config_path = os.path.join(
     Path(__file__).parent.parent, "config/test_config.config"
 )
+
+# test files directory path
+test_files_path = Path(__file__).parent.parent / "test_files"
 
 # get path of tests uml file
 test_file_path = os.path.join(
@@ -170,12 +176,12 @@ class TestPVResultsDataFrame:
         results.update_from_sim(events, job_id, response, time_completed)
         assert len(results.results) == 3
         for values in results.results.values():
-
             assert values["job_id"] == "job_id"
             assert values["response"] == "a response"
-            assert values["time_sent"] == (
-                time_completed - start_time
-            ).total_seconds()
+            assert (
+                values["time_sent"]
+                == (time_completed - start_time).total_seconds()
+            )
         assert set(results.results.keys()) == set(
             event["eventId"] for event in events
         )
@@ -235,9 +241,10 @@ class TestPVResultsDataFrame:
         for event_job_response_time_dict in event_job_response_time_dicts:
             results.add_first_event_data(**event_job_response_time_dict)
         results.read_groked_string_io(groked_string_io)
-        assert "AER_start" in results.results[
-           "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497"
-        ]
+        assert (
+            "AER_start"
+            in results.results["205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497"]
+        )
         for event_id, values in results.results.items():
             if event_id != "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497":
                 assert "AER_start" not in values
@@ -464,6 +471,137 @@ class TestPVResultsDataFrame:
         assert results.full_averages is not None
         assert results.agg_results is not None
 
+    @staticmethod
+    def test_add_results_from_log_files(
+        pv_results: PVResultsDataFrame,
+        grok_priority_patterns: list[Grok],
+        expected_verifier_pv_added_results: list[dict],
+    ) -> None:
+        """Tests `PVResultsDataFrame`.`add_results_from_log_files`
+
+        :param pv_results: Fixture providing a results holder instance with
+        sent event data
+        :type pv_results: :class:`PVResultsDataFrame`
+        :param grok_priority_patterns: Fixture providing list of grok patterns
+        in priority order
+        :type grok_priority_patterns: `list`[:class:`Grok`]
+        :param expected_verifier_pv_added_results: Fixture providing expected
+        added results for verifier logs
+        :type expected_verifier_pv_added_results: `list`[`dict`]
+        """
+        pv_results.add_results_from_log_files(
+            [test_files_path / "Verifier_test1.log"], grok_priority_patterns
+        )
+        for (
+            expected_verifier_pv_added_result
+        ) in expected_verifier_pv_added_results:
+            assert not expected_verifier_pv_added_result[
+                "event_ids"
+            ].difference(
+                set(
+                    pv_results.job_id_event_id_map[
+                        expected_verifier_pv_added_result["job_id"]
+                    ]
+                )
+            )
+            for event_id in expected_verifier_pv_added_result["event_ids"]:
+                assert (
+                    pv_results.results[event_id][
+                        expected_verifier_pv_added_result["pv_data_field"]
+                    ]
+                    == expected_verifier_pv_added_result["pv_time"]
+                )
+
+    @staticmethod
+    def test_add_verifier_results_from_log_files(
+        pv_results: PVResultsDataFrame,
+        expected_verifier_pv_added_results: list[dict],
+    ) -> None:
+        """Tests `PVResultsDataFrame`.`add_verifier_results_from_log_files`
+
+        :param pv_results: Fixture providing a results holder instance with
+        sent event data
+        :type pv_results: :class:`PVResultsDataFrame`
+        :param expected_verifier_pv_added_results: Fixture providing expected
+        added results for verifier logs
+        :type expected_verifier_pv_added_results: `list`[`dict`]
+        """
+        pv_results.add_verifier_results_from_log_files(
+            [test_files_path / "Verifier_test1.log"]
+        )
+        for (
+            expected_verifier_pv_added_result
+        ) in expected_verifier_pv_added_results:
+            assert not expected_verifier_pv_added_result[
+                "event_ids"
+            ].difference(
+                set(
+                    pv_results.job_id_event_id_map[
+                        expected_verifier_pv_added_result["job_id"]
+                    ]
+                )
+            )
+            for event_id in expected_verifier_pv_added_result["event_ids"]:
+                assert (
+                    pv_results.results[event_id][
+                        expected_verifier_pv_added_result["pv_data_field"]
+                    ]
+                    == expected_verifier_pv_added_result["pv_time"]
+                )
+
+    @staticmethod
+    def test_add_reception_results_from_log_files(
+        pv_results: PVResultsDataFrame,
+        expected_reception_pv_added_results: list[dict],
+    ) -> None:
+        """Tests `PVResultsDataFrame`.`add_reception_results_from_log_files`
+
+        :param pv_results: Fixture providing a results holder instance with
+        sent event data
+        :type pv_results: :class:`PVResultsDataFrame`
+        :param expected_reception_pv_added_results: Fixture providing expected
+        added results for reception logs
+        :type expected_reception_pv_added_results: `list`[`dict`]
+        """
+        pv_results.add_reception_results_from_log_files(
+            [test_files_path / "Reception_test1.log"]
+        )
+        for expected_pv_added_result in expected_reception_pv_added_results:
+            assert (
+                pv_results.results[expected_pv_added_result["event_id"]][
+                    expected_pv_added_result["pv_data_field"]
+                ]
+                == expected_pv_added_result["pv_time"]
+            )
+
+    @staticmethod
+    def test_add_reception_verifier_result_grok_method_equivalency(
+        pv_results: PVResultsDataFrame,
+    ) -> None:
+        """Tests `PVResultsDataFrame`.`add_verifier_results_from_log_files`
+        and `PVResultsDataFrame`.`add_reception_results_from_log_files` and
+        the equivalency to the verified grok exporter method of parsing log
+        files
+
+        :param pv_results: Fixture providing :class:`PVResultsDataFrame` with
+        sent events data loaded
+        :type pv_results: :class:`PVResultsDataFrame`
+        """
+        pv_results_1 = deepcopy(pv_results)
+        pv_results_2 = deepcopy(pv_results)
+        # add log files to pv_results_1
+        pv_results_1.add_verifier_results_from_log_files(
+            [test_files_path / "Verifier_test1.log"]
+        )
+        pv_results_1.add_reception_results_from_log_files(
+            [test_files_path / "Reception_test1.log"]
+        )
+        # add grok file to pv_results_2
+        pv_results_2.get_and_read_grok_metrics(
+            test_files_path / "grok_test1.txt"
+        )
+        check_dict_equivalency(pv_results_1.results, pv_results_2.results)
+
 
 class TestPVResultsHandler:
     """Group of tests for :class:`PVResultsHandler`"""
@@ -489,7 +627,6 @@ class TestPVResultsHandler:
         )
         results_handler.__enter__()
         results_handler.__exit__(None, None, None)
-        # assert not results_handler.daemon_not_done.is_set()
         assert not results_handler.daemon_thread.is_alive()
 
     @staticmethod
@@ -585,9 +722,7 @@ class TestPVResultsHandler:
             attr = getattr(results, attr_name)
             assert len(attr) == 1
             assert attr[0] == item
-        files_to_remove = [
-            "a_file_name"
-        ]
+        files_to_remove = ["a_file_name"]
         for file_name in files_to_remove:
             path = os.path.join(harness_config.report_file_store, file_name)
             assert os.path.exists(path)
@@ -975,7 +1110,7 @@ def test_run_test_performance_profile_shard() -> None:
 
 @responses.activate
 def test_run_test_performance_stop_test(
-    caplog: pytest.LogCaptureFixture
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
@@ -1022,10 +1157,8 @@ def test_run_test_performance_stop_test(
             "Protocol Verifier failed to finish within the test timeout of "
             f"{harness_config.pv_test_timeout} seconds.\nResults will "
             "be calculated at this point"
-        ) in caplog.text
+            in caplog.text
+        )
         clean_directories(
-            [
-                harness_config.report_file_store,
-                harness_config.log_file_store
-            ]
+            [harness_config.report_file_store, harness_config.log_file_store]
         )

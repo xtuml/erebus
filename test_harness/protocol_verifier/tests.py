@@ -47,10 +47,11 @@ from test_harness.reporting import create_report_files
 from test_harness.reporting.report_results import (
     generate_performance_test_reports,
 )
-from test_harness.requests import send_get_request, download_file_to_path
+from test_harness.requests import send_get_request  # , download_file_to_path
 from .pvresults import PVResults
 from .pvresultshandler import PVResultsHandler
 from .pvperformanceresults import PVPerformanceResults
+
 # from .pvresultsdaskdataframe import PVResultsDaskDataFrame
 from .pvresultsdataframe import PVResultsDataFrame
 from .pvfunctionalresults import PVFunctionalResults
@@ -268,8 +269,7 @@ class Test(ABC):
                 delays=self.delay_times,
                 simulation_data=self.sim_data_generator,
                 action_func=send_list_dict_as_json_wrap_url(
-                    url=self.harness_config.pv_send_url,
-                    session=session
+                    url=self.harness_config.pv_send_url, session=session
                 ),
                 results_handler=results_handler,
             )
@@ -304,7 +304,7 @@ class Test(ABC):
                 await asyncio.gather(
                     self.send_test_files(results_handler=pv_results_handler),
                     self.pv_file_inspector.run_pv_file_inspector(),
-                    self.stop_test()
+                    self.stop_test(),
                 )
             except RuntimeError as error:
                 logging.getLogger().info(msg=str(error))
@@ -529,6 +529,7 @@ class PerformanceTest(Test):
             save_files=False,
             test_profile=test_profile,
         )
+
     # TODO: implement function
     # def set_results_holder(self) -> PVResultsDaskDataFrame:
     #     return PVResultsDaskDataFrame()
@@ -601,14 +602,20 @@ class PerformanceTest(Test):
         """Method to get the PV sim data from the grok endpoint and read into
         results
         """
-        # download grok file
-        grok_file_path = os.path.join(
-            self.harness_config.log_file_store, "grok.txt"
+        self.results.add_reception_results_from_log_files(
+            file_paths=[
+                os.path.join(self.harness_config.log_file_store, file_name)
+                for file_name in self.pv_file_inspector.file_names["aer"]
+                + ["Reception.log"]
+            ]
         )
-        download_file_to_path(
-            self.harness_config.pv_grok_exporter_url, grok_file_path
+        self.results.add_verifier_results_from_log_files(
+            file_paths=[
+                os.path.join(self.harness_config.log_file_store, file_name)
+                for file_name in self.pv_file_inspector.file_names["ver"]
+                + ["Verifier.log"]
+            ]
         )
-        self.results.get_and_read_grok_metrics(grok_file_path)
 
     def get_report_files_from_results(self) -> tuple[str, str]:
         """Methodot get the reports from the results

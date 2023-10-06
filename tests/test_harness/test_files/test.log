@@ -1,0 +1,8 @@
+2023-09-28T19:27:23.434324Z 1 svdc_event_received : EventId = 3cf78438-8084-494d-8d7b-efd7ea46f7d4
+2023-09-28T19:27:23.434758Z 1 svdc_new_job_started : JobId = eeba705f-eac4-467c-8826-bf31673e745f : EventId = 3cf78438-8084-494d-8d7b-efd7ea46f7d4 : EventType = A
+2023-09-28T19:27:23.514683Z 1 aeordering_job_processed : JobId = 4cdbe6d0-424a-4a96-9357-3b19144ee07b
+2023-09-28T19:27:23.514745Z 1 aeordering_events_processed : JobId = 4cdbe6d0-424a-4a96-9357-3b19144ee07b : EventId = 7a231b76-8062-47da-a2c9-0a764dfa3dd9 : EventType = B
+2023-09-28T19:27:23.515067Z 1 aeordering_events_blocked : JobId = 4cdbe6d0-424a-4a96-9357-3b19144ee07b : EventId = 7a231b76-8062-47da-a2c9-0a764dfa3dd9 : EventType = B
+2023-09-28T19:10:57.012213Z 1 svdc_event_processed : EventId = e2169f17-819a-4b34-8edc-3df216abb96c
+2023-09-28T19:10:57.012218Z 1 svdc_event_processed : EventId = 35d0bb04-a21f-4bc1-a0f6-4ef19b50737f
+2023-09-28T19:10:57.012539Z 1 svdc_job_success : JobId = 85619f16-f04f-4f60-8525-2f643c6b417e : JobName = simple_sequence
