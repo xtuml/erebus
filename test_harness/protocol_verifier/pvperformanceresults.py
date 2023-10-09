@@ -43,6 +43,15 @@ class FailuresDict(TypedDict):
     """
 
 
+class ReceptionCountsDict(TypedDict):
+    num_aer_start: int
+    """Number of events received by AEReception
+    """
+    num_aer_end: int
+    """Number of events written by AEReception
+    """
+
+
 class PVPerformanceResults(PVResults):
     """Base class for perfromance test results extending :class:`PVResults`"""
 
@@ -95,6 +104,7 @@ class PVPerformanceResults(PVResults):
         self.end_times: dict[str, float] | None = None
         self.failures: FailuresDict | None = None
         self.full_averages: AveragesDict | None = None
+        self.reception_event_counts: ReceptionCountsDict | None = None
         self.agg_results: pd.DataFrame | None = None
 
     @abstractmethod
@@ -344,6 +354,7 @@ class PVPerformanceResults(PVResults):
         self.end_times = self.calc_end_times()
         self.failures = self.calculate_failures()
         self.full_averages = self.calc_full_averages()
+        self.reception_event_counts = self.calc_reception_counts()
         self.agg_results = self.calculate_aggregated_results_dataframe(
             agg_time_window
         )
@@ -396,6 +407,15 @@ class PVPerformanceResults(PVResults):
         * "average_response_time" - The average time an event is sent and then
         fully processed by the PV stack
         :rtype: `dict`[`str`, `float`]
+        """
+
+    @abstractmethod
+    def calc_reception_counts(self) -> ReceptionCountsDict:
+        """Returns a dictionary of counts for reception recevied and reception
+        written
+
+        :return: Returns a dictionary of reception received and written counts
+        :rtype: :class:`ReceptionCountsDict`
         """
 
     @abstractmethod

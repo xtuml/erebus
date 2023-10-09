@@ -15,6 +15,7 @@ from typing import Iterable
 from tempfile import NamedTemporaryFile
 import logging
 from copy import deepcopy
+import xml.etree.ElementTree as ET
 
 import responses
 from aioresponses import aioresponses
@@ -413,6 +414,15 @@ class TestPVResultsDataFrame:
         assert averages["average_response_time"] == 4.0
 
     @staticmethod
+    def test_calc_reception_counts(results_dataframe: pd.DataFrame) -> None:
+        results = PVResultsDataFrame()
+        results.results = results_dataframe
+        results.create_response_time_fields()
+        reception_counts = results.calc_reception_counts()
+        assert reception_counts["num_aer_start"] == 10
+        assert reception_counts["num_aer_end"] == 10
+
+    @staticmethod
     def test_calculate_aggregated_results_dataframe(
         results_dataframe: pd.DataFrame,
     ) -> None:
@@ -469,6 +479,7 @@ class TestPVResultsDataFrame:
         assert results.end_times is not None
         assert results.failures is not None
         assert results.full_averages is not None
+        assert results.reception_event_counts is not None
         assert results.agg_results is not None
 
     @staticmethod
@@ -1106,6 +1117,72 @@ def test_run_test_performance_profile_shard() -> None:
             os.remove(
                 os.path.join(harness_config.log_file_store, "Verifier.log")
             )
+
+
+@responses.activate
+def test_get_report_files_from_results(
+    results_dataframe: pd.DataFrame
+) -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    profile = Profile(
+        pd.DataFrame([[0, 30], [1, 30], [2, 30]], columns=["Time", "Number"])
+    )
+    test = PerformanceTest(
+        test_file_generators=test_events,
+        test_config=test_config,
+        harness_config=harness_config,
+        test_profile=profile,
+    )
+    test.results.results = results_dataframe.to_dict(orient="index")
+    test.results.calc_all_results()
+    _, xml = test.get_report_files_from_results()
+    # get xml tree
+    xml_tree = ET.fromstring(xml)
+    # check there is one test suite and its attributes are correct
+    children = [child for child in xml_tree]
+    assert len(children) == 1
+    test_suite = children[0]
+    expected_attribs = {
+        "name": "Performance test run",
+        "tests": "10",
+        "failures": 0,
+        "errors": 0
+    }
+    check_dict_equivalency(expected_attribs, test_suite.attrib)
+    # get and check children
+    test_suite_children = [child for child in test_suite]
+    assert len(test_suite_children) == 2
+    # check properties
+    properties = test_suite_children[0]
+    assert properties.tag == "properties"
+    property_children = [child for child in properties]
+    assert len(property_children) == 8
+    expected_properties = {
+        "num_tests": "10",
+        "num_failures": "0",
+        "num_errors": "0",
+        "th_end_time": "9",
+        "aer_end_time": "11",
+        "pv_end_time": "13",
+        "average_sent_per_sec": "1.0",
+        "average_processed_per_sec": "10/13",
+        "average_queue_time": "1.0",
+        "average_response_time": "4.0",
+        "num_aer_start": "10",
+        "num_aer_end": "10",
+    }
+    for prop in property_children:
+        assert expected_properties[prop.attrib["name"]] == prop.attrib["value"]
+    # check test case
+    test_case = test_suite_children[1]
+    assert test_case.tag == "testcase"
+    assert test_case.attrib["name"] == "Run Result"
+    assert test_case.attrib["classname"] == "Performance test run"
 
 
 @responses.activate
