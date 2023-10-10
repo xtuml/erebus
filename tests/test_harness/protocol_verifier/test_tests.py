@@ -23,6 +23,7 @@ import pandas as pd
 import pytest
 import numpy as np
 from pygrok import Grok
+from hypothesis import given, strategies as st, settings, HealthCheck
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.tests import (
@@ -319,8 +320,11 @@ class TestPVResultsDataFrame:
         assert failures["num_tests"] == 10
 
     @staticmethod
+    @given(num_to_change=st.integers(0, 10))
+    @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
     def test_calculate_failures_th_failures(
         results_dataframe: pd.DataFrame,
+        num_to_change: int
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`calculate_failures` with a th
         failure
@@ -328,19 +332,26 @@ class TestPVResultsDataFrame:
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
+        :param num_to_change: The number of entries to set to "error response"
+        in the column "response"
+        :type num_to_change: `int`
         """
         results = PVResultsDataFrame()
-        results_dataframe.loc["event_0", "response"] = "error response"
-        results.results = results_dataframe
+        test_dataframe = deepcopy(results_dataframe)
+        test_dataframe["response"].iloc[0:num_to_change] = "error response"
+        results.results = test_dataframe
         results.create_response_time_fields()
         failures = results.calculate_failures()
-        assert failures["num_errors"] == 1
+        assert failures["num_errors"] == num_to_change
         assert failures["num_failures"] == 0
         assert failures["num_tests"] == 10
 
     @staticmethod
+    @given(num_to_change=st.integers(0, 10))
+    @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
     def test_calculate_failures_pv_failures(
         results_dataframe: pd.DataFrame,
+        num_to_change: int
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`calculate_failures` with a pv
         failure
@@ -348,16 +359,18 @@ class TestPVResultsDataFrame:
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
+        :param num_to_change: The number of entries to set to None in the
+        column "AEOSVDC"
+        :type num_to_change: `int`
         """
         results = PVResultsDataFrame()
-        results_dataframe.loc[
-            "event_0", ["AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"]
-        ] = None
-        results.results = results_dataframe
+        test_dataframe = deepcopy(results_dataframe)
+        test_dataframe["AEOSVDC_end"].iloc[0:num_to_change] = None
+        results.results = test_dataframe
         results.create_response_time_fields()
         failures = results.calculate_failures()
         assert failures["num_errors"] == 0
-        assert failures["num_failures"] == 1
+        assert failures["num_failures"] == num_to_change
         assert failures["num_tests"] == 10
 
     @staticmethod

@@ -122,25 +122,18 @@ class PVResultsDataFrame(PVPerformanceResults):
         :return: Returns a dictionary of integers of the following fields:
         * "num_tests" - The number of events in the simulation
         * "num_failures" - The number of event failures in the PV groked logs
-        (i.e. did not register a time in all of the pv sim time fields)
+        (i.e. did not register a time in AEOSVDC_end)
         * "num_errors" - The number of event failures given by the test
         harness (i.e. the response received was not empty)
         :rtype: `dict`[`str`, `int`]
         """
-        th_failures = len(self.results[self.results["response"] != ""])
-        pv_failures = (
-            pd.isnull(
-                self.results.loc[
-                    :, ["AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"]
-                ]
-            )
-            .all(axis=1)
-            .sum()
-        )
+        num_tests = len(self.results)
+        num_failures = num_tests - self.results["AEOSVDC_end"].count()
+        num_errors = len(self.results[self.results["response"] != ""])
         return {
-            "num_tests": len(self.results),
-            "num_failures": pv_failures,
-            "num_errors": th_failures,
+            "num_tests": num_tests,
+            "num_failures": num_failures,
+            "num_errors": num_errors,
         }
 
     def calc_end_times(self) -> dict[str, float]:
