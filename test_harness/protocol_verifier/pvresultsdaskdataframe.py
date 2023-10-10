@@ -107,7 +107,7 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
         """
         return len(self.results)
 
-    def create_results_holder(self) -> None:
+    def _create_results_holder(self) -> None:
         """Required by the abstract class but not needed here"""
         # """Creates the results holder as pandas DataFrame"""
         # self.results = pd.DataFrame(columns=self.data_fields)

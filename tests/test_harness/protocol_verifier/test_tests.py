@@ -1153,7 +1153,7 @@ def test_get_report_files_from_results(
     # get xml tree
     xml_tree = ET.fromstring(xml)
     # check there is one test suite and its attributes are correct
-    children = [child for child in xml_tree]
+    children = list(xml_tree)
     assert len(children) == 1
     test_suite = children[0]
     expected_attribs = {
@@ -1164,13 +1164,14 @@ def test_get_report_files_from_results(
     }
     check_dict_equivalency(expected_attribs, test_suite.attrib)
     # get and check children
-    test_suite_children = [child for child in test_suite]
-    assert len(test_suite_children) == 2
+    children = list(test_suite)
+    assert len(children) == 2
+    properties = children[0]
+    test_case = children[1]
     # check properties
-    properties = test_suite_children[0]
     assert properties.tag == "properties"
-    property_children = [child for child in properties]
-    assert len(property_children) == 12
+    children = list(properties)
+    assert len(children) == 12
     expected_properties = {
         "num_tests": "10",
         "num_failures": "0",
@@ -1185,10 +1186,9 @@ def test_get_report_files_from_results(
         "num_aer_start": "10",
         "num_aer_end": "10",
     }
-    for prop in property_children:
+    for prop in children:
         assert expected_properties[prop.attrib["name"]] == prop.attrib["value"]
     # check test case
-    test_case = test_suite_children[1]
     assert test_case.tag == "testcase"
     assert test_case.attrib["name"] == "Run Result"
     assert test_case.attrib["classname"] == "Performance test run"

@@ -44,6 +44,8 @@ class FailuresDict(TypedDict):
 
 
 class ReceptionCountsDict(TypedDict):
+    """Dictionary of reception counts
+    """
     num_aer_start: int
     """Number of events received by AEReception
     """
@@ -100,7 +102,7 @@ class PVPerformanceResults(PVResults):
         """Constructor method"""
         super().__init__()
         self.results = None
-        self.create_results_holder()
+        self._create_results_holder()
         self.end_times: dict[str, float] | None = None
         self.failures: FailuresDict | None = None
         self.full_averages: AveragesDict | None = None
@@ -114,7 +116,7 @@ class PVPerformanceResults(PVResults):
         """
 
     @abstractmethod
-    def create_results_holder(self) -> None:
+    def _create_results_holder(self) -> None:
         """Abstract method that creates the results holder that will be
         updated with results
         """

@@ -46,7 +46,7 @@ class PVResultsDataFrame(PVPerformanceResults):
             if new_col not in self.results.columns:
                 self.results[new_col] = np.nan
 
-    def create_results_holder(self) -> None:
+    def _create_results_holder(self) -> None:
         """Creates the results holder as pandas DataFrame"""
         # self.results = pd.DataFrame(columns=self.data_fields)
         self.results = {}
