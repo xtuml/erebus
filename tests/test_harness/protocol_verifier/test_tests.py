@@ -415,6 +415,11 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calc_reception_counts(results_dataframe: pd.DataFrame) -> None:
+        """Tests :class:`PVResultsDataFrame`.`calc_reception_counts`
+
+        :param results_dataframe: Fixture providing a results dataframe
+        :type results_dataframe: :class:`pd`.`DataFrame`
+        """
         results = PVResultsDataFrame()
         results.results = results_dataframe
         results.create_response_time_fields()
@@ -1123,7 +1128,11 @@ def test_run_test_performance_profile_shard() -> None:
 def test_get_report_files_from_results(
     results_dataframe: pd.DataFrame
 ) -> None:
-    """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
+    """Tests :class:`PerformanceTests`.`get_report_files_from_results`
+    :param results_dataframe: Fixture providing a results dataframe with
+    pv results and th results
+    :type results_dataframe: :class:`pd`.`DataFrame`
+    """
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
@@ -1150,8 +1159,8 @@ def test_get_report_files_from_results(
     expected_attribs = {
         "name": "Performance test run",
         "tests": "10",
-        "failures": 0,
-        "errors": 0
+        "failures": "0",
+        "errors": "0"
     }
     check_dict_equivalency(expected_attribs, test_suite.attrib)
     # get and check children
@@ -1161,16 +1170,16 @@ def test_get_report_files_from_results(
     properties = test_suite_children[0]
     assert properties.tag == "properties"
     property_children = [child for child in properties]
-    assert len(property_children) == 8
+    assert len(property_children) == 12
     expected_properties = {
         "num_tests": "10",
         "num_failures": "0",
         "num_errors": "0",
-        "th_end_time": "9",
-        "aer_end_time": "11",
-        "pv_end_time": "13",
-        "average_sent_per_sec": "1.0",
-        "average_processed_per_sec": "10/13",
+        "th_end": "9.0",
+        "aer_end": "11.0",
+        "pv_end": "13.0",
+        "average_sent_per_sec": str(10/9),
+        "average_processed_per_sec": str(10/13),
         "average_queue_time": "1.0",
         "average_response_time": "4.0",
         "num_aer_start": "10",
