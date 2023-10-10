@@ -69,7 +69,7 @@ class PVResultsDaskDataFrame(PVPerformanceResults):
             self.sqlite_address = sqlite_address
 
         self.table_name = table_name
-        self.create_results_holder()
+        self._create_results_holder()
         self._results: Optional[dd.DataFrame] = None
         super().__init__()
 
