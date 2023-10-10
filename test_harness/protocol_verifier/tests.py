@@ -630,6 +630,7 @@ class PerformanceTest(Test):
             properties={
                 **self.results.end_times,
                 **self.results.full_averages,
+                **self.results.reception_event_counts
             },
         )
         return html_report, xml_report

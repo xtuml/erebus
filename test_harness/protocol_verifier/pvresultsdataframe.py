@@ -16,6 +16,7 @@ from .pvperformanceresults import (
     PVPerformanceResults,
     AveragesDict,
     FailuresDict,
+    ReceptionCountsDict,
 )
 
 
@@ -45,7 +46,7 @@ class PVResultsDataFrame(PVPerformanceResults):
             if new_col not in self.results.columns:
                 self.results[new_col] = np.nan
 
-    def create_results_holder(self) -> None:
+    def _create_results_holder(self) -> None:
         """Creates the results holder as pandas DataFrame"""
         # self.results = pd.DataFrame(columns=self.data_fields)
         self.results = {}
@@ -188,6 +189,18 @@ class PVResultsDataFrame(PVPerformanceResults):
             "average_response_time": np.nanmean(
                 self.results["full_response_time"]
             ),
+        }
+
+    def calc_reception_counts(self) -> ReceptionCountsDict:
+        """Returns a dictionary of counts for reception recevied and reception
+        written
+
+        :return: Returns a dictionary of reception received and written counts
+        :rtype: :class:`ReceptionCountsDict`
+        """
+        return {
+            "num_aer_start": self.results["AER_start"].count(),
+            "num_aer_end": self.results["AER_end"].count()
         }
 
     def calculate_aggregated_results_dataframe(
