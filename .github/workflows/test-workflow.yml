@@ -14,7 +14,7 @@ jobs:
     uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
 
   run-tests:
-    runs-on: ubuntu-latest
+    runs-on: sh-k8s-runner
     steps:
       - name: Setup Checkout
         uses: actions/checkout@v4
