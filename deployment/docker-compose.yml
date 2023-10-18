@@ -2,10 +2,15 @@ version: "1"
 name: test-harness
 services:
   test-harness:
-    image: "registry.gitlab.com/smartdcs1/cdsdt/test-harness:MuninP2S1-midstage"
+    # amd64 image
+    image: "registry.gitlab.com/smartdcs1/cdsdt/test-harness:1.0.0"
+    # arm image
+    # image: "registry.gitlab.com/smartdcs1/cdsdt/test-harness:1.0.0-arm"
     volumes:
       - "./config:/config"
       - "./report_output:/test_harness_app/test_harness/report_output"
       - "./uml_file_store:/test_harness_app/test_harness/uml_file_store"
+      - "./test_file_store:/test_harness_app/test_harness/test_file_store"
+      - "./profile_store:/test_harness_app/test_harness/profile_store"
     ports:
     - 8800:8800

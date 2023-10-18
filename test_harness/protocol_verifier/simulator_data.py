@@ -13,6 +13,7 @@ from datetime import datetime
 import logging
 import itertools
 from abc import ABC, abstractmethod
+import aiohttp
 
 from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import (
@@ -301,7 +302,8 @@ def convert_list_dict_to_json_io_bytes(
 
 
 def send_list_dict_as_json_wrap_url(
-    url: str
+    url: str,
+    session: aiohttp.ClientSession | None = None
 ) -> Callable[
     [str],
     Callable[
@@ -313,6 +315,8 @@ def send_list_dict_as_json_wrap_url(
 
     :param url: The url to use for requests
     :type url: `str`
+    :param session: The session for HTTP requests, defaults to `None`
+    :type session: `aiohttp`.`ClientSession` | `None`, optional
     :return: Returns an asynchrcnous function for sending list dictionaries
     as json packets
     :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
@@ -321,7 +325,7 @@ def send_list_dict_as_json_wrap_url(
     async def send_list_dict_as_json(
         list_dict: list[dict[str, Any]],
         job_id: str,
-        job_info: dict[str, str | None]
+        job_info: dict[str, str | None],
     ) -> tuple[
         list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
     ]:
@@ -343,7 +347,8 @@ def send_list_dict_as_json_wrap_url(
         result = await send_payload_async(
             file=file,
             file_name=file_name,
-            url=url
+            url=url,
+            session=session
         )
         time_completed = datetime.now()
         return list_dict, file_name, job_id, job_info, result, time_completed

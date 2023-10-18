@@ -113,7 +113,7 @@ class PVResultsHandler(ResultsHandler):
         """Method to handle the queue as it is added to"""
         while self.daemon_not_done:
             try:
-                item = self.queue.get(timeout=1)
+                item = self.queue.get(timeout=0.1)
                 self.handle_item_from_queue(item)
             except Empty:
                 continue
