@@ -276,7 +276,7 @@ class Test(ABC):
                 results_handler=results_handler,
             )
             # set the sim start time
-            self.time_start = datetime.now() 
+            self.time_start = datetime.now()
             results_handler.results_holder.time_start = self.time_start
             await self.simulator.simulate()
 
@@ -637,9 +637,13 @@ class PerformanceTest(Test):
                 **self.results.reception_event_counts,
                 **self.results.process_errors_counts,
                 **{
-                    "test_start_time": self.time_start.strftime("%Y/%m/%d, %H:%M:%S"),
-                    "test_end_time": self.time_end.strftime("%Y/%m/%d, %H:%M:%S")
-                }
+                    "test_start_time": self.time_start.strftime(
+                        "%Y/%m/%d, %H:%M:%S"
+                    ),
+                    "test_end_time": self.time_end.strftime(
+                        "%Y/%m/%d, %H:%M:%S"
+                    ),
+                },
             },
         )
         return html_report, xml_report
@@ -661,7 +665,7 @@ class PerformanceTest(Test):
             x_col="Time (s)",
             y_axis_name="Events/s",
             color_group_name="Metric",
-            markers=True
+            markers=True,
         )
         # get aggregated event response and queue times figure
         reponse_vs_queue = self.make_fig_melt(
@@ -675,7 +679,7 @@ class PerformanceTest(Test):
             x_col="Time (s)",
             y_axis_name="Time period (s)",
             color_group_name="Metric",
-            markers=True
+            markers=True,
         )
         # get the processing error figure
         processing_errors = self.make_fig_melt(
@@ -683,7 +687,7 @@ class PerformanceTest(Test):
             x_col="Time (s)",
             y_axis_name="Number",
             color_group_name="Processing Error",
-            plotly_func=px.bar
+            plotly_func=px.bar,
         )
         # get cumulative sent, processed, aer processed events figure
         cumulative_sent_vs_processed = self.make_fig_melt(
@@ -711,7 +715,9 @@ class PerformanceTest(Test):
                 "ResponseAndQueueTime.html": reponse_vs_queue,
                 "AggregatedResults.csv": self.results.agg_results,
                 "ProcessingErrors.html": processing_errors,
-                "AggregatedErrors.csv": self.results.process_errors_agg_results
+                "AggregatedErrors.csv": (
+                    self.results.process_errors_agg_results
+                ),
             },
             output_directory=self.test_output_directory,
         )
@@ -723,7 +729,7 @@ class PerformanceTest(Test):
         y_axis_name: str,
         color_group_name: str,
         plotly_func: Callable[..., Figure] = px.line,
-        **func_kwargs
+        **func_kwargs,
     ) -> Figure:
         """Melt a dataframe identifying an x axis column to melt against. Plot
         a line graph using an identifier y axis and color group columns.
@@ -754,6 +760,6 @@ class PerformanceTest(Test):
             x=x_col,
             y=y_axis_name,
             color=color_group_name,
-            **func_kwargs
+            **func_kwargs,
         )
         return fig
