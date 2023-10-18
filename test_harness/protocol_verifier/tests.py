@@ -6,7 +6,7 @@
 # pylint: disable=C0302
 """Methods and classes relating to tests
 """
-from typing import Generator, Any
+from typing import Generator, Any, Callable
 from abc import ABC, abstractmethod
 from random import choice, choices
 import os
@@ -630,7 +630,8 @@ class PerformanceTest(Test):
             properties={
                 **self.results.end_times,
                 **self.results.full_averages,
-                **self.results.reception_event_counts
+                **self.results.reception_event_counts,
+                **self.results.process_errors_counts
             },
         )
         return html_report, xml_report
@@ -651,6 +652,7 @@ class PerformanceTest(Test):
             x_col="Time (s)",
             y_axis_name="Events/s",
             color_group_name="Metric",
+            markers=True
         )
         # get aggregated event response and queue times figure
         reponse_vs_queue = self.make_fig_melt(
@@ -664,6 +666,15 @@ class PerformanceTest(Test):
             x_col="Time (s)",
             y_axis_name="Time period (s)",
             color_group_name="Metric",
+            markers=True
+        )
+        # get the processing error figure
+        processing_errors = self.make_fig_melt(
+            self.results.process_errors_agg_results,
+            x_col="Time (s)",
+            y_axis_name="Number",
+            color_group_name="Processing Error",
+            plotly_func=px.bar
         )
         # deliver the report files
         deliver_test_report_files(
@@ -673,6 +684,8 @@ class PerformanceTest(Test):
                 "EventsSentVSProcessed.html": sent_vs_processed,
                 "ResponseAndQueueTime.html": reponse_vs_queue,
                 "AggregatedResults.csv": self.results.agg_results,
+                "ProcessingErrors.html": processing_errors,
+                "AggregatedErrors.csv": self.results.process_errors_agg_results
             },
             output_directory=self.test_output_directory,
         )
@@ -683,6 +696,8 @@ class PerformanceTest(Test):
         x_col: str,
         y_axis_name: str,
         color_group_name: str,
+        plotly_func: Callable[..., Figure] = px.line,
+        **func_kwargs
     ) -> Figure:
         """Melt a dataframe identifying an x axis column to melt against. Plot
         a line graph using an identifier y axis and color group columns.
@@ -699,17 +714,20 @@ class PerformanceTest(Test):
         :type y_axis_name: `str`
         :param color_group_name: The title for the key of the color groups
         :type color_group_name: `str`
+        :param plotly_func: The title for the key of the color groups,
+        defaults to :class:`px`.`line`
+        :type plotly_func: :class:`Callable`[..., :class:`Figure`], optional
         :return: Returns a plotly line figure
         :rtype: :class:`Figure`
         """
         melted_df = df_un_melted.melt(
             id_vars=[x_col], var_name=color_group_name, value_name=y_axis_name
         )
-        fig = px.line(
+        fig = plotly_func(
             melted_df,
             x=x_col,
             y=y_axis_name,
             color=color_group_name,
-            markers=True,
+            **func_kwargs
         )
         return fig

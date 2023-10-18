@@ -9,13 +9,14 @@ from pathlib import Path
 import os
 import asyncio
 import glob
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import StringIO
 from typing import Iterable
 from tempfile import NamedTemporaryFile
 import logging
 from copy import deepcopy
 import xml.etree.ElementTree as ET
+import math
 
 import responses
 from aioresponses import aioresponses
@@ -31,6 +32,10 @@ from test_harness.protocol_verifier.tests import (
     FunctionalTest,
     PVResultsHandler,
     PVFunctionalResults,
+)
+from test_harness.protocol_verifier.pvperformanceresults import (
+    ResultsDict,
+    ProcessErrorDataDict,
 )
 from test_harness.protocol_verifier.pvresultsdataframe import (
     PVResultsDataFrame,
@@ -217,6 +222,193 @@ class TestPVResultsDataFrame:
             assert row["time_sent"] == row["AER_start"]
 
     @staticmethod
+    @given(
+        st.datetimes(datetime(1000, 1, 1)),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+    )
+    def test_add_error_process_field(
+        starting_time: datetime,
+        aer_processing_errors: list[timedelta],
+        aeo_processing_errors: list[timedelta],
+    ) -> None:
+        """Tests the method `add_error_process_field`
+
+        :param starting_time: The starting time of the simulation
+        :type starting_time: :class:`datetime`
+        :param aer_processing_errors: A list of time deltas to add to the
+        simulation starting time for AER processing errors
+        :type aer_processing_errors: `list`[:class:`timedelta`]
+        :param aeo_processing_errors: A list of time deltas to add to the
+        simulation starting time for AEO processing errors
+        :type aeo_processing_errors: `list`[:class:`timedelta`]
+        """
+        results = PVResultsDataFrame()
+        results.time_start = starting_time
+        results_dicts = [
+            ResultsDict(
+                field=error_name,
+                timestamp=(starting_time + time_delta).strftime(
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                ),
+            )
+            for error_name, error_list in zip(
+                ["AER_file_process_error", "AEO_file_process_error"],
+                [aer_processing_errors, aeo_processing_errors],
+            )
+            for time_delta in error_list
+        ]
+        expected_bins = {}
+        for error_name, error_list in zip(
+            ["AER_file_process_error", "AEO_file_process_error"],
+            [aer_processing_errors, aeo_processing_errors],
+        ):
+            for time_delta in error_list:
+                bin_number = math.floor(
+                    time_delta.total_seconds() / results.binning_window
+                )
+                if bin_number not in expected_bins:
+                    expected_bins[bin_number] = ProcessErrorDataDict(
+                        AER_file_process_error=0, AEO_file_process_error=0
+                    )
+                expected_bins[bin_number][error_name] += 1
+        for result in results_dicts:
+            results.add_error_process_field(result)
+        assert set(expected_bins.keys()) == set(results.process_errors.keys())
+        for binned_window, expected_result in expected_bins.items():
+            actual_result = results.process_errors[binned_window]
+            check_dict_equivalency(expected_result, actual_result)
+
+    @staticmethod
+    @given(
+        st.datetimes(datetime(1000, 1, 1)),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+    )
+    def test_calc_processing_errors_counts(
+        starting_time: datetime,
+        aer_processing_errors: list[timedelta],
+        aeo_processing_errors: list[timedelta],
+    ) -> None:
+        """Tests the method `calc_processing_errors_counts`
+
+        :param starting_time: The starting time of the simulation
+        :type starting_time: :class:`datetime`
+        :param aer_processing_errors: A list of time deltas to add to the
+        simulation starting time for AER processing errors
+        :type aer_processing_errors: `list`[:class:`timedelta`]
+        :param aeo_processing_errors: A list of time deltas to add to the
+        simulation starting time for AEO processing errors
+        :type aeo_processing_errors: `list`[:class:`timedelta`]
+        """
+        results = PVResultsDataFrame()
+        results.time_start = starting_time
+        results_dicts = [
+            ResultsDict(
+                field=error_name,
+                timestamp=(starting_time + time_delta).strftime(
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                ),
+            )
+            for error_name, error_list in zip(
+                ["AER_file_process_error", "AEO_file_process_error"],
+                [aer_processing_errors, aeo_processing_errors],
+            )
+            for time_delta in error_list
+        ]
+        for result in results_dicts:
+            results.add_error_process_field(result)
+        expected_counts = ProcessErrorDataDict(
+            AER_file_process_error=len(aer_processing_errors),
+            AEO_file_process_error=len(aeo_processing_errors),
+        )
+        actual_counts = results.calc_processing_errors_counts()
+        check_dict_equivalency(expected_counts, actual_counts)
+
+    @staticmethod
+    @given(
+        st.datetimes(datetime(1000, 1, 1)),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+    )
+    def test_calc_processing_errors_time_series(
+        starting_time: datetime,
+        aer_processing_errors: list[timedelta],
+        aeo_processing_errors: list[timedelta],
+    ) -> None:
+        """Tests the method `calc_processing_errors_time_series`
+
+        :param starting_time: The starting time of the simulation
+        :type starting_time: :class:`datetime`
+        :param aer_processing_errors: A list of time deltas to add to the
+        simulation starting time for AER processing errors
+        :type aer_processing_errors: `list`[:class:`timedelta`]
+        :param aeo_processing_errors: A list of time deltas to add to the
+        simulation starting time for AEO processing errors
+        :type aeo_processing_errors: `list`[:class:`timedelta`]
+        """
+        results = PVResultsDataFrame()
+        results.time_start = starting_time
+        results_dicts = [
+            ResultsDict(
+                field=error_name,
+                timestamp=(starting_time + time_delta).strftime(
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                ),
+            )
+            for error_name, error_list in zip(
+                ["AER_file_process_error", "AEO_file_process_error"],
+                [aer_processing_errors, aeo_processing_errors],
+            )
+            for time_delta in error_list
+        ]
+        expected_bins = {}
+        for error_name, error_list in zip(
+            ["AER_file_process_error", "AEO_file_process_error"],
+            [aer_processing_errors, aeo_processing_errors],
+        ):
+            for time_delta in error_list:
+                bin_number = math.floor(
+                    time_delta.total_seconds() / results.binning_window
+                )
+                if bin_number not in expected_bins:
+                    expected_bins[bin_number] = ProcessErrorDataDict(
+                        AER_file_process_error=0, AEO_file_process_error=0
+                    )
+                expected_bins[bin_number][error_name] += 1
+        expected_time_series = pd.DataFrame.from_dict(
+            expected_bins,
+            orient="index",
+            columns=["AER_file_process_error", "AEO_file_process_error"],
+        ).reset_index(names="Time (s)")
+        for result in results_dicts:
+            results.add_error_process_field(result)
+        actual_time_series = results.calc_processing_errors_time_series()
+        assert len(expected_time_series) == len(actual_time_series)
+        for idx, row in expected_time_series.iterrows():
+            assert actual_time_series.loc[idx, "Time (s)"] == row["Time (s)"]
+            assert (
+                actual_time_series.loc[idx, "AER_file_process_error"]
+                == row["AER_file_process_error"]
+            )
+            assert (
+                actual_time_series.loc[idx, "AEO_file_process_error"]
+                == row["AEO_file_process_error"]
+            )
+
+    @staticmethod
     def test_read_groked_string(
         start_time: datetime,
         event_job_response_time_dicts: list[dict[str, str | datetime]],
@@ -323,8 +515,7 @@ class TestPVResultsDataFrame:
     @given(num_to_change=st.integers(0, 10))
     @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
     def test_calculate_failures_th_failures(
-        results_dataframe: pd.DataFrame,
-        num_to_change: int
+        results_dataframe: pd.DataFrame, num_to_change: int
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`calculate_failures` with a th
         failure
@@ -350,8 +541,7 @@ class TestPVResultsDataFrame:
     @given(num_to_change=st.integers(0, 10))
     @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
     def test_calculate_failures_pv_failures(
-        results_dataframe: pd.DataFrame,
-        num_to_change: int
+        results_dataframe: pd.DataFrame, num_to_change: int
     ) -> None:
         """Tests :class:`PVResultsDataFrame`.`calculate_failures` with a pv
         failure
@@ -499,6 +689,8 @@ class TestPVResultsDataFrame:
         assert results.full_averages is not None
         assert results.reception_event_counts is not None
         assert results.agg_results is not None
+        assert results.process_errors_counts is not None
+        assert results.process_errors_agg_results is not None
 
     @staticmethod
     def test_add_results_from_log_files(
@@ -1139,7 +1331,7 @@ def test_run_test_performance_profile_shard() -> None:
 
 @responses.activate
 def test_get_report_files_from_results(
-    results_dataframe: pd.DataFrame
+    results_dataframe: pd.DataFrame,
 ) -> None:
     """Tests :class:`PerformanceTests`.`get_report_files_from_results`
     :param results_dataframe: Fixture providing a results dataframe with
@@ -1173,7 +1365,7 @@ def test_get_report_files_from_results(
         "name": "Performance test run",
         "tests": "10",
         "failures": "0",
-        "errors": "0"
+        "errors": "0",
     }
     check_dict_equivalency(expected_attribs, test_suite.attrib)
     # get and check children
@@ -1184,7 +1376,7 @@ def test_get_report_files_from_results(
     # check properties
     assert properties.tag == "properties"
     children = list(properties)
-    assert len(children) == 12
+    assert len(children) == 14
     expected_properties = {
         "num_tests": "10",
         "num_failures": "0",
@@ -1192,12 +1384,14 @@ def test_get_report_files_from_results(
         "th_end": "9.0",
         "aer_end": "11.0",
         "pv_end": "13.0",
-        "average_sent_per_sec": str(10/9),
-        "average_processed_per_sec": str(10/13),
+        "average_sent_per_sec": str(10 / 9),
+        "average_processed_per_sec": str(10 / 13),
         "average_queue_time": "1.0",
         "average_response_time": "4.0",
         "num_aer_start": "10",
         "num_aer_end": "10",
+        "AER_file_process_error": "0",
+        "AEO_file_process_error": "0",
     }
     for prop in children:
         assert expected_properties[prop.attrib["name"]] == prop.attrib["value"]

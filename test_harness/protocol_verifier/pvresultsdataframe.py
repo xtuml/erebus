@@ -27,9 +27,10 @@ class PVResultsDataFrame(PVPerformanceResults):
 
     def __init__(
         self,
+        binning_window: int = 1
     ) -> None:
         """Constructor method"""
-        super().__init__()
+        super().__init__(binning_window)
         self.job_id_event_id_map: dict[str, set[str]] = {}
 
     def __len__(self) -> int:
@@ -59,7 +60,6 @@ class PVResultsDataFrame(PVPerformanceResults):
         :type event_id: `str`
         """
         self.results[event_id] = {}
-        # self.results.loc[event_id] = None
 
     def update_event_results_with_event_id(
         self, event_id: str, update_values: dict[str, Any]
