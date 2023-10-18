@@ -27,7 +27,6 @@ from test_harness.protocol_verifier.pvresultsdaskdataframe import (
 
 import pytest
 
-pytest.skip("This feature does not currently work")
 
 # get test config
 test_config_path = os.path.join(
@@ -61,6 +60,7 @@ def check_numpy_expected_vs_actual(
             assert expected == actual
 
 
+@pytest.mark.skip("This feature does not currently work")
 class TestPVResultsDaskDataFrame:
     """Group of tests for :class:`PVResultsDaskDataFrame`"""
 
