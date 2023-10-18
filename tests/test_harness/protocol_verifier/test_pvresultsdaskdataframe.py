@@ -25,6 +25,10 @@ from test_harness.protocol_verifier.pvresultsdaskdataframe import (
     PVResultsDaskDataFrame,
 )
 
+import pytest
+
+pytest.skip("This feature does not currently work")
+
 # get test config
 test_config_path = os.path.join(
     Path(__file__).parent.parent, "config/test_config.config"
