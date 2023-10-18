@@ -1378,6 +1378,9 @@ def test_get_report_files_from_results(
     )
     test.results.results = results_dataframe.to_dict(orient="index")
     test.results.calc_all_results()
+    # start and end times for test
+    test.time_start = datetime.now()
+    test.time_end = test.time_start + timedelta(seconds=10)
     _, xml = test.get_report_files_from_results()
     # get xml tree
     xml_tree = ET.fromstring(xml)
@@ -1400,7 +1403,7 @@ def test_get_report_files_from_results(
     # check properties
     assert properties.tag == "properties"
     children = list(properties)
-    assert len(children) == 14
+    assert len(children) == 16
     expected_properties = {
         "num_tests": "10",
         "num_failures": "0",
@@ -1416,6 +1419,8 @@ def test_get_report_files_from_results(
         "num_aer_end": "10",
         "AER_file_process_error": "0",
         "AEO_file_process_error": "0",
+        "test_start_time": test.time_start.strftime("%Y/%m/%d, %H:%M:%S"),
+        "test_end_time": test.time_end.strftime("%Y/%m/%d, %H:%M:%S")
     }
     for prop in children:
         assert expected_properties[prop.attrib["name"]] == prop.attrib["value"]

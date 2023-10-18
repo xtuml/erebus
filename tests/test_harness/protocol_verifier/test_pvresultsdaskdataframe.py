@@ -17,6 +17,7 @@ from datetime import datetime
 from io import StringIO
 from typing import Iterable
 
+import pytest
 import pandas as pd
 import numpy as np
 import dask.dataframe as dd
@@ -24,8 +25,6 @@ import dask.dataframe as dd
 from test_harness.protocol_verifier.pvresultsdaskdataframe import (
     PVResultsDaskDataFrame,
 )
-
-import pytest
 
 
 # get test config
