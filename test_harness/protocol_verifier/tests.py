@@ -622,7 +622,7 @@ class PerformanceTest(Test):
         )
 
     def get_report_files_from_results(self) -> tuple[str, str]:
-        """Methodot get the reports from the results
+        """Method to get the reports from the results
 
         :return: Returns a tuple of:
         * html report string
