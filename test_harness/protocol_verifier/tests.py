@@ -127,6 +127,8 @@ class Test(ABC):
         self.set_test_rate()
         # prepare the test given inputs
         self.prepare_test()
+        self.time_start: datetime | None = None
+        self.time_end: datetime | None = None
 
     @abstractmethod
     def set_results_holder(self) -> PVResults | PVPerformanceResults:
@@ -274,7 +276,8 @@ class Test(ABC):
                 results_handler=results_handler,
             )
             # set the sim start time
-            results_handler.results_holder.time_start = datetime.now()
+            self.time_start = datetime.now() 
+            results_handler.results_holder.time_start = self.time_start
             await self.simulator.simulate()
 
     async def stop_test(self) -> None:
@@ -308,6 +311,7 @@ class Test(ABC):
                 )
             except RuntimeError as error:
                 logging.getLogger().info(msg=str(error))
+            self.time_end = datetime.now()
 
     @abstractmethod
     def calc_results(self) -> None:
@@ -631,7 +635,11 @@ class PerformanceTest(Test):
                 **self.results.end_times,
                 **self.results.full_averages,
                 **self.results.reception_event_counts,
-                **self.results.process_errors_counts
+                **self.results.process_errors_counts,
+                **{
+                    "test_start_time": self.time_start.strftime("%Y/%m/%d, %H:%M:%S"),
+                    "test_end_time": self.time_end.strftime("%Y/%m/%d, %H:%M:%S")
+                }
             },
         )
         return html_report, xml_report
