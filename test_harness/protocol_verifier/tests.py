@@ -647,6 +647,7 @@ class PerformanceTest(Test):
                     "Time (s)",
                     "Events Sent (/s)",
                     "Events Processed (/s)",
+                    "AER Events Processed (/s)",
                 ]
             ],
             x_col="Time (s)",
@@ -676,12 +677,29 @@ class PerformanceTest(Test):
             color_group_name="Processing Error",
             plotly_func=px.bar
         )
+        # get cumulative sent, processed, aer processed events figure
+        cumulative_sent_vs_processed = self.make_fig_melt(
+            self.results.agg_results[
+                [
+                    "Time (s)",
+                    "Cumulative Events Sent",
+                    "Cumulative Events Processed",
+                    "Cumulative AER Events Processed",
+                ]
+            ],
+            x_col="Time (s)",
+            y_axis_name="Count",
+            color_group_name="Metric",
+        )
         # deliver the report files
         deliver_test_report_files(
             {
                 "Report.xml": xml_report,
                 "Report.html": html_report,
                 "EventsSentVSProcessed.html": sent_vs_processed,
+                "CumulativeEventsSentVSProcessed.html": (
+                    cumulative_sent_vs_processed
+                ),
                 "ResponseAndQueueTime.html": reponse_vs_queue,
                 "AggregatedResults.csv": self.results.agg_results,
                 "ProcessingErrors.html": processing_errors,

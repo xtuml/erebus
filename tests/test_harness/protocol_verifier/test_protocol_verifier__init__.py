@@ -245,6 +245,7 @@ def test_puml_files_performance_with_input_profile(
             )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
+            "CumulativeEventsSentVSProcessed.html",
             "Verifier.log",
             "Reception.log",
             "grok.txt",

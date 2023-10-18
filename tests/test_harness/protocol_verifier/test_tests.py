@@ -663,6 +663,11 @@ class TestPVResultsDataFrame:
             expected_agg_events_per_second,
             aggregated_results["Events Processed (/s)"],
         )
+        expected_agg_aer_events_per_second = [0.0] * 2 + [1.0] * 10 + [0.0]
+        check_numpy_expected_vs_actual(
+            expected_agg_aer_events_per_second,
+            aggregated_results["AER Events Processed (/s)"],
+        )
         expected_agg_full_response_time = [4.0] * 10 + [np.nan] * 3
         check_numpy_expected_vs_actual(
             expected_agg_full_response_time,
@@ -671,6 +676,25 @@ class TestPVResultsDataFrame:
         expected_agg_queue_time = [1.0] * 10 + [np.nan] * 3
         check_numpy_expected_vs_actual(
             expected_agg_queue_time, aggregated_results["Queue Time (s)"]
+        )
+        expected_cum_sent_per_second = np.cumsum(expected_agg_sent_per_second)
+        check_numpy_expected_vs_actual(
+            expected_cum_sent_per_second,
+            aggregated_results["Cumulative Events Sent"],
+        )
+        expected_cum_events_per_second = np.cumsum(
+            expected_agg_events_per_second
+        )
+        check_numpy_expected_vs_actual(
+            expected_cum_events_per_second,
+            aggregated_results["Cumulative Events Processed"],
+        )
+        expected_cum_aer_events_per_second = np.cumsum(
+            expected_agg_aer_events_per_second
+        )
+        check_numpy_expected_vs_actual(
+            expected_cum_aer_events_per_second,
+            aggregated_results["Cumulative AER Events Processed"],
         )
 
     @staticmethod
