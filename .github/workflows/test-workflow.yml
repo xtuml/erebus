@@ -4,7 +4,7 @@ on:
 
   push:
     branches:
-      main
+      '**'
 jobs:
   sast:
     uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
