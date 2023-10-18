@@ -5,10 +5,12 @@
 # pylint: disable=W0613
 # pylint: disable=C0302
 # pylint: disable=C0114
+# pylint: disable=R0904
 import os
 from abc import abstractmethod
 from datetime import datetime
-from typing import Any, TextIO, TypedDict
+from typing import Any, TextIO, TypedDict, NotRequired
+import math
 
 import pandas as pd
 from prometheus_client.parser import text_fd_to_metric_families
@@ -44,13 +46,41 @@ class FailuresDict(TypedDict):
 
 
 class ReceptionCountsDict(TypedDict):
-    """Dictionary of reception counts
-    """
+    """Dictionary of reception counts"""
+
     num_aer_start: int
     """Number of events received by AEReception
     """
     num_aer_end: int
     """Number of events written by AEReception
+    """
+
+
+class ProcessErrorDataDict(TypedDict):
+    """Dictionary of processing errors"""
+
+    AER_file_process_error: int
+    """Dictionary of counts of AER file processing errors in bins
+    """
+    AEO_file_process_error: int
+    """Dictionary of counts of AEO file processing errors in bins
+    """
+
+
+class ResultsDict(TypedDict):
+    """Dictionary of the result of a processing error"""
+
+    field: str
+    """The field of the processing error
+    """
+    timestamp: str
+    """The timestamp of the occurence of the error
+    """
+    event_id: NotRequired[str]
+    """Unique id for an event
+    """
+    job_id: NotRequired[str]
+    """Unique id for a job
     """
 
 
@@ -68,6 +98,10 @@ class PVPerformanceResults(PVResults):
         "aeordering_events_processed": "AEOSVDC_start",
         "svdc_job_success": "AEOSVDC_end",
         "svdc_job_failed": "AEOSVDC_end",
+    }
+    process_error_fields_map = {
+        "reception_file_process_error": "AER_file_process_error",
+        "aeordering_file_processing_failure": "AEO_file_process_error",
     }
     data_fields = [
         "job_id",
@@ -88,6 +122,10 @@ class PVPerformanceResults(PVResults):
             "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} %{WORD:field} :"
             " JobId = %{UUID:job_id}"
         ),
+        # Grok(
+        #     "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} "
+        #     "%{WORD:field} : File = %{WORD}"
+        # )
     ]
     reception_grok_priority_patterns = [
         Grok(
@@ -96,18 +134,20 @@ class PVPerformanceResults(PVResults):
         )
     ]
 
-    def __init__(
-        self,
-    ) -> None:
+    def __init__(self, binning_window: int = 1) -> None:
         """Constructor method"""
         super().__init__()
         self.results = None
+        self.binning_window = binning_window
+        self.process_errors: dict[int, ProcessErrorDataDict] = {}
         self._create_results_holder()
         self.end_times: dict[str, float] | None = None
         self.failures: FailuresDict | None = None
         self.full_averages: AveragesDict | None = None
         self.reception_event_counts: ReceptionCountsDict | None = None
         self.agg_results: pd.DataFrame | None = None
+        self.process_errors_counts: ProcessErrorDataDict | None = None
+        self.process_errors_agg_results: pd.DataFrame | None = None
 
     @abstractmethod
     def create_final_results_holder(self) -> None:
@@ -314,9 +354,38 @@ class PVPerformanceResults(PVResults):
         for result in yield_grok_metrics_from_files(
             file_paths=file_paths, grok_priorities=grok_priority_patterns
         ):
-            if result["field"] in self.pv_grok_map:
-                result["field"] = self.pv_grok_map[result["field"]]
-                self.update_pv_sim_time_field(**result)
+            self.add_result(result)
+
+    def add_result(self, result: ResultsDict) -> None:
+        """Method to add a result to instance. If
+        * the result field is an event result the instance will be updated
+        using `update_pv_sim_time_field`
+        * if the result field is a processing error field the instance will be
+        updated using `add_error_process_field`
+
+        :param result: _description_
+        :type result: ResultsDict
+        """
+        if result["field"] in self.pv_grok_map:
+            result["field"] = self.pv_grok_map[result["field"]]
+            self.update_pv_sim_time_field(**result)
+        if result["field"] in self.process_error_fields_map:
+            result["field"] = self.process_error_fields_map[result["field"]]
+            self.add_error_process_field(result)
+
+    def add_error_process_field(self, result: ResultsDict) -> None:
+        """Adds an error processing result to the process_erros attribute dict
+
+        :param result: The dictionary of the input result
+        :type result: :class:`ResultsDict`
+        """
+        converted_time = self.convert_pv_time_string(result["timestamp"])
+        bin_number = math.floor(converted_time / self.binning_window)
+        if bin_number not in self.process_errors:
+            self.process_errors[bin_number] = ProcessErrorDataDict(
+                AEO_file_process_error=0, AER_file_process_error=0
+            )
+        self.process_errors[bin_number][result["field"]] += 1
 
     def add_verifier_results_from_log_files(
         self, file_paths: list[str]
@@ -357,6 +426,10 @@ class PVPerformanceResults(PVResults):
         self.failures = self.calculate_failures()
         self.full_averages = self.calc_full_averages()
         self.reception_event_counts = self.calc_reception_counts()
+        self.process_errors_counts = self.calc_processing_errors_counts()
+        self.process_errors_agg_results = (
+            self.calc_processing_errors_time_series()
+        )
         self.agg_results = self.calculate_aggregated_results_dataframe(
             agg_time_window
         )
@@ -419,6 +492,42 @@ class PVPerformanceResults(PVResults):
         :return: Returns a dictionary of reception received and written counts
         :rtype: :class:`ReceptionCountsDict`
         """
+
+    def calc_processing_errors_counts(self) -> ProcessErrorDataDict:
+        """Method to calculate the total file processing errors in the
+        simulation
+
+        :return: Dictionary with the total count of file processing errors for
+        each field
+        :rtype: ProcessErrorDataDict
+        """
+        process_errors = ProcessErrorDataDict(
+            AER_file_process_error=0, AEO_file_process_error=0
+        )
+        for entry in self.process_errors.values():
+            for process_error_field, count in entry.items():
+                process_errors[process_error_field] += count
+        return process_errors
+
+    def calc_processing_errors_time_series(self) -> pd.DataFrame:
+        """Method to get a dataframe of processing errors with the following
+        columns
+        * "Time (s)" - The time bin of the result
+        * "AER_file_process_error" - The count of AER file processing errors
+        in the bin
+        * "AEO_file_process_error" - The count of AEO file processing errors
+        in the bin
+
+        :return: Returnd the dataframe of counts of file processing errors
+        :rtype: :class:`pd`.`DataFrame`
+        """
+        processing_errors = pd.DataFrame.from_dict(
+            self.process_errors,
+            orient="index",
+            columns=["AER_file_process_error", "AEO_file_process_error"],
+        )
+        processing_errors.reset_index(inplace=True, names="Time (s)")
+        return processing_errors
 
     @abstractmethod
     def calculate_aggregated_results_dataframe(

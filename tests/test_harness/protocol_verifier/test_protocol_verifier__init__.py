@@ -252,7 +252,9 @@ def test_puml_files_performance_with_input_profile(
             "Report.html",
             "EventsSentVSProcessed.html",
             "ResponseAndQueueTime.html",
-            "AggregatedResults.csv"
+            "AggregatedResults.csv",
+            "ProcessingErrors.html",
+            "AggregatedErrors.csv"
         ]
         for file in files:
             file_in_files = file in expected_files
