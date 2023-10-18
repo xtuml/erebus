@@ -74,10 +74,7 @@ class PVResultsDataFrame(PVPerformanceResults):
         """
         if event_id not in self.results:
             return
-        self.results[event_id] = {
-            **self.results[event_id],
-            **update_values
-        }
+        self.results[event_id] = {**self.results[event_id], **update_values}
         if "job_id" in update_values:
             if update_values["job_id"] not in self.job_id_event_id_map:
                 self.job_id_event_id_map[update_values["job_id"]] = set()
@@ -98,7 +95,7 @@ class PVResultsDataFrame(PVPerformanceResults):
             for event_id in self.job_id_event_id_map[job_id]:
                 self.results[event_id] = {
                     **self.results[event_id],
-                    **update_values
+                    **update_values,
                 }
 
     def create_response_time_fields(self) -> None:
@@ -193,7 +190,7 @@ class PVResultsDataFrame(PVPerformanceResults):
         """
         return {
             "num_aer_start": self.results["AER_start"].count(),
-            "num_aer_end": self.results["AER_end"].count()
+            "num_aer_end": self.results["AER_end"].count(),
         }
 
     def calculate_aggregated_results_dataframe(
@@ -224,24 +221,31 @@ class PVResultsDataFrame(PVPerformanceResults):
         test_end_ceil = np.ceil(np.nanmax(list(self.end_times.values())))
         time_range = np.arange(0, test_end_ceil + time_window, time_window)
         # get aggregated events sent per second
-        aggregated_sent_per_second = (
+        aggregated_sent = (
             sps.binned_statistic(
                 self.results["time_sent"],
                 [1] * len(self.results),
                 bins=time_range,
                 statistic="count",
             ).statistic
-            / time_window
         )
         # get events per second
-        aggregated_events_per_second = (
+        aggregated_events = (
             sps.binned_statistic(
                 self.results["AEOSVDC_end"],
                 [1] * len(self.results),
                 bins=time_range,
                 statistic="count",
             ).statistic
-            / time_window
+        )
+        # get aggregated number of events processed by AER
+        aggregated_aer_events = (
+            sps.binned_statistic(
+                self.results["AER_end"],
+                [1] * len(self.results),
+                bins=time_range,
+                statistic="count",
+            ).statistic
         )
         # get aggregated full response time
         aggregated_full_response_time = sps.binned_statistic(
@@ -257,22 +261,47 @@ class PVResultsDataFrame(PVPerformanceResults):
             bins=time_range,
             statistic=np.nanmean,
         ).statistic
+        # get cumulative number of events sent per second
+        cumulative_events_sent_per_second = np.nancumsum(
+            aggregated_sent
+        )
+        # get cumulative number of events processed per second
+        cumulative_events_processed_per_second = np.nancumsum(
+            aggregated_events
+        )
+        # get cumulative number of aer events processed per second
+        cumulative_aer_events_processed_per_second = np.nancumsum(
+            aggregated_aer_events
+        )
+        # divide sent, processed and aer processed
+        aggregated_sent_per_second = aggregated_sent / time_window
+        aggregated_events_per_second = aggregated_events / time_window
+        aggregated_aer_events_per_second = aggregated_aer_events / time_window
+
         aggregated_results = pd.DataFrame(
             np.vstack(
                 [
                     time_range[:-1] + time_window / 2,
                     aggregated_sent_per_second,
                     aggregated_events_per_second,
+                    aggregated_aer_events_per_second,
                     aggregated_queue_time,
                     aggregated_full_response_time,
+                    cumulative_events_sent_per_second,
+                    cumulative_events_processed_per_second,
+                    cumulative_aer_events_processed_per_second,
                 ]
             ).T,
             columns=[
                 "Time (s)",
                 "Events Sent (/s)",
                 "Events Processed (/s)",
+                "AER Events Processed (/s)",
                 "Queue Time (s)",
                 "Response Time (s)",
+                "Cumulative Events Sent",
+                "Cumulative Events Processed",
+                "Cumulative AER Events Processed",
             ],
         )
         return aggregated_results
