@@ -472,7 +472,7 @@ class TestPVResultsDataFrame:
     def test_create_response_time_fields(
         results_dataframe: pd.DataFrame,
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`create_respone_time_fields`
+        """Tests :class:`PVResultsDataFrame`.`create_response_time_fields`
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
@@ -481,6 +481,7 @@ class TestPVResultsDataFrame:
         results = PVResultsDataFrame()
         results.results = results_dataframe
         results.create_response_time_fields()
+
         assert (
             len(
                 set(["full_response_time", "queue_time"]).difference(
