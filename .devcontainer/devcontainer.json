@@ -8,6 +8,23 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {},
 
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"black-formatter.args": [
+					"--preview",
+					"--line-length",
+					"79"
+				]
+			},
+			"extensions": [
+				"ms-python.black-formatter",
+				"ms-python.vscode-pylance",
+				"ms-python.python"
+			]
+		}
+	},
+
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
@@ -27,7 +44,7 @@
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 	"mounts": [
-		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
-		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached"
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+		// "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached"
 	]
 }
