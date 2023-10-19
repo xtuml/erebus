@@ -310,23 +310,9 @@ class PVResultsDataFrame(PVPerformanceResults):
                 f"self.results is unsupported type: {type(self.results)}"
             )
 
-        # try:
-        #     return self._calculator
-        # except AttributeError:
-        #     self._calculator = PVResultsDataFrameCalculator(
-        #         events_dict=self.results,
-        #         end_times=self.end_times if hasattr(self, 'end_times') else None,
-        #         data_fields=self.data_fields if hasattr(self, 'data_fields') else None,
-        #     )
-        #     return self._calculator
 
     def create_final_results_holder(self) -> None:
         self.results = self.calculator.results
-
-        # self.results = pd.DataFrame.from_dict(self.results, orient="index")
-        # for new_col in self.data_fields[3:]:
-        #     if new_col not in self.results.columns:
-        #         self.results[new_col] = np.nan
 
     def _create_results_holder(self) -> None:
         """Creates the results holder as pandas DataFrame"""
@@ -385,15 +371,7 @@ class PVResultsDataFrame(PVPerformanceResults):
         * queue_time - The time when event was picked up by AER minus the time
         sent
         """
-        pass
-        # self.results["full_response_time"] = (
-        #     self.results["AEOSVDC_end"] - self.results["time_sent"]
-        # )
-        # self.results["full_response_time"].clip(lower=0, inplace=True)
-        # self.results["queue_time"] = (
-        #     self.results["AER_start"] - self.results["time_sent"]
-        # )
-        # self.results["queue_time"].clip(lower=0, inplace=True)
+        self.create_final_results_holder()
 
     def calculate_failures(self) -> FailuresDict:
         """Method to generate the failures and successes from the sim
