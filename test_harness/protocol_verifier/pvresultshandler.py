@@ -16,6 +16,7 @@ from typing import Type, Any
 from test_harness.simulator.simulator import ResultsHandler
 
 from .pvresults import PVResults
+from .types import PVResultsHandlerItem
 
 
 class PVResultsHandler(ResultsHandler):
@@ -84,15 +85,7 @@ class PVResultsHandler(ResultsHandler):
 
     def handle_result(
         self,
-        result: tuple[
-            list[dict[str, Any]],
-            str,
-            str,
-            dict[str, str | None],
-            str,
-            datetime,
-        ]
-        | None,
+        result: PVResultsHandlerItem | None,
     ) -> None:
         """Method to handle the result from a simulation iteration
 
@@ -103,9 +96,7 @@ class PVResultsHandler(ResultsHandler):
         * a string representing the job id
         * a dict representing the job info
         * a string representing the response from the request
-        :type result: `tuple`[ `list`[`dict`[`str`, `Any`]], `str`, `str`,
-        :class:`datetime`
-        `dict`[`str`, `str`  |  `None`], `str` ] | `None`
+        :type result: `PVResultsHandlerItem` | `None`
         """
         self.queue.put(result)
 
@@ -120,22 +111,12 @@ class PVResultsHandler(ResultsHandler):
 
     def handle_item_from_queue(
         self,
-        item: tuple[
-            list[dict[str, Any]],
-            str,
-            str,
-            dict[str, str | None],
-            str,
-            datetime,
-        ]
-        | None,
+        item: PVResultsHandlerItem | None,
     ) -> None:
         """Method to handle saving the data when an item is take from the queue
 
         :param item: PV iteration data taken from the queue
-        :type item: `tuple`[ `list`[`dict`[`str`, `Any`]], `str`, `str`,
-        :class:`datetime`
-        `dict`[`str`, `str`  |  `None`], `str` ] | `None`
+        :type item: `PVResultsHandlerItem | None`
         """
         if item is None:
             return
