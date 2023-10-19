@@ -24,6 +24,9 @@ from .pvperformanceresults import (
 
 
 class PVResultsDataFrameCalculator:
+    """
+    Calculates useful metrics based on the test data.
+    """
     def __init__(
         self,
         events_dict: dict[str, dict[str, Any]],
