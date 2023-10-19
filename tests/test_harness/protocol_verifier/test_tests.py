@@ -472,7 +472,7 @@ class TestPVResultsDataFrame:
     def test_create_response_time_fields(
         results_dataframe: pd.DataFrame,
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`create_respone_time_fields`
+        """Tests :class:`PVResultsDataFrameCalculator`.`_create_response_time_fields`
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
@@ -480,7 +480,13 @@ class TestPVResultsDataFrame:
         """
         results = PVResultsDataFrame()
         results.results = results_dataframe
-        results.create_response_time_fields()
+
+        # Because this class is due to be replaced by the calculator class, this
+        # create_response_time_fields is now a part of the calculator init
+        # function. During this time when the code is split between the two classes
+        # self.create_final_results_holder() is a function which inits the
+        # calculator class and then saves the results in self.results.
+        results.create_final_results_holder()
         assert (
             len(
                 set(["full_response_time", "queue_time"]).difference(

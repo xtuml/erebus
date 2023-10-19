@@ -306,7 +306,7 @@ class PVResultsDataFrame(PVPerformanceResults):
                 ),
             )
         else:
-            raise ValueError(
+            raise TypeError(
                 f"self.results is unsupported type: {type(self.results)}"
             )
 
