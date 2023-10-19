@@ -262,7 +262,9 @@ async def pv_finish_inspector_logs(
 def handle_domain_log_file_reception_and_save(
     urls: dict[str, str],
     domain_file_names: list[str],
-    log_file_store_path: str
+    log_file_store_path: str,
+    location: str | None = None,
+    file_prefix: str | None = None
 ) -> tuple[str, str]:
     """Method to handle the recption of log files and saving for a specific PV
     domain
@@ -284,7 +286,9 @@ def handle_domain_log_file_reception_and_save(
     log_files = get_log_files(
         url_log_file_names=urls["getFileNames"],
         url_get_file=urls["getFile"],
-        already_received_file_names=domain_file_names
+        already_received_file_names=domain_file_names,
+        location=location,
+        file_prefix=file_prefix
     )
     return save_log_file_strings(log_files, log_file_store_path)
 

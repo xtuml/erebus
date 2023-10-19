@@ -15,7 +15,9 @@ from test_harness.requests import (
 
 
 def get_verifier_log_file_names(
-    url: str
+    url: str,
+    location: str | None = None,
+    file_prefix: str | None = None
 ) -> list[str]:
     """Method to get verifier log file names
 
@@ -34,10 +36,22 @@ def get_verifier_log_file_names(
     :return: Returns a list of the file names of logs
     :rtype: `list`[`str`]
     """
-    response_tuple = send_get_request(
-        url=url,
-        max_retries=5
-    )
+    if not location:
+        response_tuple = send_get_request(
+            url=url,
+            max_retries=5
+        )
+    else:
+        json_dict = {
+            "location": location,
+            "file_prefix": file_prefix
+        }
+        response_tuple = send_json_post_request(
+            json_dict=json_dict,
+            url=url,
+            max_retries=5
+        )
+
     check_response_tuple_ok(response_tuple=response_tuple, url=url)
     try:
         json_response = response_tuple[2].json()
@@ -73,7 +87,8 @@ def get_verifier_log_file_names(
 
 def get_verifier_log_file_data(
     file_name: str,
-    url: str
+    url: str,
+    location: str | None = None
 ) -> bytes:
     """Method to get the bytes response content of a file from the endpoint
 
@@ -87,6 +102,8 @@ def get_verifier_log_file_data(
     json_dict = {
         "fileName": file_name
     }
+    if location:
+        json_dict["location"] = location
     response_tuple = send_json_post_request(
         json_dict=json_dict,
         url=url,
@@ -124,7 +141,9 @@ def get_verifier_log_files_data(
 def get_log_files_raw_bytes(
     url_log_file_names: str,
     url_get_file: str,
-    already_received_file_names: list[str] | None = None
+    already_received_file_names: list[str] | None = None,
+    location: str | None = None,
+    file_prefix: str | None = None
 ) -> dict[str, bytes]:
     """Method to get log files raw bytes from server. Catches EOF errors.
 
@@ -142,7 +161,9 @@ def get_log_files_raw_bytes(
     if not already_received_file_names:
         already_received_file_names = []
     file_names = get_verifier_log_file_names(
-        url_log_file_names
+        url_log_file_names,
+        location=location,
+        file_prefix=file_prefix
     )
     files_to_request = set(file_names).difference(
         set(already_received_file_names)
@@ -150,7 +171,8 @@ def get_log_files_raw_bytes(
     # request files
     files = get_verifier_log_files_data(
         files_to_request,
-        url_get_file
+        url_get_file,
+        location=location
     )
     return files
 
@@ -204,7 +226,9 @@ def get_log_file_string_from_log_file_bytes(
 def get_log_files(
     url_log_file_names: str,
     url_get_file: str,
-    already_received_file_names: list[str] | None = None
+    already_received_file_names: list[str] | None = None,
+    location: str | None = None,
+    file_prefix: str | None = None
 ) -> dict[str, str]:
     """Method to get log files strings from server
 
@@ -222,7 +246,9 @@ def get_log_files(
     raw_bytes_files = get_log_files_raw_bytes(
         url_log_file_names=url_log_file_names,
         url_get_file=url_get_file,
-        already_received_file_names=already_received_file_names
+        already_received_file_names=already_received_file_names,
+        location=location,
+        file_prefix=file_prefix
     )
     files = get_log_files_strings_from_log_files_bytes(raw_bytes_files)
     return files
