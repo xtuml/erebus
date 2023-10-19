@@ -23,7 +23,12 @@ from .pvperformanceresults import (
 
 
 class PVResultsDataFrameCalculator:
-    def __init__(self, events_dict: dict[str, dict[str, Any]], end_times: float | None, data_fields: Any) -> None:
+    def __init__(
+        self,
+        events_dict: dict[str, dict[str, Any]],
+        end_times: float | None,
+        data_fields: Any,
+    ) -> None:
         self.end_times = end_times
         self.data_fields = data_fields
         self._results = pd.DataFrame.from_dict(events_dict, orient="index")
@@ -277,25 +282,33 @@ class PVResultsDataFrame(PVPerformanceResults):
         """
         return len(self.results)
 
-
-    # This is legit a bit sneaky, 
+    # This is legit a bit sneaky,
     @property
     def calculator(self):
         if isinstance(self.results, dict):
             return PVResultsDataFrameCalculator(
-                    events_dict=self.results,
-                    end_times=self.end_times if hasattr(self, 'end_times') else None,
-                    data_fields=self.data_fields if hasattr(self, 'data_fields') else None,
-                )
+                events_dict=self.results,
+                end_times=(
+                    self.end_times if hasattr(self, "end_times") else None
+                ),
+                data_fields=(
+                    self.data_fields if hasattr(self, "data_fields") else None
+                ),
+            )
         elif isinstance(self.results, pd.DataFrame):
             return PVResultsDataFrameCalculator(
-                    events_dict=self.results.to_dict(orient='index'),
-                    end_times=self.end_times if hasattr(self, 'end_times') else None,
-                    data_fields=self.data_fields if hasattr(self, 'data_fields') else None,
-                )
+                events_dict=self.results.to_dict(orient="index"),
+                end_times=(
+                    self.end_times if hasattr(self, "end_times") else None
+                ),
+                data_fields=(
+                    self.data_fields if hasattr(self, "data_fields") else None
+                ),
+            )
         else:
-            raise ValueError(f"self.results is unsupported type: {type(self.results)}")
-
+            raise ValueError(
+                f"self.results is unsupported type: {type(self.results)}"
+            )
 
         # try:
         #     return self._calculator
@@ -306,7 +319,6 @@ class PVResultsDataFrame(PVPerformanceResults):
         #         data_fields=self.data_fields if hasattr(self, 'data_fields') else None,
         #     )
         #     return self._calculator
-
 
     def create_final_results_holder(self) -> None:
         self.results = self.calculator.results
