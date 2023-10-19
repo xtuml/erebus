@@ -8,25 +8,19 @@
 # pylint: disable=E0110
 """Tests for tests.py
 """
-from pathlib import Path
 import os
-
-from tempfile import NamedTemporaryFile
 from datetime import datetime
-
 from io import StringIO
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Iterable
 
-import pandas as pd
-import numpy as np
 import dask.dataframe as dd
-
-from test_harness.protocol_verifier.pvresultsdaskdataframe import (
-    PVResultsDaskDataFrame,
-)
-
+import numpy as np
+import pandas as pd
 import pytest
-
+from test_harness.protocol_verifier.pvresultsdaskdataframe import \
+    PVResultsDaskDataFrame
 
 # get test config
 test_config_path = os.path.join(
