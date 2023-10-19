@@ -18,70 +18,10 @@ from pygrok import Grok
 
 from test_harness.reporting.log_analyser import yield_grok_metrics_from_files
 from .pvresults import PVResults
+from .pvresultsdataframecalculator import PVResultsDataFrameCalculator
+from .types import AveragesDict, FailuresDict, ProcessErrorDataDict, ReceptionCountsDict, ResultsDict
 
 
-class AveragesDict(TypedDict):
-    """Dictionary of averages"""
-
-    average_sent_per_sec: float
-    average_processed_per_sec: float
-    average_queue_time: float
-    average_response_time: float
-
-
-class FailuresDict(TypedDict):
-    """Dictionary of failures and successes"""
-
-    num_tests: int
-    num_failures: int
-    """
-    This represents when the test harness successfully send a file but the PV
-    fails in processing.
-    """
-
-    num_errors: int
-    """
-    This represents when the test harness fails to send a file to PV.
-    """
-
-
-class ReceptionCountsDict(TypedDict):
-    """Dictionary of reception counts"""
-
-    num_aer_start: int
-    """Number of events received by AEReception
-    """
-    num_aer_end: int
-    """Number of events written by AEReception
-    """
-
-
-class ProcessErrorDataDict(TypedDict):
-    """Dictionary of processing errors"""
-
-    AER_file_process_error: int
-    """Dictionary of counts of AER file processing errors in bins
-    """
-    AEO_file_process_error: int
-    """Dictionary of counts of AEO file processing errors in bins
-    """
-
-
-class ResultsDict(TypedDict):
-    """Dictionary of the result of a processing error"""
-
-    field: str
-    """The field of the processing error
-    """
-    timestamp: str
-    """The timestamp of the occurence of the error
-    """
-    event_id: NotRequired[str]
-    """Unique id for an event
-    """
-    job_id: NotRequired[str]
-    """Unique id for a job
-    """
 
 
 class PVPerformanceResults(PVResults):
@@ -149,23 +89,56 @@ class PVPerformanceResults(PVResults):
         self.process_errors_counts: ProcessErrorDataDict | None = None
         self.process_errors_agg_results: pd.DataFrame | None = None
 
-    @abstractmethod
+        self.job_id_event_id_map: dict[str, set[str]] = {}
+        self._calculator: PVResultsDataFrameCalculator
+
+    def __len__(self) -> int:
+        """The length of the results
+
+        :return: The length of the results holder
+        :rtype: `int`
+        """
+        return len(self.results)
+
+    @property
+    def calculator(self):
+        if isinstance(self.results, dict):
+            return PVResultsDataFrameCalculator(
+                events_dict=self.results,
+                end_times=(
+                    self.end_times if hasattr(self, "end_times") else None
+                ),
+                data_fields=(
+                    self.data_fields if hasattr(self, "data_fields") else None
+                ),
+            )
+        elif isinstance(self.results, pd.DataFrame):
+            return PVResultsDataFrameCalculator(
+                events_dict=self.results.to_dict(orient="index"),
+                end_times=(
+                    self.end_times if hasattr(self, "end_times") else None
+                ),
+                data_fields=(
+                    self.data_fields if hasattr(self, "data_fields") else None
+                ),
+            )
+        else:
+            raise TypeError(
+                f"self.results is unsupported type: {type(self.results)}"
+            )
+
     def create_final_results_holder(self) -> None:
-        """Abstract method to create the final results holder once all results
-        have been added
-        """
+        self.results = self.calculator.results
 
-    @abstractmethod
     def _create_results_holder(self) -> None:
-        """Abstract method that creates the results holder that will be
-        updated with results
-        """
+        """Creates the results holder as pandas DataFrame"""
+        # self.results = pd.DataFrame(columns=self.data_fields)
+        self.results = {}
 
-    @abstractmethod
     def update_event_results_with_event_id(
         self, event_id: str, update_values: dict[str, Any]
     ) -> None:
-        """Abstract method that is used to update the results holder with an
+        """Method that is used to update the results holder with an
         event id as key and update values named in a dictionary
 
         :param event_id: Unique event id
@@ -173,12 +146,18 @@ class PVPerformanceResults(PVResults):
         :param update_values: Arbitrary named update values
         :type update_values: `dict`[`str`, `Any`]
         """
+        if event_id not in self.results:
+            return
+        self.results[event_id] = {**self.results[event_id], **update_values}
+        if "job_id" in update_values:
+            if update_values["job_id"] not in self.job_id_event_id_map:
+                self.job_id_event_id_map[update_values["job_id"]] = set()
+            self.job_id_event_id_map[update_values["job_id"]].add(event_id)
 
-    @abstractmethod
     def update_event_results_with_job_id(
         self, job_id: str, update_values: dict[str, Any]
     ) -> None:
-        """Abstract method to update all rows in results holder based on the
+        """Method to update all rows in results holder based on the
         column job id match
 
         :param job_id: Job id
@@ -186,15 +165,21 @@ class PVPerformanceResults(PVResults):
         :param update_values: Arbitrary named update values
         :type update_values: `dict`[`str`, `Any`]
         """
+        if job_id in self.job_id_event_id_map:
+            for event_id in self.job_id_event_id_map[job_id]:
+                self.results[event_id] = {
+                    **self.results[event_id],
+                    **update_values,
+                }
 
-    @abstractmethod
     def create_event_result_row(self, event_id: str) -> None:
-        """Abstract method to create a row in the results holder based on an
+        """Method to create a row in the results holder based on an
         event id
 
         :param event_id: Unique event id
         :type event_id: `str`
         """
+        self.results[event_id] = {}
 
     def update_from_sim(
         self,
@@ -434,28 +419,27 @@ class PVPerformanceResults(PVResults):
             agg_time_window
         )
 
-    @abstractmethod
     def create_response_time_fields(self) -> None:
-        """Abstract method used to create response fields in the rsults holder
+        """Method used to create response fields in the results holder
         * full_response_time - the AEOSVDC end time minus the time sent
         * queue_time - The time when event was picked up by AER minus the time
         sent
         """
+        self.create_final_results_holder()
 
-    @abstractmethod
     def calculate_failures(self) -> FailuresDict:
-        """Abstract method to generate the failures and successes from the sim
+        """Method to generate the failures and successes from the sim
 
         :return: Returns a dictionary of integers of the following fields:
         * "num_tests" - The number of events in the simulation
         * "num_failures" - The number of event failures in the PV groked logs
-        (i.e. did not register a time in all of the pv sim time fields)
+        (i.e. did not register a time in AEOSVDC_end)
         * "num_errors" - The number of event failures given by the test
         harness (i.e. the response received was not empty)
         :rtype: `dict`[`str`, `int`]
         """
+        return self.calculator.calculate_failures()
 
-    @abstractmethod
     def calc_end_times(self) -> dict[str, float]:
         """Significant end times in the simulation
 
@@ -466,9 +450,11 @@ class PVPerformanceResults(PVResults):
         * "aer_end" - the time when aer processed its last event
         :rtype: `dict`[`str`, `float`]
         """
+        return self.calculator.calc_end_times()
 
-    @abstractmethod
-    def calc_full_averages(self) -> AveragesDict:
+    def calc_full_averages(
+        self,
+    ) -> AveragesDict:
         """Averages calculated in the data
 
         :return: Returns the dictionary of the following full avergaes of the
@@ -483,8 +469,8 @@ class PVPerformanceResults(PVResults):
         fully processed by the PV stack
         :rtype: `dict`[`str`, `float`]
         """
+        return self.calculator.calc_full_averages()
 
-    @abstractmethod
     def calc_reception_counts(self) -> ReceptionCountsDict:
         """Returns a dictionary of counts for reception recevied and reception
         written
@@ -492,6 +478,7 @@ class PVPerformanceResults(PVResults):
         :return: Returns a dictionary of reception received and written counts
         :rtype: :class:`ReceptionCountsDict`
         """
+        return self.calculator.calc_reception_counts()
 
     def calc_processing_errors_counts(self) -> ProcessErrorDataDict:
         """Method to calculate the total file processing errors in the
@@ -529,11 +516,10 @@ class PVPerformanceResults(PVResults):
         processing_errors.reset_index(inplace=True, names="Time (s)")
         return processing_errors
 
-    @abstractmethod
     def calculate_aggregated_results_dataframe(
-        self, time_window: float | int = 1
+        self, time_window: int | float = 1
     ) -> pd.DataFrame:
-        """Abstract method to calculate the following aggregated results
+        """Method to calculate the following aggregated results
         within bins of the specified time window in seconds. The dataframe has
         the following columns:
         * Time (s) - The midpoint of the time window for the aggregated result
@@ -549,7 +535,10 @@ class PVPerformanceResults(PVResults):
         when it is fully processed not when it is sent.
         :param time_window: The time window to use for aggregations, defaults
         to `1`
-        :type time_window: `float | int`, optional
+        :type time_window: `int`, optional
         :return: Returns a dataframe of the aggeragted results
         :rtype: :class:`pd`.`DataFrame`
         """
+        return self.calculator.calculate_aggregated_results_dataframe(
+            time_window=time_window
+        )
