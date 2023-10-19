@@ -310,7 +310,6 @@ class PVResultsDataFrame(PVPerformanceResults):
                 f"self.results is unsupported type: {type(self.results)}"
             )
 
-
     def create_final_results_holder(self) -> None:
         self.results = self.calculator.results
 
