@@ -7,12 +7,7 @@
 # pylint: disable=C0114
 # pylint: disable=C0103
 # pylint: disable=R0914
-from typing import Any
 import warnings
-
-import numpy as np
-import pandas as pd
-import scipy.stats as sps
 
 from .pvperformanceresults import (
     PVPerformanceResults,

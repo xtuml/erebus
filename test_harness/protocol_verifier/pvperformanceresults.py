@@ -7,9 +7,8 @@
 # pylint: disable=C0114
 # pylint: disable=R0904
 import os
-from abc import abstractmethod
 from datetime import datetime
-from typing import Any, TextIO, TypedDict, NotRequired
+from typing import Any, TextIO
 import math
 
 import pandas as pd
@@ -19,9 +18,13 @@ from pygrok import Grok
 from test_harness.reporting.log_analyser import yield_grok_metrics_from_files
 from .pvresults import PVResults
 from .pvresultsdataframecalculator import PVResultsDataFrameCalculator
-from .types import AveragesDict, FailuresDict, ProcessErrorDataDict, ReceptionCountsDict, ResultsDict
-
-
+from .types import (
+    AveragesDict,
+    FailuresDict,
+    ProcessErrorDataDict,
+    ReceptionCountsDict,
+    ResultsDict,
+)
 
 
 class PVPerformanceResults(PVResults):
