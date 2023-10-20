@@ -10,6 +10,7 @@ import shutil
 import json
 from tempfile import NamedTemporaryFile
 import logging
+from typing import Callable, Literal
 
 import pytest
 import responses
@@ -123,6 +124,100 @@ def test_puml_files_test() -> None:
             "Results.csv", "Results.html", "Results.xml",
             "Results_Aggregated.html",
             "Verifier.log", "Reception.log",
+        ]
+        for file in files:
+            file_in_files = file in expected_files
+            is_uuid = bool(uuid4hex.match(
+                    file.replace("-", "").replace(".json", "")
+                ))
+            assert any([file_in_files, is_uuid])
+
+        clean_directories([harness_config.report_file_store])
+
+
+@responses.activate
+def test_puml_files_test_with_location_log_urls(
+    get_log_file_names_call_back: Callable[
+        ...,
+        tuple[Literal[400], dict, Literal["Error response"]]
+        | tuple[Literal[400], dict, str]
+        | tuple[Literal[200], dict, str],
+    ]
+) -> None:
+    """Tests method `puml_test_files` with location log files urls added
+
+    :param get_log_file_names_call_back: Fixture to provide a call back
+    request function
+    :type get_log_file_names_call_back: :class:`Callable`[
+        `...`,
+        `tuple`[:class:`Literal`[`400`], `dict`, :class:`Literal`[
+            `"Error response"`
+        ]]
+        | `tuple`[:class:`Literal`[`400`], `dict`, `str`]
+        | `tuple`[:class:`Literal`[`200`], `dict`, `str`],
+    ]
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict({
+        "event_gen_options": {
+            "invalid": False
+        }
+    })
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b'test log',
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        responses.post(
+            url=harness_config.log_urls["location"]["getFile"],
+            body=b'test log',
+        )
+        responses.add_callback(
+            method="POST",
+            url=harness_config.log_urls["location"]["getFileNames"],
+            callback=get_log_file_names_call_back,
+            content_type="application/json"
+        )
+        puml_files_test(
+            puml_file_paths=[test_file_path],
+            test_output_directory=harness_config.report_file_store,
+            harness_config=harness_config,
+            test_config=test_config
+        )
+        files = glob.glob("*.*", root_dir=harness_config.report_file_store)
+        expected_files = [
+            "Results.csv", "Results.html", "Results.xml",
+            "Results_Aggregated.html",
+            "Verifier.log", "Reception.log",
+            "AEReception.log", "AEOrdering.log",
+            "AESequenceDC.log", "IStore.log"
         ]
         for file in files:
             file_in_files = file in expected_files

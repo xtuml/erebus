@@ -36,7 +36,7 @@ def get_verifier_log_file_names(
     :return: Returns a list of the file names of logs
     :rtype: `list`[`str`]
     """
-    if not location:
+    if not location or not file_prefix:
         response_tuple = send_get_request(
             url=url,
             max_retries=5
@@ -118,7 +118,8 @@ def get_verifier_log_file_data(
 
 def get_verifier_log_files_data(
     file_names: Iterable[str],
-    url: str
+    url: str,
+    location: str | None
 ) -> dict[str, bytes]:
     """Method to get raw file bytes from an iterable of file names
 
@@ -132,7 +133,8 @@ def get_verifier_log_files_data(
     return {
         file_name: get_verifier_log_file_data(
             file_name,
-            url
+            url,
+            location=location
         )
         for file_name in file_names
     }
