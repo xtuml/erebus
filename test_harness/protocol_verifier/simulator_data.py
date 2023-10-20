@@ -6,7 +6,7 @@
 """
 from __future__ import annotations
 from io import BytesIO
-from typing import Generator, Any, Callable, Awaitable
+from typing import Generator, Any, Callable, Awaitable, TypedDict
 import json
 from uuid import uuid4
 from datetime import datetime
@@ -355,9 +355,22 @@ def send_list_dict_as_json_wrap_url(
     return send_list_dict_as_json
 
 
+class MetaDataCategory(TypedDict):
+    """Dictionary for categories of event meta data
+    """
+    random_string: dict[str, str]
+    """Dictionary of meta data name mapped to a string value
+    """
+    fixed: dict[str, Any]
+    """Dictionary of meta data name mapped to any value but string
+    """
+
+
 class Event:
     """Class to hold data and links pertaining to Protocol Verifier Events.
 
+    :param job: The job this event belongs to, defaults to `None`
+    :type job: :class:`Job`, optional
     :param job_name: Name of the job this event belongs to, defaults to ""
     :type job_name: `str`, optional
     :param job_id: The job's unique hex ID, defaults to ""
@@ -372,10 +385,8 @@ class Event:
     :type application_name: `str`, optional
     :param previous_event_ids: IDs of previous events, defaults to ""
     :type previous_event_ids: `list[str]`, optional
-    :param meta_data: Any meta data attached to event, defaults to ""
-    :type meta_data: `dict`, optional
-    :param new_event_id: Remembers previous IDs, defaults to ""
-    :type new_event_id: `str`, optional
+    :param meta_data: Any meta data attached to event, defaults to `None`
+    :type meta_data: `dict`[`str`, `Any`], optional
 
     """
     attribute_mappings = {
@@ -398,7 +409,7 @@ class Event:
             time_stamp: str = "",
             application_name: str = "",
             previous_event_ids: str | list[str] = "",
-            meta_data: dict | None = None,
+            meta_data: dict[str, Any] | None = None,
             ) -> None:
         """Constructor method
         """
@@ -428,9 +439,37 @@ class Event:
             else:
                 attribute_value = input_dict.pop(field)
             setattr(self, attribute, attribute_value)
-        self.meta_data = {
-            **input_dict
-        }
+        self.meta_data = input_dict
+
+    @property
+    def meta_data(self):
+        return self.generate_meta_data(self._meta_data)
+
+    @meta_data.setter
+    def meta_data(self, input_dict: dict[str, Any]) -> None:
+        self._meta_data = self.categorise_meta_data(input_dict)
+
+    @staticmethod
+    def categorise_meta_data(
+        meta_data: dict
+    ) -> MetaDataCategory:
+        categories = MetaDataCategory(
+            random_string={},
+            fixed={}
+        )
+        for meta_data_name, meta_data_value in meta_data.items():
+            if isinstance(meta_data_value, str):
+                categories["random_string"][meta_data_name] = meta_data_value
+            else:
+                categories["fixed"][meta_data_name] = meta_data_value
+        return categories
+
+    @staticmethod
+    def generate_meta_data(meta_data: MetaDataCategory) -> dict[str, Any]:
+        meta_data = {**meta_data["fixed"]}
+        for meta_data_name in meta_data["random_string"].keys():
+            meta_data[meta_data_name] = str(uuid4())
+        return meta_data
 
     def has_previous_event_id(self) -> bool:
         """Checks whether an event's previous_event_ids is populated

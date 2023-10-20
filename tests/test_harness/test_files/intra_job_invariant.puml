@@ -1,0 +1,9 @@
+@startuml
+partition "test_invariant" {
+  group "test_invariant"
+    :A,IINV,name=Inv_1,IINV,name=Inv_2;
+    :B;
+    :C,IINV,USER,name=Inv_1,IINV,USER,name=Inv_2;
+  end group
+}
+@enduml
