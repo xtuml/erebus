@@ -171,6 +171,14 @@ class HarnessConfig:
                 "getFileNames": self.config_parser[
                     "non-default"
                 ]["ver_get_file_names_url"]
+            },
+            "location": {
+                "getFile": self.config_parser[
+                    "non-default"
+                ]["get_log_file_url"],
+                "getFileNames": self.config_parser[
+                    "non-default"
+                ]["get_log_file_names_url"]
             }
         }
         self.pv_grok_exporter_url = self.config_parser[

@@ -24,11 +24,15 @@ import pandas as pd
 import plotly.express as px
 from plotly.graph_objects import Figure
 from requests import ReadTimeout
+import requests
 import numpy as np
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import clean_directories
-from test_harness.protocol_verifier.calc_pv_finish import PVFileInspector
+from test_harness.protocol_verifier.calc_pv_finish import (
+    PVFileInspector,
+    handle_domain_log_file_reception_and_save,
+)
 from test_harness.protocol_verifier.simulator_data import (
     Job,
     generate_events_from_template_jobs,
@@ -316,6 +320,29 @@ class Test(ABC):
     @abstractmethod
     def calc_results(self) -> None:
         """Method to cal the results and save reports for the test"""
+
+    def get_all_remaining_log_files(self):
+        # get all other log files
+        try:
+            for location, prefix in zip(
+                ["RECEPTION"] + ["VERIFIER"] * 3,
+                ["AEReception", "AEOrdering", "AESequenceDC", "IStore"],
+            ):
+                _, _, _ = handle_domain_log_file_reception_and_save(
+                    urls=self.harness_config.log_urls["location"],
+                    domain_file_names=[],
+                    log_file_store_path=self.harness_config.log_file_store,
+                    location=location,
+                    file_prefix=prefix,
+                )
+        except (RuntimeError, requests.ConnectionError) as error:
+            logging.getLogger().warning(
+                (
+                    "Obtaining all the other relevant log files failed with"
+                    " the following error:\n%s"
+                ),
+                str(error),
+            )
 
     def save_log_files_to_test_output_directory(self) -> None:
         """Method to copy all log files to the test output directory"""

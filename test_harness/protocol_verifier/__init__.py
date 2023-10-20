@@ -132,6 +132,8 @@ def puml_files_test(
         "Post processing results"
     )
     test.calc_results()
+    # grab all remaining log files
+    test.get_all_remaining_log_files()
     # save pv log files to output folder
     test.save_log_files_to_test_output_directory()
     # clean directories ready for next test
