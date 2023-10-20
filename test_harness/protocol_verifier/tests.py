@@ -23,7 +23,8 @@ import flatdict
 import pandas as pd
 import plotly.express as px
 from plotly.graph_objects import Figure
-from requests import ReadTimeout, ConnectionError
+from requests import ReadTimeout
+import requests
 import numpy as np
 
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -322,8 +323,6 @@ class Test(ABC):
 
     def get_all_remaining_log_files(self):
         # get all other log files
-        # TODO: Need to update config to have the arbitrary fields for log
-        # retrieval
         try:
             for location, prefix in zip(
                 ["RECEPTION"] + ["VERIFIER"] * 3,
@@ -336,7 +335,7 @@ class Test(ABC):
                     location=location,
                     file_prefix=prefix,
                 )
-        except (RuntimeError, ConnectionError) as error:
+        except (RuntimeError, requests.ConnectionError) as error:
             logging.getLogger().warning(
                 (
                     "Obtaining all the other relevant log files failed with"

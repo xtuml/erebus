@@ -36,7 +36,7 @@ def get_verifier_log_file_names(
     :return: Returns a list of the file names of logs
     :rtype: `list`[`str`]
     """
-    if not location or not file_prefix:
+    if location is None or file_prefix is None:
         response_tuple = send_get_request(
             url=url,
             max_retries=5
