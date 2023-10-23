@@ -105,6 +105,7 @@ class PVPerformanceResults(PVResults):
 
     @property
     def calculator(self):
+        """A just-in-time instantiated PVResultsDataFrameCalculator."""
         if isinstance(self.results, dict):
             return PVResultsDataFrameCalculator(
                 events_dict=self.results,

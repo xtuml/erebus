@@ -856,6 +856,7 @@ class TestPVResultsHandler:
 
     @staticmethod
     def test_events_cache_happy_path() -> None:
+        """Tests the happy path for event caching using shelve.Shelf."""
         harness_config = HarnessConfig(test_config_path)
         results = PVFunctionalResults()
         with NamedTemporaryFile(suffix=".db") as tmp_file:
