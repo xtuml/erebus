@@ -11,7 +11,7 @@ import os
 import re
 import shelve
 from datetime import datetime
-from multiprocessing import Pipe, Process, current_process
+from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection
 from queue import Empty, Queue
 from threading import Thread
@@ -58,7 +58,9 @@ class PVResultsHandler(ResultsHandler):
         self.events_cache_parent_conn: Connection[
             PVResultsHandlerItem | None
         ] | None = None
-        """Items sent to this connection are written to the events cache file."""
+        """
+        Items sent to this connection are written to the events cache file.
+        """
 
         if events_cache_file is not None and not events_cache_file.endswith(
             ".db"
@@ -148,12 +150,12 @@ class PVResultsHandler(ResultsHandler):
     def queue_handler(self) -> None:
         """Method to handle the queue as it is added to"""
         # Hi programmer,
-        # You may ask why the events_cache_process is created and started in the
-        # queue_handler rather than the __enter__ and __exit__ methods. The
+        # You may ask why the events_cache_process is created and started in
+        # the queue_handler rather than the __enter__ and __exit__ methods. The
         # reason is simple: in creating the thread, Python somehow calls the
         # __enter__ method *again* and this causes another process to start
-        # which is inaccessible within the scope of this code. So the process is
-        # started only within the thread and then only one process is ever
+        # which is inaccessible within the scope of this code. So the process
+        # is started only within the thread and then only one process is ever
         # spawned.
         if self.events_cache_file is not None:
             self.events_cache_parent_conn, child_conn = Pipe()
