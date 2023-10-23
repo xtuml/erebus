@@ -3,7 +3,7 @@ This is a module for assorted types with no have behaviour attached.
 
 """
 from datetime import datetime
-from typing import TypedDict, NotRequired, NamedTuple, Any
+from typing import TypedDict, NotRequired, NamedTuple, Any, Required
 
 
 class AveragesDict(TypedDict):

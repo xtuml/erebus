@@ -5,46 +5,48 @@
 # pylint: disable=R0904
 """Tests for tests.py
 """
-from pathlib import Path
-import os
 import asyncio
 import glob
+import logging
+import math
+import os
+import xml.etree.ElementTree as ET
+from copy import deepcopy
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import Iterable
+from pathlib import Path
 from tempfile import NamedTemporaryFile
-import logging
-from copy import deepcopy
-import xml.etree.ElementTree as ET
-import math
+from typing import Iterable
 
-import responses
-from aioresponses import aioresponses
+import numpy as np
 import pandas as pd
 import pytest
-import numpy as np
+import responses
+from aioresponses import aioresponses
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 from pygrok import Grok
-from hypothesis import given, strategies as st, settings, HealthCheck
 
-from test_harness.config.config import TestConfig, HarnessConfig
-from test_harness.protocol_verifier.tests import (
-    PerformanceTest,
-    FunctionalTest,
-    PVResultsHandler,
-    PVFunctionalResults,
+from test_harness.config.config import HarnessConfig, TestConfig
+from test_harness.protocol_verifier.generate_test_files import (
+    generate_test_events_from_puml_files,
 )
 from test_harness.protocol_verifier.pvperformanceresults import (
-    ResultsDict,
     ProcessErrorDataDict,
+    ResultsDict,
 )
 from test_harness.protocol_verifier.pvresultsdataframe import (
     PVResultsDataFrame,
 )
-from test_harness.protocol_verifier.generate_test_files import (
-    generate_test_events_from_puml_files,
+from test_harness.protocol_verifier.tests import (
+    FunctionalTest,
+    PerformanceTest,
+    PVFunctionalResults,
+    PVResultsHandler,
 )
+from test_harness.protocol_verifier.types import PVResultsHandlerItem
 from test_harness.simulator.simulator_profile import Profile
-from test_harness.utils import clean_directories, check_dict_equivalency
+from test_harness.utils import check_dict_equivalency, clean_directories
 
 # get test config
 test_config_path = os.path.join(
@@ -853,6 +855,36 @@ class TestPVResultsHandler:
     """Group of tests for :class:`PVResultsHandler`"""
 
     @staticmethod
+    def test_events_cache_happy_path() -> None:
+        harness_config = HarnessConfig(test_config_path)
+        results = PVFunctionalResults()
+        with NamedTemporaryFile(suffix=".db") as tmp_file:
+            with PVResultsHandler(
+                results,
+                harness_config.report_file_store,
+                events_cache_file=tmp_file.name,
+            ) as results_handler:
+                for _ in range(10):
+                    results_handler.handle_result(
+                        result=PVResultsHandlerItem(
+                            event_list=["id1", "id2"],
+                            file_name="foo",
+                            job_id="jobid1",
+                            job_info=None,
+                            response="response1",
+                            time_completed=datetime.utcnow(),
+                        )
+                    )
+
+            with PVResultsHandler(
+                results,
+                harness_config.report_file_store,
+                events_cache_file=tmp_file.name,
+            ) as results_handler:
+                assert len(results_handler.results_holder.responses) == 10
+                # TODO more testing around this functionality.
+
+    @staticmethod
     def test___enter__() -> None:
         """Tests :class:`PVResultsHandler`.`__enter__`"""
         harness_config = HarnessConfig(test_config_path)
@@ -1421,7 +1453,7 @@ def test_get_report_files_from_results(
         "AER_file_process_error": "0",
         "AEO_file_process_error": "0",
         "test_start_time": test.time_start.strftime("%Y/%m/%d, %H:%M:%S"),
-        "test_end_time": test.time_end.strftime("%Y/%m/%d, %H:%M:%S")
+        "test_end_time": test.time_end.strftime("%Y/%m/%d, %H:%M:%S"),
     }
     for prop in children:
         assert expected_properties[prop.attrib["name"]] == prop.attrib["value"]
