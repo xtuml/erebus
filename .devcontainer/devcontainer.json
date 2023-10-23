@@ -15,7 +15,14 @@
 					"--preview",
 					"--line-length",
 					"79"
-				]
+				],
+				"[python]":{
+					"editor.rulers": [
+						{
+							"column": 79
+						}
+					]
+				}
 			},
 			"extensions": [
 				"ms-python.black-formatter",
