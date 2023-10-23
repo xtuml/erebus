@@ -442,22 +442,44 @@ class Event:
         self.meta_data = input_dict
 
     @property
-    def meta_data(self):
-        return self.generate_meta_data(self._meta_data)
+    def meta_data(self) -> dict[str, Any]:
+        """Property getter for meta data on the instance
+
+        :return: Returns a dictionary of the meta data using
+        :class:`generate_meta_data`
+        :rtype: `dict`[`str`, `Any`]
+        """
+        return self.generate_meta_data(self._categorised_meta_data)
 
     @meta_data.setter
     def meta_data(self, input_dict: dict[str, Any]) -> None:
-        self._meta_data = self.categorise_meta_data(input_dict)
+        """Property setter for meta data from an input meta data dictionary
+        from a template. Uses :class:`categorise_meta_data` to categorise the
+        input
+
+        :param input_dict: The input meta data dictionary
+        :type input_dict: `dict`[`str`, `Any`]
+        """
+        self._categorised_meta_data = self.categorise_meta_data(input_dict)
 
     @staticmethod
     def categorise_meta_data(
-        meta_data: dict
+        input_dict: dict[str, Any]
     ) -> MetaDataCategory:
+        """Method to categorise data within a given input dictionary into:
+        * fixed - entries whose value is not a string
+        * random_string - entries whose value is a string
+
+        :param input_dict: The input dictionary with values to categorise
+        :type input_dict: `dict`[`str`, `Any`]
+        :return: Returns a dictionary with the categorised values and keys
+        :rtype: :class:`MetaDataCategory`
+        """
         categories = MetaDataCategory(
             random_string={},
             fixed={}
         )
-        for meta_data_name, meta_data_value in meta_data.items():
+        for meta_data_name, meta_data_value in input_dict.items():
             if isinstance(meta_data_value, str):
                 categories["random_string"][meta_data_name] = meta_data_value
             else:
@@ -468,6 +490,16 @@ class Event:
     def generate_meta_data(
         categorised_meta_data: MetaDataCategory
     ) -> dict[str, Any]:
+        """Method to generate a meta data dictionary from a categorised meta
+        data dictionary. If an entry is classed as "random_string" then the
+        output meta data will have a random uuid4 produced for that entry.
+        Otherwise the value of the entry will be used.
+
+        :param categorised_meta_data: Categorised meta data
+        :type categorised_meta_data: :class:`MetaDataCategory`
+        :return: Returns a dictionary with values for the meta data
+        :rtype: `dict`[`str`, `Any`]
+        """
         meta_data = {**categorised_meta_data["fixed"]}
         for meta_data_name in categorised_meta_data["random_string"].keys():
             meta_data[meta_data_name] = str(uuid4())

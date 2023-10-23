@@ -509,6 +509,13 @@ class TestEvent:
         non_string_type: list,
         string_type: list
     ) -> None:
+        """Tests :class:`Event`.`categorise_meta_data`
+
+        :param non_string_type: A list of any type but string
+        :type non_string_type: `list`[`Any`]
+        :param string_type: A list of strings
+        :type string_type: `list`[`str`]
+        """
         string_type_dict = {
             str(i): val
             for i, val in enumerate(string_type)
@@ -553,9 +560,16 @@ class TestEvent:
         )
     )
     def test_generate_meta_data(
-        non_string_type: list,
-        string_type: list
+        non_string_type: list[Any],
+        string_type: list[str]
     ) -> None:
+        """Tests :class:`Event`.`generate_meta_data`
+
+        :param non_string_type: A list of any type but string
+        :type non_string_type: `list`[`Any`]
+        :param string_type: A list of strings
+        :type string_type: `list`[`str`]
+        """
         string_type_dict = {
             str(i): val
             for i, val in enumerate(string_type)
@@ -590,7 +604,8 @@ class TestEvent:
 
     @staticmethod
     def test_make_event_dict_meta_data_string_type() -> None:
-        """Tests :class:`Event`.`make_event_dict` with meta data
+        """Tests :class:`Event`.`make_event_dict` with meta data including
+        as string type and an integer type.
         """
         input_dict = {
             "jobName": "test",
