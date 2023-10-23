@@ -9,7 +9,7 @@ async-timeout==4.0.2
 attrs==22.2.0
 banal==1.0.6
 certifi==2023.5.7
-charset-normalizer==3.1.0
+charset-normalizer==3.3.1
 click==8.1.7
 cloudpickle==2.2.1
 contourpy==1.0.7
