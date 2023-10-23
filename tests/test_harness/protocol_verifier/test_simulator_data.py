@@ -588,6 +588,59 @@ class TestEvent:
             assert is_uuid
         assert not generated_meta_data
 
+    @staticmethod
+    def test_make_event_dict_meta_data_string_type() -> None:
+        """Tests :class:`Event`.`make_event_dict` with meta data
+        """
+        input_dict = {
+            "jobName": "test",
+            "jobId": "1",
+            "eventType": "test_event",
+            "eventId": "1",
+            "timestamp": "test o'clock",
+            "applicationName": "test application",
+            "previousEventIds": ["1", "2"],
+            "X": "some invariant",
+            "Y": 12
+        }
+        events: list[Event] = []
+        event_id_map = {}
+        missing_events: list[Event] = []
+        TestEvent.make_events_from_job_list(
+            [input_dict.copy()],
+            events,
+            event_id_map,
+            missing_events
+        )
+        event_event_id_map = {
+            id(event): str(index)
+            for index, event in enumerate(events + missing_events)
+        }
+        job_id = "1"
+        event_dict = events[-1].make_event_dict(
+            event_event_id_map=event_event_id_map,
+            job_id=job_id
+        )
+        fields_to_check = [
+            "jobId", "jobName", "eventType", "applicationName", "Y"
+        ]
+        check_dict_equivalency(
+            {
+                key: value
+                for key, value in event_dict.items()
+                if key in fields_to_check
+            },
+            {
+                key: value
+                for key, value in input_dict.items()
+                if key in fields_to_check
+            }
+        )
+        is_uuid = bool(uuid4hex.match(
+                    event_dict["X"].replace("-", "")
+                ))
+        assert is_uuid
+
 
 class TestJob:
     """Group of tests for :class:`Job`
