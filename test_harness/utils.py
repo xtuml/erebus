@@ -11,6 +11,7 @@ import asyncio
 
 import flatdict
 from tqdm import tqdm
+import numpy as np
 
 
 def create_file_io_file_name_tuple(
@@ -123,7 +124,17 @@ def check_dict_equivalency(
         sorted(flat_dict_2.items(), key=lambda item: item[0])
     ):
         # check sorted values are the same
-        assert sub_1_item[1] == sub_2_item[1]
+        # for floats check if nan first
+        if (
+            isinstance(sub_1_item[1], float) and
+            isinstance(sub_2_item[1], float)
+        ):
+            if np.isnan(sub_1_item[1]) and np.isnan(sub_2_item[1]):
+                assert True
+            else:
+                assert sub_1_item[1] == sub_2_item[1]
+        else:
+            assert sub_1_item[1] == sub_2_item[1]
         # check the value lies at the correct depth
         assert (
             len(sub_1_item[0].split(":"))

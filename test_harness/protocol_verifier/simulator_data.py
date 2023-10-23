@@ -465,9 +465,11 @@ class Event:
         return categories
 
     @staticmethod
-    def generate_meta_data(meta_data: MetaDataCategory) -> dict[str, Any]:
-        meta_data = {**meta_data["fixed"]}
-        for meta_data_name in meta_data["random_string"].keys():
+    def generate_meta_data(
+        categorised_meta_data: MetaDataCategory
+    ) -> dict[str, Any]:
+        meta_data = {**categorised_meta_data["fixed"]}
+        for meta_data_name in categorised_meta_data["random_string"].keys():
             meta_data[meta_data_name] = str(uuid4())
         return meta_data
 

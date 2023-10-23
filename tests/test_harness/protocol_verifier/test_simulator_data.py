@@ -7,6 +7,9 @@ from io import BytesIO
 from typing import Generator, Any
 from copy import copy, deepcopy
 import json
+import re
+
+from hypothesis import given, strategies as st
 
 from test_harness.utils import check_dict_equivalency
 from test_harness.simulator.simulator import (
@@ -24,8 +27,12 @@ from test_harness.protocol_verifier.simulator_data import (
     simple_sequencer,
     job_sequencer,
     generate_events_from_template_jobs,
-    convert_list_dict_to_json_io_bytes
+    convert_list_dict_to_json_io_bytes,
 )
+
+uuid4hex = re.compile(
+            '[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z', re.I
+        )
 
 
 class TestBatchJobSimDatumTransformer:
@@ -480,6 +487,106 @@ class TestEvent:
                 if key in fields_to_check
             }
         )
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.one_of(
+                st.none(),
+                st.integers(),
+                st.floats(),
+                st.dictionaries(
+                    st.text(),
+                    st.text()
+                ),
+            )
+        ),
+        st.lists(
+            st.text()
+        )
+    )
+    def test_categorise_meta_data(
+        non_string_type: list,
+        string_type: list
+    ) -> None:
+        string_type_dict = {
+            str(i): val
+            for i, val in enumerate(string_type)
+        }
+        num_string_type = len(string_type)
+        non_string_type_dict = {
+            str(i + num_string_type): val
+            for i, val in enumerate(non_string_type)
+        }
+        num_non_string_type = len(non_string_type)
+        input_dict = {
+            **string_type_dict,
+            **non_string_type_dict
+        }
+        categorised_meta_data = Event.categorise_meta_data(
+            input_dict
+        )
+        assert len(categorised_meta_data["fixed"]) == num_non_string_type
+        assert len(categorised_meta_data["random_string"]) == num_string_type
+        check_dict_equivalency(
+            string_type_dict, categorised_meta_data["random_string"]
+        )
+        check_dict_equivalency(
+            non_string_type_dict, categorised_meta_data["fixed"]
+        )
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.one_of(
+                st.none(),
+                st.integers(),
+                st.floats(),
+                st.dictionaries(
+                    st.text(),
+                    st.text()
+                ),
+            )
+        ),
+        st.lists(
+            st.text()
+        )
+    )
+    def test_generate_meta_data(
+        non_string_type: list,
+        string_type: list
+    ) -> None:
+        string_type_dict = {
+            str(i): val
+            for i, val in enumerate(string_type)
+        }
+        num_string_type = len(string_type)
+        non_string_type_dict = {
+            str(i + num_string_type): val
+            for i, val in enumerate(non_string_type)
+        }
+        input_dict = {
+            **string_type_dict,
+            **non_string_type_dict
+        }
+        categorised_meta_data = Event.categorise_meta_data(
+            input_dict
+        )
+        generated_meta_data = Event.generate_meta_data(
+            categorised_meta_data
+        )
+        fixed_dict = {
+            key: generated_meta_data.pop(key)
+            for key in non_string_type_dict.keys()
+        }
+        check_dict_equivalency(non_string_type_dict, fixed_dict)
+        for key in string_type_dict.keys():
+            value = generated_meta_data.pop(key)
+            is_uuid = bool(uuid4hex.match(
+                    value.replace("-", "")
+                ))
+            assert is_uuid
+        assert not generated_meta_data
 
 
 class TestJob:
