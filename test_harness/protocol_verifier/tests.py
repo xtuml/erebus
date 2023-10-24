@@ -322,7 +322,7 @@ class Test(ABC):
         """Method to cal the results and save reports for the test"""
 
     def get_all_remaining_log_files(self):
-        # get all other log files
+        """Get's all other log files."""
         try:
             for location, prefix in zip(
                 ["RECEPTION"] + ["VERIFIER"] * 3,
