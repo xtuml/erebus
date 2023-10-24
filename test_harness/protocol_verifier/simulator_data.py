@@ -687,14 +687,26 @@ class Event:
 
 
 class Invariant:
+    """Class to hold invariant name and create a randomised string
+
+    :param name: _description_
+    :type name: str
+    """
     def __init__(
         self,
         name: str
     ) -> None:
+        """Constructor method
+        """
         self.name = name
 
     @staticmethod
     def create_random_invariant_data() -> str:
+        """Method to create a uuid4 string
+
+        :return: Returns a uuid4 string
+        :rtype: `str`
+        """
         return str(uuid4())
 
 

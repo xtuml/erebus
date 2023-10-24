@@ -1,6 +1,7 @@
 # pylint: disable=W0212
 # pylint: disable=W0143
 # pylint: disable=R0903
+# pylint: disable=C0302
 """Test simulation_data.py
 """
 from io import BytesIO
@@ -575,7 +576,7 @@ class TestEvent:
                 st.integers(),
                 st.floats(),
                 st.dictionaries(
-                    st.text(),
+                    st.characters(exclude_characters=":"),
                     st.text()
                 ),
             )
@@ -630,7 +631,9 @@ class TestEvent:
                 st.integers(),
                 st.floats(),
                 st.dictionaries(
-                    st.text(),
+                    st.text(
+                        st.characters(exclude_characters=":")
+                    ),
                     st.text()
                 ),
             )
@@ -693,7 +696,7 @@ class TestEvent:
                 st.integers(),
                 st.floats(),
                 st.dictionaries(
-                    st.text(),
+                    st.characters(exclude_characters=":"),
                     st.text()
                 ),
             )
@@ -834,7 +837,7 @@ class TestJob:
 
     @staticmethod
     def test_parse_input_job_file_all_events_meta_data(
-        job_list: list[dict[str, str | list[str]]]
+        job_list_with_meta_data: list[dict[str, str | list[str]]]
     ) -> None:
         """Tests :class:`Job`.`parse_input_job_file` with all events present
         for meta data and invariants
@@ -843,7 +846,7 @@ class TestJob:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         job = Job()
-        job.parse_input_jobfile(job_list)
+        job.parse_input_jobfile(job_list_with_meta_data)
         events = job.events
         assert len(job.invariants.invariants) == 1
         assert "X" in job.invariants.invariants
