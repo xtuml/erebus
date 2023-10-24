@@ -871,6 +871,27 @@ class TestJob:
         assert "X" in events[1].categorised_meta_data["invariants"]
 
     @staticmethod
+    def test_parse_input_job_file_all_events_two_jobs(
+        job_list_with_multiple_job_ids: list[dict[str, str | list[str]]]
+    ) -> None:
+        """Tests :class:`Job`.`parse_input_job_file` with all events present
+        for two job ids present
+
+        :param job_list_with_multiple_job_ids: A list of event dicts in a job
+        :type job_list_with_multiple_job_ids: `list`[`dict`[`str`, `str`  |
+        `list`[`str`]]]
+        """
+        job = Job()
+        job.parse_input_jobfile(job_list_with_multiple_job_ids)
+        events = job.events
+        assert len(events) == 4
+        assert len(job.job_ids.named_uuids) == 2
+        assert "1" in job.job_ids.named_uuids
+        assert "2" in job.job_ids.named_uuids
+        assert job.job_ids.named_uuids["1"].count == 2
+        assert job.job_ids.named_uuids["2"].count == 2
+
+    @staticmethod
     def test_parse_input_job_file_missing_event(
         job_list: list[dict[str, str | list[str]]]
     ) -> None:
@@ -935,6 +956,43 @@ def test_generate_job_batch_events(
     assert "job_id" in sim_datums[-1].kwargs
 
 
+def test_generate_job_batch_events_multiple_job_ids(
+    job_list_with_multiple_job_ids: list[dict[str, str | list[str]]]
+) -> None:
+    """Tests `generate_job_batch_events` with multiple job ids in the event
+    sequence
+
+    :param job_list: A list of event dicts in a job
+    :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+    """
+    job = Job()
+    job.parse_input_jobfile(job_list_with_multiple_job_ids)
+    generators = generate_job_batch_events([job])
+    assert len(generators) == 1
+    sim_datums = list(generators[0])
+    assert len(sim_datums) == 4
+    for sim_datum in sim_datums[::2]:
+        assert sim_datum.action_func == async_do_nothing
+        assert not sim_datum.args
+        assert not sim_datum.kwargs
+    for sim_datum in sim_datums[1::2]:
+        assert not sim_datum.args
+        assert not sim_datum.action_func
+        assert "list_dict" in sim_datum.kwargs
+        assert len(sim_datum.kwargs["list_dict"]) == 2
+        assert "job_info" in sim_datum.kwargs
+        assert "job_id" in sim_datum.kwargs
+    assert sim_datums[1].kwargs["job_id"] != sim_datums[3].kwargs["job_id"]
+    assert len(set(
+        event["jobId"]
+        for event in sim_datums[1].kwargs["list_dict"]
+    )) == 1
+    assert len(set(
+        event["jobId"]
+        for event in sim_datums[3].kwargs["list_dict"]
+    )) == 1
+
+
 def test_generate_single_events(
     job_list: list[dict[str, str | list[str]]]
 ) -> None:
@@ -956,6 +1014,50 @@ def test_generate_single_events(
         assert len(sim_datum.kwargs["list_dict"]) == 1
         assert "job_info" in sim_datum.kwargs
         assert "job_id" in sim_datum.kwargs
+
+
+def test_generate_single_events_multiple_job_ids(
+    job_list_with_multiple_job_ids: list[dict[str, str | list[str]]]
+) -> None:
+    """Tests `generate_single_events` with multiple job ids in the event
+    sequence
+
+    :param job_list_with_multiple_job_ids: A list of event dicts in a job
+    :type job_list_with_multiple_job_ids: `list`[`dict`[`str`, `str`  |
+    `list`[`str`]]]
+    """
+    job = Job()
+    job.parse_input_jobfile(job_list_with_multiple_job_ids)
+    generators = generate_single_events([job])
+    assert len(generators) == 1
+    sim_datums = list(generators[0])
+    assert len(sim_datums) == 4
+    for sim_datum in sim_datums:
+        assert not sim_datum.args
+        assert not sim_datum.action_func
+        assert "list_dict" in sim_datum.kwargs
+        assert len(sim_datum.kwargs["list_dict"]) == 1
+        assert "job_info" in sim_datum.kwargs
+        assert "job_id" in sim_datum.kwargs
+    job_1_ids = set(
+        sim_datum.kwargs["job_id"]
+        for sim_datum in sim_datums[:2]
+    )
+    job_2_ids = set(
+        sim_datum.kwargs["job_id"]
+        for sim_datum in sim_datums[2:]
+    )
+    assert job_1_ids != job_2_ids
+    assert len(job_1_ids) == 1
+    assert len(job_2_ids) == 1
+    assert len(set(
+        sim_datum.kwargs["list_dict"][0]["jobId"]
+        for sim_datum in sim_datums[:2]
+    )) == 1
+    assert len(set(
+        sim_datum.kwargs["list_dict"][0]["jobId"]
+        for sim_datum in sim_datums[2:]
+    )) == 1
 
 
 def test_simple_sequencer(
