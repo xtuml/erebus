@@ -16,4 +16,6 @@ disable=all
     ; useless-parent-delegation,
     ; raise-missing-from,
     ; duplicate-code,
-enable=missing-function-docstring
+enable=missing-function-docstring,
+    missing-module-docstring,
+    missing-class-docstring,
