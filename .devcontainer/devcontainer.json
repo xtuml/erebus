@@ -15,12 +15,21 @@
 					"--preview",
 					"--line-length",
 					"79"
-				]
+				],
+				"[python]":{
+					"editor.rulers": [
+						{
+							"column": 79
+						}
+					]
+				}
 			},
 			"extensions": [
 				"ms-python.black-formatter",
 				"ms-python.vscode-pylance",
-				"ms-python.python"
+				"ms-python.python",
+				"GitHub.copilot-chat",
+				"GitHub.copilot"
 			]
 		}
 	},

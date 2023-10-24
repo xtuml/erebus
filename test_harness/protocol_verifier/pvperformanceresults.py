@@ -105,6 +105,7 @@ class PVPerformanceResults(PVResults):
 
     @property
     def calculator(self):
+        """A just-in-time instantiated PVResultsDataFrameCalculator."""
         if isinstance(self.results, dict):
             return PVResultsDataFrameCalculator(
                 events_dict=self.results,
@@ -129,9 +130,6 @@ class PVPerformanceResults(PVResults):
             raise TypeError(
                 f"self.results is unsupported type: {type(self.results)}"
             )
-
-    def create_final_results_holder(self) -> None:
-        self.results = self.calculator.results
 
     def _create_results_holder(self) -> None:
         """Creates the results holder as pandas DataFrame"""
@@ -408,7 +406,7 @@ class PVPerformanceResults(PVResults):
         defaults to `1.0`
         :type agg_time_window: `float`, optional
         """
-        self.create_final_results_holder()
+        self.results = self.calculator.results
         self.create_response_time_fields()
         self.end_times = self.calc_end_times()
         self.failures = self.calculate_failures()
@@ -428,7 +426,7 @@ class PVPerformanceResults(PVResults):
         * queue_time - The time when event was picked up by AER minus the time
         sent
         """
-        self.create_final_results_holder()
+        self.results = self.calculator.results
 
     def calculate_failures(self) -> FailuresDict:
         """Method to generate the failures and successes from the sim
@@ -538,7 +536,7 @@ class PVPerformanceResults(PVResults):
         when it is fully processed not when it is sent.
         :param time_window: The time window to use for aggregations, defaults
         to `1`
-        :type time_window: `int`, optional
+        :type time_window: `int | float`, optional
         :return: Returns a dataframe of the aggeragted results
         :rtype: :class:`pd`.`DataFrame`
         """

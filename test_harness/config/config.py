@@ -131,6 +131,7 @@ class HarnessConfig:
         ]["requests_timeout"])
 
     def parse_io_tracking_config(self):
+        """TODO docstring."""
         self.io_calc_interval_time = int(self.config_parser[
             "non-default"
         ]["io_calc_interval_time"])
@@ -149,6 +150,7 @@ class HarnessConfig:
         }
 
     def parse_log_retrieval_config(self):
+        """TODO docstring."""
         self.pv_finish_interval = int(self.config_parser[
             "non-default"
         ]["pv_finish_interval"])
@@ -289,6 +291,7 @@ class TestConfig:
         }
 
     def config_to_dict(self) -> dict:
+        """TODO docstring."""
         config_dict_to_return = {
             "type": self.type,
             "max_different_sequences": 200,
