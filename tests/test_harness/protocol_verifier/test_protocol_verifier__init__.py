@@ -206,6 +206,29 @@ def test_puml_files_test_functional_extra_job_invariants() -> None:
         assert results.loc[0, "SequenceName"] == "test_uml_1 + test_uml_2"
         assert results.loc[1, "SequenceName"] == "test_uml_1 + test_uml_2"
         assert results.loc[0, "JobId"] != results.loc[1, "JobId"]
+        files = glob.glob("*.*", root_dir=harness_config.report_file_store)
+        # check if the invariant in the files are correct
+        invariants = []
+        event_types = []
+        for file in files:
+            is_uuid = bool(uuid4hex.match(
+                    file.replace("-", "").replace(".json", "")
+                ))
+            if is_uuid:
+                with open(
+                    os.path.join(
+                        harness_config.report_file_store,
+                        file
+                    ),
+                    "r"
+                ) as json_file:
+                    data = json.load(json_file)
+                    for event in data:
+                        if "testEINV" in event:
+                            invariants.append(event["testEINV"])
+                            event_types.append(event["eventType"])
+        assert len(invariants) == 2
+        assert len(set(invariants)) == 1
         clean_directories([harness_config.report_file_store])
 
 
