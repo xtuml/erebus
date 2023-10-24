@@ -6,7 +6,7 @@
 """
 from __future__ import annotations
 from io import BytesIO
-from typing import Generator, Any, Callable, Awaitable
+from typing import Generator, Any, Callable, Awaitable, TypedDict
 import json
 from uuid import uuid4
 from datetime import datetime
@@ -355,9 +355,22 @@ def send_list_dict_as_json_wrap_url(
     return send_list_dict_as_json
 
 
+class MetaDataCategory(TypedDict):
+    """Dictionary for categories of event meta data
+    """
+    invariants: dict[str, str]
+    """Set of meta data names
+    """
+    fixed: dict[str, Any]
+    """Dictionary of meta data name mapped to any value but string
+    """
+
+
 class Event:
     """Class to hold data and links pertaining to Protocol Verifier Events.
 
+    :param job: The job this event belongs to, defaults to `None`
+    :type job: :class:`Job`, optional
     :param job_name: Name of the job this event belongs to, defaults to ""
     :type job_name: `str`, optional
     :param job_id: The job's unique hex ID, defaults to ""
@@ -372,10 +385,8 @@ class Event:
     :type application_name: `str`, optional
     :param previous_event_ids: IDs of previous events, defaults to ""
     :type previous_event_ids: `list[str]`, optional
-    :param meta_data: Any meta data attached to event, defaults to ""
-    :type meta_data: `dict`, optional
-    :param new_event_id: Remembers previous IDs, defaults to ""
-    :type new_event_id: `str`, optional
+    :param meta_data: Any meta data attached to event, defaults to `None`
+    :type meta_data: `dict`[`str`, `Any`], optional
 
     """
     attribute_mappings = {
@@ -398,10 +409,12 @@ class Event:
             time_stamp: str = "",
             application_name: str = "",
             previous_event_ids: str | list[str] = "",
-            meta_data: dict | None = None,
+            meta_data: dict[str, Any] | None = None,
             ) -> None:
         """Constructor method
         """
+        if job is None:
+            job = Job()
         self.job = job
         self.job_name = job_name
         self.job_id = job_id
@@ -410,7 +423,7 @@ class Event:
         self.time_stamp = time_stamp
         self.application_name = application_name
         self.previous_event_ids = previous_event_ids
-        self.meta_data = meta_data if meta_data else {}
+        self.categorised_meta_data = meta_data if meta_data else {}
         self.prev_events = []
 
     def parse_from_input_dict(
@@ -428,9 +441,98 @@ class Event:
             else:
                 attribute_value = input_dict.pop(field)
             setattr(self, attribute, attribute_value)
-        self.meta_data = {
-            **input_dict
+        self.categorised_meta_data = input_dict
+
+    @property
+    def meta_data(self) -> dict[str, Any]:
+        """Property defining meta data
+
+        :return: Returns a dictionary of the meta data
+        :rtype: `dict`[`str`, `Any`]
+        """
+        return {
+            **self.categorised_meta_data["fixed"],
+            **self.categorised_meta_data["invariants"]
         }
+
+    @property
+    def categorised_meta_data(self) -> MetaDataCategory:
+        """Property getter for meta data on the instance
+
+        :return: Returns a dictionary of the categorised meta data using
+        :rtype: :class:`MetaDataCategory`
+        """
+        return self._categorised_meta_data
+
+    @categorised_meta_data.setter
+    def categorised_meta_data(
+        self,
+        input_dict: dict[str, Any]
+    ) -> None:
+        """Property setter for meta data from an input meta data dictionary
+        from a template. Uses :class:`categorise_meta_data` to categorise the
+        input
+
+        :param input_dict: The input meta data dictionary
+        :type input_dict: `dict`[`str`, `Any`]
+        """
+        self._categorised_meta_data = self.categorise_meta_data(
+            input_dict,
+            self.job.invariants
+        )
+
+    @staticmethod
+    def categorise_meta_data(
+        input_dict: dict[str, Any],
+        invariant_store: InvariantStore
+    ) -> MetaDataCategory:
+        """Method to categorise data within a given input dictionary into:
+        * fixed - entries whose value is not a string
+        * random_string - entries whose value is a string
+
+        :param input_dict: The input dictionary with values to categorise
+        :type input_dict: `dict`[`str`, `Any`]
+        :param invariant_store: The invariant store in which to store
+        invariants
+        :type invariant_store: :class:`InvariantStore`
+        :return: Returns a dictionary with the categorised values and keys
+        :rtype: :class:`MetaDataCategory`
+        """
+        categories = MetaDataCategory(
+            invariants={},
+            fixed={}
+        )
+        for meta_data_name, meta_data_value in input_dict.items():
+            if isinstance(meta_data_value, str):
+                invariant_store.update_invariants(meta_data_name)
+                categories["invariants"][meta_data_name] = meta_data_value
+            else:
+                categories["fixed"][meta_data_name] = meta_data_value
+        return categories
+
+    @staticmethod
+    def generate_meta_data(
+        categorised_meta_data: MetaDataCategory,
+        invariant_name_data_map: dict[str, str],
+    ) -> dict[str, Any]:
+        """Method to generate a meta data dictionary from a categorised meta
+        data dictionary. If an entry is classed as "invariant" then the
+        output meta data will have a random uuid4 produced for that entry
+        using the invariant_name_data_map.
+        Otherwise the value of the entry will be used.
+
+        :param categorised_meta_data: Categorised meta data
+        :type categorised_meta_data: :class:`MetaDataCategory`
+        :param invariant_name_data_map: The map from invariant name to
+        randomised invariant data
+        :type invariant_name_data_map: `dict`[`str`, `str`]
+        :return: Returns a dictionary with values for the meta data
+        :rtype: `dict`[`str`, `Any`]
+        """
+        meta_data = {**categorised_meta_data["fixed"]}
+        for name in categorised_meta_data["invariants"]:
+            meta_data[name] = invariant_name_data_map[name]
+        return meta_data
 
     def has_previous_event_id(self) -> bool:
         """Checks whether an event's previous_event_ids is populated
@@ -500,6 +602,7 @@ class Event:
         self,
         event_event_id_map: dict[int, str],
         job_id: str,
+        invariant_name_data_map: dict[str, str]
     ) -> dict[str, str | list | dict]:
         """Method to generate an event dict with an event to event id map and
         given job id
@@ -509,6 +612,9 @@ class Event:
         :type event_event_id_map: `dict`[`int`, `str`]
         :param job_id: A job id
         :type job_id: `str`
+        :param invariant_name_data_map: The map from invariant name to
+        randomised invariant data
+        :type invariant_name_data_map: `dict`[`str`, `str`]
         :return: Returns a dictionary of the event dict
         :rtype: `dict`[`str`, `str` | `list` | `dict`]
         """
@@ -533,7 +639,10 @@ class Event:
         # add meta data if it exists
         event_dict = {
             **event_dict,
-            **self.meta_data
+            **self.generate_meta_data(
+                self.categorised_meta_data,
+                invariant_name_data_map
+            )
         }
         return event_dict
 
@@ -541,7 +650,8 @@ class Event:
         self,
         event_event_id_map: dict[int, str],
         job_id: str,
-        sim_datum_transformer: PVSimDatumTransformer
+        sim_datum_transformer: PVSimDatumTransformer,
+        invariant_name_data_map: dict[str, str]
     ) -> Generator[SimDatum, Any, None]:
         """Method to generate a :class:`SimDatum` from an event dict
 
@@ -553,12 +663,16 @@ class Event:
         :param sim_datum_transformer: The arbitrary transformer class to
         transform the data into the required :class:`SimDatum` to generate
         :type sim_datum_transformer: :class:`SimDatumTransformer`
+        :param invariant_name_data_map: The map from invariant name to
+        randomised invariant data
+        :type invariant_name_data_map: `dict`[`str`, `str`]
         :yield: Generates the :class:`SimDatum` for the event
         :rtype: :class:`Generator`[:class:`SimDatum`, `Any`, `None`]
         """
         event_dict = self.make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         try:
             yield from sim_datum_transformer.get_sim_datum(
@@ -570,6 +684,62 @@ class Event:
                 "The event job has not been set and is required for job info"
             )
             raise error
+
+
+class Invariant:
+    """Class to hold invariant name and create a randomised string
+
+    :param name: _description_
+    :type name: str
+    """
+    def __init__(
+        self,
+        name: str
+    ) -> None:
+        """Constructor method
+        """
+        self.name = name
+
+    @staticmethod
+    def create_random_invariant_data() -> str:
+        """Method to create a uuid4 string
+
+        :return: Returns a uuid4 string
+        :rtype: `str`
+        """
+        return str(uuid4())
+
+
+class InvariantStore:
+    """Class to store invariants and create random data for invariants
+    """
+    def __init__(self) -> None:
+        """Constructor method
+        """
+        self.invariants: dict[str, Invariant] = {}
+
+    def update_invariants(self, name: str) -> Invariant:
+        """Method to update invariants given an invariant name
+
+        :param name: The name of the invariant
+        :type name: `str`
+        :return: Returns the invariant mapped to the name
+        :rtype: :class:`Invariant`
+        """
+        if name not in self.invariants:
+            self.invariants[name] = Invariant(name)
+        return self.invariants[name]
+
+    def create_invariant_name_data_map(self) -> dict[str, str]:
+        """Creates a map from invariant name to a randomised uuid4
+
+        :return: Returns the map of invariant name to uuid4
+        :rtype: `dict`[`str`, `str`]
+        """
+        return {
+            name: invariant.create_random_invariant_data()
+            for name, invariant in self.invariants.items()
+        }
 
 
 class Job:
@@ -584,6 +754,7 @@ class Job:
         self.events: list[Event] = []
         self.missing_events: list[Event] = []
         self.job_info = job_info
+        self.invariants = InvariantStore()
 
     @property
     def job_info(self) -> dict[str, str | bool]:
@@ -635,11 +806,15 @@ class Job:
         :rtype: :class:`Generator`[:class:`SimDatum`, `Any`, `None`]
         """
         event_event_id_map = self.create_new_event_event_id_map()
+        invariant_name_data_map = (
+            self.invariants.create_invariant_name_data_map()
+        )
         for event in self.events:
             yield from event.generate_simulation_event_dict(
                 event_event_id_map=event_event_id_map,
                 job_id=job_id,
-                sim_datum_transformer=sim_datum_transformer
+                sim_datum_transformer=sim_datum_transformer,
+                invariant_name_data_map=invariant_name_data_map
             )
 
     def create_new_event_event_id_map(self) -> dict[int, str]:

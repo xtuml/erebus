@@ -1,12 +1,17 @@
 # pylint: disable=W0212
 # pylint: disable=W0143
 # pylint: disable=R0903
+# pylint: disable=C0302
 """Test simulation_data.py
 """
 from io import BytesIO
 from typing import Generator, Any
 from copy import copy, deepcopy
 import json
+import re
+
+from hypothesis import given, strategies as st
+import pytest
 
 from test_harness.utils import check_dict_equivalency
 from test_harness.simulator.simulator import (
@@ -19,13 +24,19 @@ from test_harness.protocol_verifier.simulator_data import (
     EventSimDatumTransformer,
     Job,
     Event,
+    Invariant,
+    InvariantStore,
     generate_job_batch_events,
     generate_single_events,
     simple_sequencer,
     job_sequencer,
     generate_events_from_template_jobs,
-    convert_list_dict_to_json_io_bytes
+    convert_list_dict_to_json_io_bytes,
 )
+
+uuid4hex = re.compile(
+            '[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z', re.I
+        )
 
 
 class TestBatchJobSimDatumTransformer:
@@ -128,6 +139,74 @@ class TestEventSimDatumTransformer:
         assert "job_id" in sim_datum.kwargs
         assert sim_datum.kwargs["job_id"] == job_id
         assert sim_datum.action_func is None
+
+
+class TestInvariants:
+    """Tests for the classes:
+    * :class:`Invariant`
+    * :class:`InvariantStore`
+    """
+    @staticmethod
+    def test_create_random_invariant_data() -> None:
+        """Tests the method :class:`Invariant`.`create_random_invariant_data`
+        """
+        random_data = Invariant.create_random_invariant_data()
+        is_uuid = bool(uuid4hex.match(
+                random_data.replace("-", "")
+            ))
+        assert is_uuid
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.text()
+        )
+    )
+    def test_update_invariants(names: list[str]) -> None:
+        """Tests the method :class:`InvariantStore`.`update_invariants`
+
+        :param names: list of names of invariants
+        :type names: `list`[`str`]
+        """
+        invariant_store = InvariantStore()
+        invariants = [
+            invariant_store.update_invariants(name)
+            for name in names
+        ]
+        assert len(set(names)) == len(invariant_store.invariants)
+        for invariant in invariants:
+            assert invariant.name in invariant_store.invariants
+            assert invariant_store.invariants[invariant.name] == invariant
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.text()
+        )
+    )
+    def test_create_invariant_name_data_map(names: list[str]) -> None:
+        """Tests the method
+        :class:`InvariantStore`.`create_invariant_name_data_map`
+
+        :param names: List of names of invariants
+        :type names: `list`[`str`]
+        """
+        invariant_store = InvariantStore()
+        invariants = [
+            invariant_store.update_invariants(name)
+            for name in names
+        ]
+        invariant_name_data_map = (
+            invariant_store.create_invariant_name_data_map()
+        )
+        assert len(set(names)) == len(invariant_name_data_map)
+        for invariant in invariants:
+            assert invariant.name in invariant_name_data_map
+            random_data = invariant_name_data_map[invariant.name]
+            is_uuid = bool(uuid4hex.match(
+                    random_data.replace("-", "")
+                ))
+            assert is_uuid
 
 
 class TestEvent:
@@ -344,9 +423,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        invariant_name_data_map = {}
         event_dict = events[0].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[0][field]
@@ -380,9 +461,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        invariant_name_data_map = {}
         event_dict = events[1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[1][field]
@@ -418,9 +501,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        invariant_name_data_map = {}
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[-1][field]
@@ -461,9 +546,11 @@ class TestEvent:
             for index, event in enumerate(events + missing_events)
         }
         job_id = "1"
+        invariant_name_data_map = {}
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         fields_to_check = [
             "jobId", "jobName", "eventType", "applicationName", "X"
@@ -480,6 +567,239 @@ class TestEvent:
                 if key in fields_to_check
             }
         )
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.one_of(
+                st.none(),
+                st.integers(),
+                st.floats(),
+                st.dictionaries(
+                    st.characters(exclude_characters=":"),
+                    st.text()
+                ),
+            )
+        ),
+        st.lists(
+            st.text()
+        )
+    )
+    def test_categorise_meta_data(
+        non_string_type: list,
+        string_type: list
+    ) -> None:
+        """Tests :class:`Event`.`categorise_meta_data`
+
+        :param non_string_type: A list of any type but string
+        :type non_string_type: `list`[`Any`]
+        :param string_type: A list of strings
+        :type string_type: `list`[`str`]
+        """
+        string_type_dict = {
+            str(i): val
+            for i, val in enumerate(string_type)
+        }
+        num_string_type = len(string_type)
+        non_string_type_dict = {
+            str(i + num_string_type): val
+            for i, val in enumerate(non_string_type)
+        }
+        num_non_string_type = len(non_string_type)
+        input_dict = {
+            **string_type_dict,
+            **non_string_type_dict
+        }
+        categorised_meta_data = Event.categorise_meta_data(
+            input_dict,
+            InvariantStore()
+        )
+        assert len(categorised_meta_data["fixed"]) == num_non_string_type
+        assert len(categorised_meta_data["invariants"]) == num_string_type
+        check_dict_equivalency(
+            string_type_dict, categorised_meta_data["invariants"]
+        )
+        check_dict_equivalency(
+            non_string_type_dict, categorised_meta_data["fixed"]
+        )
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.one_of(
+                st.none(),
+                st.integers(),
+                st.floats(),
+                st.dictionaries(
+                    st.text(
+                        st.characters(exclude_characters=":")
+                    ),
+                    st.text()
+                ),
+            )
+        ),
+        st.lists(
+            st.text()
+        )
+    )
+    def test_generate_meta_data(
+        non_string_type: list[Any],
+        string_type: list[str]
+    ) -> None:
+        """Tests :class:`Event`.`generate_meta_data`
+
+        :param non_string_type: A list of any type but string
+        :type non_string_type: `list`[`Any`]
+        :param string_type: A list of strings
+        :type string_type: `list`[`str`]
+        """
+        string_type_dict = {
+            str(i): val
+            for i, val in enumerate(string_type)
+        }
+        num_string_type = len(string_type)
+        non_string_type_dict = {
+            str(i + num_string_type): val
+            for i, val in enumerate(non_string_type)
+        }
+        input_dict = {
+            **string_type_dict,
+            **non_string_type_dict
+        }
+        invariant_store = InvariantStore()
+        categorised_meta_data = Event.categorise_meta_data(
+            input_dict,
+            invariant_store
+        )
+        generated_meta_data = Event.generate_meta_data(
+            categorised_meta_data,
+            invariant_store.create_invariant_name_data_map()
+        )
+        fixed_dict = {
+            key: generated_meta_data.pop(key)
+            for key in non_string_type_dict.keys()
+        }
+        check_dict_equivalency(non_string_type_dict, fixed_dict)
+        for key in string_type_dict.keys():
+            value = generated_meta_data.pop(key)
+            is_uuid = bool(uuid4hex.match(
+                    value.replace("-", "")
+                ))
+            assert is_uuid
+        assert not generated_meta_data
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.one_of(
+                st.none(),
+                st.integers(),
+                st.floats(),
+                st.dictionaries(
+                    st.characters(exclude_characters=":"),
+                    st.text()
+                ),
+            )
+        ),
+        st.lists(
+            st.text(),
+            min_size=1
+        )
+    )
+    def test_generate_meta_data_not_in_invariant_map(
+        non_string_type: list[Any],
+        string_type: list[str]
+    ) -> None:
+        """Tests :class:`Event`.`generate_meta_data` when data is not in the
+        invariant map
+
+        :param non_string_type: A list of any type but string
+        :type non_string_type: `list`[`Any`]
+        :param string_type: A list of strings
+        :type string_type: `list`[`str`]
+        """
+        string_type_dict = {
+            str(i): val
+            for i, val in enumerate(string_type)
+        }
+        num_string_type = len(string_type)
+        non_string_type_dict = {
+            str(i + num_string_type): val
+            for i, val in enumerate(non_string_type)
+        }
+        input_dict = {
+            **string_type_dict,
+            **non_string_type_dict
+        }
+        categorised_meta_data = Event.categorise_meta_data(
+            input_dict,
+            InvariantStore()
+        )
+        with pytest.raises(KeyError):
+            Event.generate_meta_data(
+                categorised_meta_data,
+                {}
+            )
+
+    @staticmethod
+    def test_make_event_dict_meta_data_string_type() -> None:
+        """Tests :class:`Event`.`make_event_dict` with meta data including
+        as string type and an integer type.
+        """
+        input_dict = {
+            "jobName": "test",
+            "jobId": "1",
+            "eventType": "test_event",
+            "eventId": "1",
+            "timestamp": "test o'clock",
+            "applicationName": "test application",
+            "previousEventIds": ["1", "2"],
+            "X": "some invariant",
+            "Y": 12
+        }
+        events: list[Event] = []
+        event_id_map = {}
+        missing_events: list[Event] = []
+        TestEvent.make_events_from_job_list(
+            [input_dict.copy()],
+            events,
+            event_id_map,
+            missing_events
+        )
+        event_event_id_map = {
+            id(event): str(index)
+            for index, event in enumerate(events + missing_events)
+        }
+        job_id = "1"
+        invariant_store = InvariantStore()
+        invariant_store.update_invariants("X")
+        invaraint_name_data_map = (
+            invariant_store.create_invariant_name_data_map()
+        )
+        event_dict = events[-1].make_event_dict(
+            event_event_id_map=event_event_id_map,
+            job_id=job_id,
+            invariant_name_data_map=invaraint_name_data_map
+        )
+        fields_to_check = [
+            "jobId", "jobName", "eventType", "applicationName", "Y"
+        ]
+        check_dict_equivalency(
+            {
+                key: value
+                for key, value in event_dict.items()
+                if key in fields_to_check
+            },
+            {
+                key: value
+                for key, value in input_dict.items()
+                if key in fields_to_check
+            }
+        )
+        is_uuid = bool(uuid4hex.match(
+                    event_dict["X"].replace("-", "")
+                ))
+        assert is_uuid
 
 
 class TestJob:
@@ -514,6 +834,36 @@ class TestJob:
             assert events[0] in events[i].prev_events
             assert events[i] in events[3].prev_events
         assert len(events[3].prev_events) == 2
+
+    @staticmethod
+    def test_parse_input_job_file_all_events_meta_data(
+        job_list_with_meta_data: list[dict[str, str | list[str]]]
+    ) -> None:
+        """Tests :class:`Job`.`parse_input_job_file` with all events present
+        for meta data and invariants
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+        """
+        job = Job()
+        job.parse_input_jobfile(job_list_with_meta_data)
+        events = job.events
+        assert len(job.invariants.invariants) == 1
+        assert "X" in job.invariants.invariants
+        assert len(events[0].meta_data) == 2
+        assert all(
+            name in events[0].meta_data
+            for name in ["X", "Y"]
+        )
+        assert len(events[0].categorised_meta_data["fixed"]) == 1
+        assert len(events[0].categorised_meta_data["invariants"]) == 1
+        assert "Y" in events[0].categorised_meta_data["fixed"]
+        assert "X" in events[0].categorised_meta_data["invariants"]
+        assert len(events[1].meta_data) == 1
+        assert "X" in events[1].meta_data
+        assert len(events[1].categorised_meta_data["fixed"]) == 0
+        assert len(events[1].categorised_meta_data["invariants"]) == 1
+        assert "X" in events[1].categorised_meta_data["invariants"]
 
     @staticmethod
     def test_parse_input_job_file_missing_event(
