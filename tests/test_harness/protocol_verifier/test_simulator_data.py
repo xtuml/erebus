@@ -24,8 +24,8 @@ from test_harness.protocol_verifier.simulator_data import (
     EventSimDatumTransformer,
     Job,
     Event,
-    Invariant,
-    InvariantStore,
+    NamedUUID,
+    NamedUUIDStore,
     generate_job_batch_events,
     generate_single_events,
     simple_sequencer,
@@ -143,14 +143,14 @@ class TestEventSimDatumTransformer:
 
 class TestInvariants:
     """Tests for the classes:
-    * :class:`Invariant`
-    * :class:`InvariantStore`
+    * :class:`NamedUUID`
+    * :class:`NamedUUIDStore`
     """
     @staticmethod
-    def test_create_random_invariant_data() -> None:
-        """Tests the method :class:`Invariant`.`create_random_invariant_data`
+    def test_create_random_data() -> None:
+        """Tests the method :class:`NamedUUID`.`create_random_data`
         """
-        random_data = Invariant.create_random_invariant_data()
+        random_data = NamedUUID.create_random_data()
         is_uuid = bool(uuid4hex.match(
                 random_data.replace("-", "")
             ))
@@ -163,20 +163,20 @@ class TestInvariants:
         )
     )
     def test_update_invariants(names: list[str]) -> None:
-        """Tests the method :class:`InvariantStore`.`update_invariants`
+        """Tests the method :class:`NamedUUIDStore`.`update`
 
-        :param names: list of names of invariants
+        :param names: list of names of named_uuids
         :type names: `list`[`str`]
         """
-        invariant_store = InvariantStore()
-        invariants = [
-            invariant_store.update_invariants(name)
+        named_uuid_store = NamedUUIDStore()
+        named_uuids = [
+            named_uuid_store.update(name)
             for name in names
         ]
-        assert len(set(names)) == len(invariant_store.invariants)
-        for invariant in invariants:
-            assert invariant.name in invariant_store.invariants
-            assert invariant_store.invariants[invariant.name] == invariant
+        assert len(set(names)) == len(named_uuid_store.named_uuids)
+        for named_uuid in named_uuids:
+            assert named_uuid.name in named_uuid_store.named_uuids
+            assert named_uuid_store.named_uuids[named_uuid.name] == named_uuid
 
     @staticmethod
     @given(
@@ -184,25 +184,25 @@ class TestInvariants:
             st.text()
         )
     )
-    def test_create_invariant_name_data_map(names: list[str]) -> None:
+    def test_create_name_data_map(names: list[str]) -> None:
         """Tests the method
-        :class:`InvariantStore`.`create_invariant_name_data_map`
+        :class:`NamedUUIDStore`.`create_name_data_map`
 
-        :param names: List of names of invariants
+        :param names: List of names of named uuids
         :type names: `list`[`str`]
         """
-        invariant_store = InvariantStore()
-        invariants = [
-            invariant_store.update_invariants(name)
+        named_uuid_store = NamedUUIDStore()
+        named_uuids = [
+            named_uuid_store.update(name)
             for name in names
         ]
-        invariant_name_data_map = (
-            invariant_store.create_invariant_name_data_map()
+        named_uuid_name_data_map = (
+            named_uuid_store.create_name_data_map()
         )
-        assert len(set(names)) == len(invariant_name_data_map)
-        for invariant in invariants:
-            assert invariant.name in invariant_name_data_map
-            random_data = invariant_name_data_map[invariant.name]
+        assert len(set(names)) == len(named_uuid_name_data_map)
+        for named_uuid in named_uuids:
+            assert named_uuid.name in named_uuid_name_data_map
+            random_data = named_uuid_name_data_map[named_uuid.name]
             is_uuid = bool(uuid4hex.match(
                     random_data.replace("-", "")
                 ))
@@ -423,10 +423,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        job_id_data_map = {job_id: job_id}
         invariant_name_data_map = {}
         event_dict = events[0].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id,
+            job_id_data_map=job_id_data_map,
             invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
@@ -461,10 +462,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        job_id_data_map = {job_id: job_id}
         invariant_name_data_map = {}
         event_dict = events[1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id,
+            job_id_data_map=job_id_data_map,
             invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
@@ -501,10 +503,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        job_id_data_map = {job_id: job_id}
         invariant_name_data_map = {}
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id,
+            job_id_data_map=job_id_data_map,
             invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
@@ -546,10 +549,11 @@ class TestEvent:
             for index, event in enumerate(events + missing_events)
         }
         job_id = "1"
+        job_id_data_map = {job_id: job_id}
         invariant_name_data_map = {}
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id,
+            job_id_data_map=job_id_data_map,
             invariant_name_data_map=invariant_name_data_map
         )
         fields_to_check = [
@@ -612,7 +616,7 @@ class TestEvent:
         }
         categorised_meta_data = Event.categorise_meta_data(
             input_dict,
-            InvariantStore()
+            NamedUUIDStore()
         )
         assert len(categorised_meta_data["fixed"]) == num_non_string_type
         assert len(categorised_meta_data["invariants"]) == num_string_type
@@ -666,14 +670,14 @@ class TestEvent:
             **string_type_dict,
             **non_string_type_dict
         }
-        invariant_store = InvariantStore()
+        invariant_store = NamedUUIDStore()
         categorised_meta_data = Event.categorise_meta_data(
             input_dict,
             invariant_store
         )
         generated_meta_data = Event.generate_meta_data(
             categorised_meta_data,
-            invariant_store.create_invariant_name_data_map()
+            invariant_store.create_name_data_map()
         )
         fixed_dict = {
             key: generated_meta_data.pop(key)
@@ -733,7 +737,7 @@ class TestEvent:
         }
         categorised_meta_data = Event.categorise_meta_data(
             input_dict,
-            InvariantStore()
+            NamedUUIDStore()
         )
         with pytest.raises(KeyError):
             Event.generate_meta_data(
@@ -771,14 +775,15 @@ class TestEvent:
             for index, event in enumerate(events + missing_events)
         }
         job_id = "1"
-        invariant_store = InvariantStore()
-        invariant_store.update_invariants("X")
+        job_id_data_map = {job_id: job_id}
+        invariant_store = NamedUUIDStore()
+        invariant_store.update("X")
         invaraint_name_data_map = (
-            invariant_store.create_invariant_name_data_map()
+            invariant_store.create_name_data_map()
         )
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id,
+            job_id_data_map=job_id_data_map,
             invariant_name_data_map=invaraint_name_data_map
         )
         fields_to_check = [
@@ -848,8 +853,8 @@ class TestJob:
         job = Job()
         job.parse_input_jobfile(job_list_with_meta_data)
         events = job.events
-        assert len(job.invariants.invariants) == 1
-        assert "X" in job.invariants.invariants
+        assert len(job.invariants.named_uuids) == 1
+        assert "X" in job.invariants.named_uuids
         assert len(events[0].meta_data) == 2
         assert all(
             name in events[0].meta_data
