@@ -10,6 +10,7 @@ import json
 import re
 
 from hypothesis import given, strategies as st
+import pytest
 
 from test_harness.utils import check_dict_equivalency
 from test_harness.simulator.simulator import (
@@ -22,6 +23,8 @@ from test_harness.protocol_verifier.simulator_data import (
     EventSimDatumTransformer,
     Job,
     Event,
+    Invariant,
+    InvariantStore,
     generate_job_batch_events,
     generate_single_events,
     simple_sequencer,
@@ -135,6 +138,57 @@ class TestEventSimDatumTransformer:
         assert "job_id" in sim_datum.kwargs
         assert sim_datum.kwargs["job_id"] == job_id
         assert sim_datum.action_func is None
+
+
+class TestInvariants:
+    @staticmethod
+    def test_create_random_invariant_data():
+        random_data = Invariant.create_random_invariant_data()
+        is_uuid = bool(uuid4hex.match(
+                random_data.replace("-", "")
+            ))
+        assert is_uuid
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.text()
+        )
+    )
+    def test_update_invariants(names: list[str]) -> None:
+        invariant_store = InvariantStore()
+        invariants = [
+            invariant_store.update_invariants(name)
+            for name in names
+        ]
+        assert len(set(names)) == len(invariant_store.invariants)
+        for invariant in invariants:
+            assert invariant.name in invariant_store.invariants
+            assert invariant_store.invariants[invariant.name] == invariant
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.text()
+        )
+    )
+    def test_create_invariant_name_data_map(names: list[str]) -> None:
+        invariant_store = InvariantStore()
+        invariants = [
+            invariant_store.update_invariants(name)
+            for name in names
+        ]
+        invariant_name_data_map = (
+            invariant_store.create_invariant_name_data_map()
+        )
+        assert len(set(names)) == len(invariant_name_data_map)
+        for invariant in invariants:
+            assert invariant.name in invariant_name_data_map
+            random_data = invariant_name_data_map[invariant.name]
+            is_uuid = bool(uuid4hex.match(
+                    random_data.replace("-", "")
+                ))
+            assert is_uuid
 
 
 class TestEvent:
@@ -351,9 +405,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        invariant_name_data_map = {}
         event_dict = events[0].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[0][field]
@@ -387,9 +443,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        invariant_name_data_map = {}
         event_dict = events[1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[1][field]
@@ -425,9 +483,11 @@ class TestEvent:
             for index, event in enumerate(events)
         }
         job_id = "1"
+        invariant_name_data_map = {}
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[-1][field]
@@ -468,9 +528,11 @@ class TestEvent:
             for index, event in enumerate(events + missing_events)
         }
         job_id = "1"
+        invariant_name_data_map = {}
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invariant_name_data_map
         )
         fields_to_check = [
             "jobId", "jobName", "eventType", "applicationName", "X"
@@ -531,12 +593,13 @@ class TestEvent:
             **non_string_type_dict
         }
         categorised_meta_data = Event.categorise_meta_data(
-            input_dict
+            input_dict,
+            InvariantStore()
         )
         assert len(categorised_meta_data["fixed"]) == num_non_string_type
-        assert len(categorised_meta_data["random_string"]) == num_string_type
+        assert len(categorised_meta_data["invariants"]) == num_string_type
         check_dict_equivalency(
-            string_type_dict, categorised_meta_data["random_string"]
+            string_type_dict, categorised_meta_data["invariants"]
         )
         check_dict_equivalency(
             non_string_type_dict, categorised_meta_data["fixed"]
@@ -583,11 +646,14 @@ class TestEvent:
             **string_type_dict,
             **non_string_type_dict
         }
+        invariant_store = InvariantStore()
         categorised_meta_data = Event.categorise_meta_data(
-            input_dict
+            input_dict,
+            invariant_store
         )
         generated_meta_data = Event.generate_meta_data(
-            categorised_meta_data
+            categorised_meta_data,
+            invariant_store.create_invariant_name_data_map()
         )
         fixed_dict = {
             key: generated_meta_data.pop(key)
@@ -601,6 +667,58 @@ class TestEvent:
                 ))
             assert is_uuid
         assert not generated_meta_data
+
+    @staticmethod
+    @given(
+        st.lists(
+            st.one_of(
+                st.none(),
+                st.integers(),
+                st.floats(),
+                st.dictionaries(
+                    st.text(),
+                    st.text()
+                ),
+            )
+        ),
+        st.lists(
+            st.text(),
+            min_size=1
+        )
+    )
+    def test_generate_meta_data_not_in_invariant_map(
+        non_string_type: list[Any],
+        string_type: list[str]
+    ) -> None:
+        """Tests :class:`Event`.`generate_meta_data`
+
+        :param non_string_type: A list of any type but string
+        :type non_string_type: `list`[`Any`]
+        :param string_type: A list of strings
+        :type string_type: `list`[`str`]
+        """
+        string_type_dict = {
+            str(i): val
+            for i, val in enumerate(string_type)
+        }
+        num_string_type = len(string_type)
+        non_string_type_dict = {
+            str(i + num_string_type): val
+            for i, val in enumerate(non_string_type)
+        }
+        input_dict = {
+            **string_type_dict,
+            **non_string_type_dict
+        }
+        categorised_meta_data = Event.categorise_meta_data(
+            input_dict,
+            InvariantStore()
+        )
+        with pytest.raises(KeyError):
+            Event.generate_meta_data(
+                categorised_meta_data,
+                {}
+            )
 
     @staticmethod
     def test_make_event_dict_meta_data_string_type() -> None:
@@ -632,9 +750,15 @@ class TestEvent:
             for index, event in enumerate(events + missing_events)
         }
         job_id = "1"
+        invariant_store = InvariantStore()
+        invariant_store.update_invariants("X")
+        invaraint_name_data_map = (
+            invariant_store.create_invariant_name_data_map()
+        )
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id
+            job_id=job_id,
+            invariant_name_data_map=invaraint_name_data_map
         )
         fields_to_check = [
             "jobId", "jobName", "eventType", "applicationName", "Y"
@@ -689,6 +813,35 @@ class TestJob:
             assert events[0] in events[i].prev_events
             assert events[i] in events[3].prev_events
         assert len(events[3].prev_events) == 2
+
+    @staticmethod
+    def test_parse_input_job_file_all_events_meta_data(
+        job_list: list[dict[str, str | list[str]]]
+    ) -> None:
+        """Tests :class:`Job`.`parse_input_job_file` with all events present
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+        """
+        job = Job()
+        job.parse_input_jobfile(job_list)
+        events = job.events
+        assert len(job.invariants.invariants) == 1
+        assert "X" in job.invariants.invariants
+        assert len(events[0].meta_data) == 2
+        assert all(
+            name in events[0].meta_data
+            for name in ["X", "Y"]
+        )
+        assert len(events[0].categorised_meta_data["fixed"]) == 1
+        assert len(events[0].categorised_meta_data["invariants"]) == 1
+        assert "Y" in events[0].categorised_meta_data["fixed"]
+        assert "X" in events[0].categorised_meta_data["invariants"]
+        assert len(events[1].meta_data) == 1
+        assert "X" in events[1].meta_data
+        assert len(events[1].categorised_meta_data["fixed"]) == 0
+        assert len(events[1].categorised_meta_data["invariants"]) == 1
+        assert "X" in events[1].categorised_meta_data["invariants"]
 
     @staticmethod
     def test_parse_input_job_file_missing_event(

@@ -21,7 +21,9 @@ def job_list() -> list[dict[str, str | list[str]]]:
             "eventType": "test_event",
             "eventId": "1",
             "timestamp": "1",
-            "applicationName": "test_application"
+            "applicationName": "test_application",
+            "X": "some invariant",
+            "Y": 12
         },
         {
             "jobName": "test_job",
@@ -30,7 +32,8 @@ def job_list() -> list[dict[str, str | list[str]]]:
             "eventId": "2",
             "timestamp": "2",
             "applicationName": "test_application",
-            "previousEventIds": "1"
+            "previousEventIds": "1",
+            "X": "some invariant"
         },
         {
             "jobName": "test_job",
