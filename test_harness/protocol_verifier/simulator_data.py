@@ -723,6 +723,11 @@ class NamedUUID:
 
     @property
     def count(self) -> int:
+        """Property to get the count of the instance
+
+        :return: Returns the count
+        :rtype: `int`
+        """
         return self._counter
 
 
