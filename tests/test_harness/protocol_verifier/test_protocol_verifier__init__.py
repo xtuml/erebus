@@ -66,6 +66,20 @@ test_uml_2_events = os.path.join(
     "test_uml_2_events.json"
 )
 
+# get path of umls and events file for extra job invariants test
+test_uml_1_einv_path = os.path.join(
+    Path(__file__).parent.parent / "test_files",
+    "test_uml_1_EINV.puml"
+)
+test_uml_2_einv_path = os.path.join(
+    Path(__file__).parent.parent / "test_files",
+    "test_uml_2_EINV.puml"
+)
+test_file_path_einv = os.path.join(
+    Path(__file__).parent.parent / "test_files",
+    "test_event_file_EINV.json"
+)
+
 uuid4hex = re.compile(
             '[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z', re.I
         )
@@ -132,6 +146,128 @@ def test_puml_files_test() -> None:
                 ))
             assert any([file_in_files, is_uuid])
 
+        clean_directories([harness_config.report_file_store])
+
+
+@responses.activate
+def test_puml_files_test_functional_extra_job_invariants() -> None:
+    """Tests method `puml_test_files` functional test with extra job
+    invariants
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict({
+        "event_gen_options": {
+            "invalid": False
+        }
+    })
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b'test log',
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        puml_files_test(
+            puml_file_paths=[test_uml_1_einv_path, test_uml_2_einv_path],
+            test_output_directory=harness_config.report_file_store,
+            harness_config=harness_config,
+            test_config=test_config,
+            test_file_paths=[test_file_path_einv]
+        )
+        results = pd.read_csv(
+            os.path.join(harness_config.report_file_store, "Results.csv")
+        )
+        assert len(results) == 2
+        assert results.loc[0, "SequenceName"] == "test_uml_1 + test_uml_2"
+        assert results.loc[1, "SequenceName"] == "test_uml_1 + test_uml_2"
+        assert results.loc[0, "JobId"] != results.loc[1, "JobId"]
+        clean_directories([harness_config.report_file_store])
+
+
+@responses.activate
+def test_puml_files_test_performance_extra_job_invariants() -> None:
+    """Tests method `puml_test_files` performance test with extra job
+    invariants
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "type": "Performance",
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 40, "total_jobs": 20},
+        }
+    )
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b'test log',
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        puml_files_test(
+            puml_file_paths=[test_uml_1_einv_path, test_uml_2_einv_path],
+            test_output_directory=harness_config.report_file_store,
+            harness_config=harness_config,
+            test_config=test_config,
+            test_file_paths=[test_file_path_einv]
+        )
+        results = pd.read_csv(
+            os.path.join(
+                harness_config.report_file_store,
+                "AggregatedResults.csv"
+            )
+        )
+        assert results.iloc[-1]["Cumulative Events Sent"] == 80.0
         clean_directories([harness_config.report_file_store])
 
 
