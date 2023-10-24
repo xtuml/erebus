@@ -141,8 +141,14 @@ class TestEventSimDatumTransformer:
 
 
 class TestInvariants:
+    """Tests for the classes:
+    * :class:`Invariant`
+    * :class:`InvariantStore`
+    """
     @staticmethod
-    def test_create_random_invariant_data():
+    def test_create_random_invariant_data() -> None:
+        """Tests the method :class:`Invariant`.`create_random_invariant_data`
+        """
         random_data = Invariant.create_random_invariant_data()
         is_uuid = bool(uuid4hex.match(
                 random_data.replace("-", "")
@@ -156,6 +162,11 @@ class TestInvariants:
         )
     )
     def test_update_invariants(names: list[str]) -> None:
+        """Tests the method :class:`InvariantStore`.`update_invariants`
+
+        :param names: list of names of invariants
+        :type names: `list`[`str`]
+        """
         invariant_store = InvariantStore()
         invariants = [
             invariant_store.update_invariants(name)
@@ -173,6 +184,12 @@ class TestInvariants:
         )
     )
     def test_create_invariant_name_data_map(names: list[str]) -> None:
+        """Tests the method
+        :class:`InvariantStore`.`create_invariant_name_data_map`
+
+        :param names: List of names of invariants
+        :type names: `list`[`str`]
+        """
         invariant_store = InvariantStore()
         invariants = [
             invariant_store.update_invariants(name)
@@ -690,7 +707,8 @@ class TestEvent:
         non_string_type: list[Any],
         string_type: list[str]
     ) -> None:
-        """Tests :class:`Event`.`generate_meta_data`
+        """Tests :class:`Event`.`generate_meta_data` when data is not in the
+        invariant map
 
         :param non_string_type: A list of any type but string
         :type non_string_type: `list`[`Any`]
@@ -819,6 +837,7 @@ class TestJob:
         job_list: list[dict[str, str | list[str]]]
     ) -> None:
         """Tests :class:`Job`.`parse_input_job_file` with all events present
+        for meta data and invariants
 
         :param job_list: A list of event dicts in a job
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
