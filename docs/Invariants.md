@@ -47,6 +47,7 @@ They are defined in the job definition pumls and have a source in one job and a 
 
 ![Alt text](diagrams/Invariants/Extra_1.png)
 ![Alt text](diagrams/Invariants/Extra_2.png)
+
 An example of an extra job invariant audit event stream for two jobs is shown below:
 ```
 [
