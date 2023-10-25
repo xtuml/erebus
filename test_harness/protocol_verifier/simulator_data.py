@@ -182,13 +182,14 @@ def generate_job_batch_events(
     sim_datum_transformer = BatchJobSimDatumTransformer()
     generators = []
     for job in template_jobs:
-        job_id = str(uuid4())
-        sim_datum_transformer.initialise_batch(
-            job_id=job_id,
-            length=len(job.events)
-        )
+        job_id_data_map = job.create_job_id_data_map()
+        for job_id, named_job_id in job.job_ids.named_uuids.items():
+            sim_datum_transformer.initialise_batch(
+                job_id=job_id_data_map[job_id],
+                length=named_job_id.count
+            )
         generators.append(job.generate_simulation_job_events(
-            job_id=job_id,
+            job_id_data_map=job_id_data_map,
             sim_datum_transformer=sim_datum_transformer
         ))
     return generators
@@ -209,9 +210,9 @@ def generate_single_events(
     sim_datum_transformer = EventSimDatumTransformer()
     generators = []
     for job in template_jobs:
-        job_id = str(uuid4())
+        job_id_data_map = job.create_job_id_data_map()
         generators.append(job.generate_simulation_job_events(
-            job_id=job_id,
+            job_id_data_map=job_id_data_map,
             sim_datum_transformer=sim_datum_transformer
         ))
     return generators
@@ -440,6 +441,8 @@ class Event:
                 attribute_value = []
             else:
                 attribute_value = input_dict.pop(field)
+            if field == "jobId":
+                self.job.job_ids.update(attribute_value)
             setattr(self, attribute, attribute_value)
         self.categorised_meta_data = input_dict
 
@@ -484,7 +487,7 @@ class Event:
     @staticmethod
     def categorise_meta_data(
         input_dict: dict[str, Any],
-        invariant_store: InvariantStore
+        invariant_store: NamedUUIDStore
     ) -> MetaDataCategory:
         """Method to categorise data within a given input dictionary into:
         * fixed - entries whose value is not a string
@@ -494,7 +497,7 @@ class Event:
         :type input_dict: `dict`[`str`, `Any`]
         :param invariant_store: The invariant store in which to store
         invariants
-        :type invariant_store: :class:`InvariantStore`
+        :type invariant_store: :class:`NamedUUIDStore`
         :return: Returns a dictionary with the categorised values and keys
         :rtype: :class:`MetaDataCategory`
         """
@@ -504,7 +507,7 @@ class Event:
         )
         for meta_data_name, meta_data_value in input_dict.items():
             if isinstance(meta_data_value, str):
-                invariant_store.update_invariants(meta_data_name)
+                invariant_store.update(meta_data_name)
                 categories["invariants"][meta_data_name] = meta_data_value
             else:
                 categories["fixed"][meta_data_name] = meta_data_value
@@ -601,7 +604,7 @@ class Event:
     def make_event_dict(
         self,
         event_event_id_map: dict[int, str],
-        job_id: str,
+        job_id_data_map: dict[str, str],
         invariant_name_data_map: dict[str, str]
     ) -> dict[str, str | list | dict]:
         """Method to generate an event dict with an event to event id map and
@@ -610,14 +613,15 @@ class Event:
         :param event_event_id_map: The map from the `id` call of an event
         (producing a unique integer) to the event id
         :type event_event_id_map: `dict`[`int`, `str`]
-        :param job_id: A job id
-        :type job_id: `str`
+        :param job_id_data_map: The map from job id to randomised job id
+        :type job_id_data_map: `dict`[`str`, `str`]
         :param invariant_name_data_map: The map from invariant name to
         randomised invariant data
         :type invariant_name_data_map: `dict`[`str`, `str`]
         :return: Returns a dictionary of the event dict
         :rtype: `dict`[`str`, `str` | `list` | `dict`]
         """
+        job_id = job_id_data_map[self.job_id]
         event_dict = {
             "jobName": self.job_name,
             "jobId": job_id,
@@ -649,7 +653,7 @@ class Event:
     def generate_simulation_event_dict(
         self,
         event_event_id_map: dict[int, str],
-        job_id: str,
+        job_id_data_map: dict[str, str],
         sim_datum_transformer: PVSimDatumTransformer,
         invariant_name_data_map: dict[str, str]
     ) -> Generator[SimDatum, Any, None]:
@@ -658,8 +662,8 @@ class Event:
         :param event_event_id_map: The map from the `id` call of an event
         (producing a unique integer) to the event id
         :type event_event_id_map: `dict`[`int`, `str`]
-        :param job_id: A job id
-        :type job_id: `str`
+        :param job_id_data_map: The map from job id to randomised job id
+        :type job_id_data_map: `dict`[`str`, `str`]
         :param sim_datum_transformer: The arbitrary transformer class to
         transform the data into the required :class:`SimDatum` to generate
         :type sim_datum_transformer: :class:`SimDatumTransformer`
@@ -671,7 +675,7 @@ class Event:
         """
         event_dict = self.make_event_dict(
             event_event_id_map=event_event_id_map,
-            job_id=job_id,
+            job_id_data_map=job_id_data_map,
             invariant_name_data_map=invariant_name_data_map
         )
         try:
@@ -686,8 +690,8 @@ class Event:
             raise error
 
 
-class Invariant:
-    """Class to hold invariant name and create a randomised string
+class NamedUUID:
+    """Class to hold named uuid and create a randomised string when requested
 
     :param name: _description_
     :type name: str
@@ -699,46 +703,64 @@ class Invariant:
         """Constructor method
         """
         self.name = name
+        self._counter = 0
 
     @staticmethod
-    def create_random_invariant_data() -> str:
+    def create_random_data(
+        length: int = 1
+    ) -> str:
         """Method to create a uuid4 string
 
         :return: Returns a uuid4 string
         :rtype: `str`
         """
-        return str(uuid4())
+        return str(uuid4()) * length
+
+    def update_counter(self) -> None:
+        """Method to update the counter
+        """
+        self._counter += 1
+
+    @property
+    def count(self) -> int:
+        """Property to get the count of the instance
+
+        :return: Returns the count
+        :rtype: `int`
+        """
+        return self._counter
 
 
-class InvariantStore:
-    """Class to store invariants and create random data for invariants
+class NamedUUIDStore:
+    """Class to store named UUID and create random data
     """
     def __init__(self) -> None:
         """Constructor method
         """
-        self.invariants: dict[str, Invariant] = {}
+        self.named_uuids: dict[str, NamedUUID] = {}
 
-    def update_invariants(self, name: str) -> Invariant:
-        """Method to update invariants given an invariant name
+    def update(self, name: str) -> NamedUUID:
+        """Method to update named uuids given a name
 
-        :param name: The name of the invariant
+        :param name: The name of the named uuid
         :type name: `str`
-        :return: Returns the invariant mapped to the name
-        :rtype: :class:`Invariant`
+        :return: Returns the named uuid mapped to the name
+        :rtype: :class:`NamedUUID`
         """
-        if name not in self.invariants:
-            self.invariants[name] = Invariant(name)
-        return self.invariants[name]
+        if name not in self.named_uuids:
+            self.named_uuids[name] = NamedUUID(name)
+        self.named_uuids[name].update_counter()
+        return self.named_uuids[name]
 
-    def create_invariant_name_data_map(self) -> dict[str, str]:
-        """Creates a map from invariant name to a randomised uuid4
+    def create_name_data_map(self) -> dict[str, str]:
+        """Creates a map from named UUID to a randomised uuid4
 
-        :return: Returns the map of invariant name to uuid4
+        :return: Returns the map of named UUID to uuid4
         :rtype: `dict`[`str`, `str`]
         """
         return {
-            name: invariant.create_random_invariant_data()
-            for name, invariant in self.invariants.items()
+            name: named_uuid.create_random_data()
+            for name, named_uuid in self.named_uuids.items()
         }
 
 
@@ -754,7 +776,16 @@ class Job:
         self.events: list[Event] = []
         self.missing_events: list[Event] = []
         self.job_info = job_info
-        self.invariants = InvariantStore()
+        self.invariants = NamedUUIDStore()
+        self.job_ids = NamedUUIDStore()
+
+    def create_job_id_data_map(self) -> dict[str, str]:
+        """Creates a map from job id to a randomised uuid4
+
+        :return: Returns the map of job id to uuid4
+        :rtype: `dict`[`str`, `str`]
+        """
+        return self.job_ids.create_name_data_map()
 
     @property
     def job_info(self) -> dict[str, str | bool]:
@@ -791,14 +822,14 @@ class Job:
 
     def generate_simulation_job_events(
         self,
-        job_id: str,
+        job_id_data_map: dict[str, str],
         sim_datum_transformer: PVSimDatumTransformer,
     ) -> Generator[SimDatum, Any, None]:
         """Method to generate :class:`SimDatum`'s for each event in the job
         given the input :class:`SimDatumTransformer` instance
 
-        :param job_id: A job id
-        :type job_id: `str`
+        :param job_id_data_map: The map from job id to randomised job id
+        :type job_id_data_map: `dict`[`str`, `str`]
         :param sim_datum_transformer: The arbitrary transformer class to
         transform the data into the required :class:`SimDatum` to generate
         :type sim_datum_transformer: :class:`SimDatumTransformer`
@@ -807,12 +838,12 @@ class Job:
         """
         event_event_id_map = self.create_new_event_event_id_map()
         invariant_name_data_map = (
-            self.invariants.create_invariant_name_data_map()
+            self.invariants.create_name_data_map()
         )
         for event in self.events:
             yield from event.generate_simulation_event_dict(
                 event_event_id_map=event_event_id_map,
-                job_id=job_id,
+                job_id_data_map=job_id_data_map,
                 sim_datum_transformer=sim_datum_transformer,
                 invariant_name_data_map=invariant_name_data_map
             )
