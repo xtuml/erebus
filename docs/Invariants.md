@@ -1,6 +1,6 @@
 # Invariants
 ## Introduction
-Invariants are bits of information that should be unchanged as a job progresses. Events that share the same named invariant (in the job definition puml) should have exactly the same value for that named invariant at run time. Invariants within the Protocol Verifier come in two types:
+Invariants are bits of information that should be unchanged as a job progresses. Events that share the same named invariant (in the job definition puml) should have exactly the same value for that named invariant at run time. Invariants within the Protocol Verifier have two types:
 * Intra-job invariants
 * Extra-job invariants
 
