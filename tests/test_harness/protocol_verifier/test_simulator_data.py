@@ -141,7 +141,7 @@ class TestEventSimDatumTransformer:
         assert sim_datum.action_func is None
 
 
-class TestInvariants:
+class TestNamedUUID:
     """Tests for the classes:
     * :class:`NamedUUID`
     * :class:`NamedUUIDStore`
