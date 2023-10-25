@@ -1131,20 +1131,18 @@ def test_send_test_files_performance() -> None:
     )
     with aioresponses() as mock:
         mock.post(url=harness_config.pv_send_url, repeat=True)
-        with NamedTemporaryFile(suffix=".db") as db_file:
-            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
-            test = PerformanceTest(
-                test_file_generators=test_events,
-                test_config=test_config,
-                harness_config=harness_config,
-                test_output_directory=harness_config.report_file_store,
-            )
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+            test_output_directory=harness_config.report_file_store,
+        )
 
-            with PVResultsHandler(
-                test.results, test.test_output_directory, test.save_files
-            ) as pv_results_handler:
-                asyncio.run(test.send_test_files(pv_results_handler))
-            assert len(test.results) == 60
+        with PVResultsHandler(
+            test.results, test.test_output_directory, test.save_files
+        ) as pv_results_handler:
+            asyncio.run(test.send_test_files(pv_results_handler))
+        assert len(test.results) == 60
 
 
 @responses.activate
@@ -1179,27 +1177,17 @@ def test_run_test_performance() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        with NamedTemporaryFile(suffix=".db") as db_file:
-            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
-            test = PerformanceTest(
-                test_file_generators=test_events,
-                test_config=test_config,
-                harness_config=harness_config,
-            )
-            asyncio.run(test.run_test())
-            assert len(test.results) == 60
-            assert (
-                test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
-            )
-            assert (
-                test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-            )
-            os.remove(
-                os.path.join(harness_config.log_file_store, "Reception.log")
-            )
-            os.remove(
-                os.path.join(harness_config.log_file_store, "Verifier.log")
-            )
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 60
+        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+        assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
+        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
+        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
 
 
 @responses.activate
@@ -1247,22 +1235,20 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        with NamedTemporaryFile(suffix=".db") as db_file:
-            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
-            test = PerformanceTest(
-                test_file_generators=test_events,
-                test_config=test_config,
-                harness_config=harness_config,
-                test_output_directory=harness_config.report_file_store,
-            )
-            asyncio.run(test.run_test())
-            test.calc_results()
-            clean_directories(
-                [
-                    harness_config.report_file_store,
-                    harness_config.log_file_store,
-                ]
-            )
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+            test_output_directory=harness_config.report_file_store,
+        )
+        asyncio.run(test.run_test())
+        test.calc_results()
+        clean_directories(
+            [
+                harness_config.report_file_store,
+                harness_config.log_file_store,
+            ]
+        )
 
 
 @responses.activate
@@ -1300,28 +1286,18 @@ def test_run_test_performance_profile_job_batch() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        with NamedTemporaryFile(suffix=".db") as db_file:
-            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
-            test = PerformanceTest(
-                test_file_generators=test_events,
-                test_config=test_config,
-                harness_config=harness_config,
-                test_profile=profile,
-            )
-            asyncio.run(test.run_test())
-            assert len(test.results) == 60
-            assert (
-                test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
-            )
-            assert (
-                test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-            )
-            os.remove(
-                os.path.join(harness_config.log_file_store, "Reception.log")
-            )
-            os.remove(
-                os.path.join(harness_config.log_file_store, "Verifier.log")
-            )
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+            test_profile=profile,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 60
+        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+        assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
+        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
+        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
 
 
 @responses.activate
@@ -1363,28 +1339,18 @@ def test_run_test_performance_profile_shard() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        with NamedTemporaryFile(suffix=".db") as db_file:
-            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
-            test = PerformanceTest(
-                test_file_generators=test_events,
-                test_config=test_config,
-                harness_config=harness_config,
-                test_profile=profile,
-            )
-            asyncio.run(test.run_test())
-            assert len(test.results) == 60
-            assert (
-                test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
-            )
-            assert (
-                test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-            )
-            os.remove(
-                os.path.join(harness_config.log_file_store, "Reception.log")
-            )
-            os.remove(
-                os.path.join(harness_config.log_file_store, "Verifier.log")
-            )
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+            test_profile=profile,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 60
+        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+        assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
+        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
+        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
 
 
 @responses.activate
@@ -1501,14 +1467,12 @@ def test_run_test_performance_stop_test(
             url=harness_config.log_urls["ver"]["getFile"],
             body=b"test log",
         )
-        with NamedTemporaryFile(suffix=".db") as db_file:
-            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
-            test = PerformanceTest(
-                test_file_generators=test_events,
-                test_config=test_config,
-                harness_config=harness_config,
-            )
-            asyncio.run(test.run_test())
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
         assert (
             "Protocol Verifier failed to finish within the test timeout of "
             f"{harness_config.pv_test_timeout} seconds.\nResults will "
