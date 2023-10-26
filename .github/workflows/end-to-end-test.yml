@@ -30,10 +30,11 @@ jobs:
       - name: Build and run containers
         run: |
           cd .github/workflows
-          docker compose up -d
+          docker compose --log-level=debug up -d
 
       - name: Run curl commands
         run: |
           sleep 1
           echo "you made it!"
           # Add your curl commands here
+          docker compose down
