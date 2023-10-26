@@ -61,11 +61,8 @@ services:
     labels:
       org.label-schema.group: "monitoring"
   test-harness:
-    # amd64 image
-    build: ../../Dockerfile
-    # image: "test-harness:1.0.2-test"
-    # arm image
-    # image: "registry.gitlab.com/smartdcs1/cdsdt/test-harness:1.0.0-arm"
+    context: ../../
+    build: .
     environment:
      - PYTHONUNBUFFERED=1
     volumes:
