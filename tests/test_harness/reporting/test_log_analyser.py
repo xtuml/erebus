@@ -31,6 +31,8 @@ verifier_parse_logs = test_resources / "Verifier_parse_test.log"
 
 
 def test_parse_log_string_to_pv_results_dataframe() -> None:
+    """Tests `parse_log_string_to_pv_results_dataframe`
+    """
     pv_results = parse_log_string_to_pv_results_dataframe(
         verifier_parse_logs.read_text()
     )
@@ -48,6 +50,8 @@ def test_parse_log_string_to_pv_results_dataframe() -> None:
 
 
 def test_parse_log_string_to_pv_results_dataframe_un_happy() -> None:
+    """Tests `parse_log_string_to_pv_results_dataframe` with unhappy logs
+    """
     pv_results = parse_log_string_to_pv_results_dataframe(
         unhappy_logs_file.read_text()
     )

@@ -6,7 +6,7 @@ from typing import TextIO, Any, Generator
 import pandas as pd
 from pygrok import Grok
 
-
+# Grok patterns for functional tests log scraping
 pv_success_groks = (
     Grok(
         "svdc_job_success :"
