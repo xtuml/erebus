@@ -30,7 +30,7 @@ services:
     command: "-configPath config/ -log-config config/log-config-verifier.xml -log-param instance_index=1 -log-level trace -preinit schedule/startup.sch -startJobGroup 00 -endJobGroup FF -util Inspector -inspector-port 0"
   httpserver:
     # image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-http-server:v1.0.0"
-    image: "http-server:latest"
+    image: "ghcr.io/smartdcsitlimited/protocol-verifier-http-server:latest"
     environment:
       - GIN_MODE=release
     volumes:
