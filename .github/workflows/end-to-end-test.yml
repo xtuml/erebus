@@ -34,7 +34,8 @@ jobs:
 
       - name: Build and run containers
         run: |
-          docker compose pull
+          docker compose -f ./docker-compose-end-to-end-test.yml pull
+          docker compose -f ./docker-compose-end-to-end-test.yml up -d
 
           # sudo docker compose --progress plain -f ./docker-compose-end-to-end-test.yml up -d
 
@@ -43,5 +44,5 @@ jobs:
           sleep 1
           echo "you made it!"
           # Add your curl commands here
-          docker compose logs test-harness
-          docker compose down
+          docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness
+          docker compose -f ./docker-compose-end-to-end-test.yml down
