@@ -32,15 +32,10 @@ jobs:
       #   with:
       #     compose-file: ./docker-compose-end-to-end-test.yml
 
-      - name: Build and run containers
+      - name: Do test
         run: |
-          docker compose -f ./docker-compose-end-to-end-test.yml pull
+          # docker compose -f ./docker-compose-end-to-end-test.yml pull
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
-
-          # sudo docker compose --progress plain -f ./docker-compose-end-to-end-test.yml up -d
-
-      - name: Run curl commands
-        run: |
           sleep 1
           echo "you made it!"
           curl --location --request POST 'http://127.0.0.1:8800/uploadUML' --form 'file1=@"./tests/test_harness/test_files/test_uml_1.puml"'
@@ -48,3 +43,4 @@ jobs:
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness
           docker compose -f ./docker-compose-end-to-end-test.yml down
+
