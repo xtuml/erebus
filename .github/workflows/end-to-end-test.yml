@@ -32,7 +32,6 @@ jobs:
       #   with:
       #     compose-file: ./docker-compose-end-to-end-test.yml
 
-
       - name: Build and run containers
         run: |
           sudo docker compose --progress plain -f ./docker-compose-end-to-end-test.yml up -d
