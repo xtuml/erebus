@@ -43,6 +43,8 @@ jobs:
         run: |
           sleep 1
           echo "you made it!"
-          # Add your curl commands here
+          curl --location --request POST 'http://127.0.0.1:8800/uploadUML' --form 'file1=@"./tests/test_harness/test_files/test_uml_1.puml"'
+          curl -X POST -d '{"TestName": "demo4", "TestConfig":{"event_gen_options":{"invalid":false}, "type":"Performance", "performance_options": {"num_files_per_sec":10, "total_jobs":100, "shard":true}}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
+
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness
           docker compose -f ./docker-compose-end-to-end-test.yml down
