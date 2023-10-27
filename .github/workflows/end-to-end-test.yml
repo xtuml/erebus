@@ -29,8 +29,7 @@ jobs:
 
       - name: Build and run containers
         run: |
-          cd .github/workflows
-          docker compose --progress plain up -d
+          docker compose --progress plain -f ./docker-compose-end-to-end-test.yml up -d
 
       - name: Run curl commands
         run: |

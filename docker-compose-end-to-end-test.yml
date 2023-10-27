@@ -61,7 +61,6 @@ services:
     labels:
       org.label-schema.group: "monitoring"
   test-harness:
-    context: ../../
     build: .
     environment:
      - PYTHONUNBUFFERED=1
