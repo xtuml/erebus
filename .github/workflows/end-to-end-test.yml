@@ -27,9 +27,15 @@ jobs:
           username: ${{ secrets.GITLAB_USERNAME }}
           password: ${{ secrets.GITLAB_PASSWORD }}
 
+      # - name: Build and run containers
+      #   uses: adambirds/docker-compose-action@v1.3.0
+      #   with:
+      #     compose-file: ./docker-compose-end-to-end-test.yml
+
+
       - name: Build and run containers
         run: |
-          docker compose --progress plain -f ./docker-compose-end-to-end-test.yml up -d
+          sudo docker compose --progress plain -f ./docker-compose-end-to-end-test.yml up -d
 
       - name: Run curl commands
         run: |
