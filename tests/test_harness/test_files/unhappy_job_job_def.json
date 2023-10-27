@@ -1,0 +1,163 @@
+{
+    "JobDefinitionName": "ACriticalJob1",
+    "Events": [
+        {
+            "EventName": "CSJA",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "SequenceStart": true
+        },
+        {
+            "EventName": "CSJB",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJA",
+                    "PreviousOccurrenceId": 0
+                }
+            ]
+        },
+        {
+            "EventName": "CSJC",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJB",
+                    "PreviousOccurrenceId": 0,
+                    "ConstraintDefinitionId": "5b95a9d0-ff9a-36c5-943a-9022947eeeff",
+                    "ConstraintValue": "AND"
+                }
+            ]
+        },
+        {
+            "EventName": "CSJD",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJC",
+                    "PreviousOccurrenceId": 0
+                }
+            ]
+        },
+        {
+            "EventName": "CSJE",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "IsCritical": true,
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJD",
+                    "PreviousOccurrenceId": 0
+                }
+            ]
+        },
+        {
+            "EventName": "CSJF",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJB",
+                    "PreviousOccurrenceId": 0,
+                    "ConstraintDefinitionId": "5b95a9d0-ff9a-36c5-943a-9022947eeeff",
+                    "ConstraintValue": "AND"
+                }
+            ]
+        },
+        {
+            "EventName": "CSJG",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJF",
+                    "PreviousOccurrenceId": 0
+                }
+            ]
+        },
+        {
+            "EventName": "CSJH",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "IsCritical": true,
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJG",
+                    "PreviousOccurrenceId": 0
+                }
+            ]
+        },
+        {
+            "EventName": "CSJI",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJE",
+                    "PreviousOccurrenceId": 0
+                },
+                {
+                    "PreviousEventName": "CSJH",
+                    "PreviousOccurrenceId": 0
+                }
+            ]
+        },
+        {
+            "EventName": "CSJJ",
+            "OccurrenceId": 0,
+            "SequenceName": " A Critical Job Sequence 1",
+            "Application": "default_application_name",
+            "SequenceEnd": true,
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "CSJI",
+                    "PreviousOccurrenceId": 0
+                }
+            ]
+        }
+    ],
+    "UnhappyEvents": [
+        {
+            "EventName": "CSJB_Err",
+            "PackageName": "Unhappy Events",
+            "Application": "default_application_name"
+        },
+        {
+            "EventName": "CSJD_Err",
+            "PackageName": "Unhappy Events",
+            "Application": "default_application_name"
+        },
+        {
+            "EventName": "CSJE_Err",
+            "PackageName": "Unhappy Events",
+            "Application": "default_application_name"
+        },
+        {
+            "EventName": "CSJF_Err",
+            "PackageName": "Unhappy Events",
+            "Application": "default_application_name"
+        },
+        {
+            "EventName": "CSJG_Err",
+            "PackageName": "Unhappy Events",
+            "Application": "default_application_name"
+        },
+        {
+            "EventName": "CSJI_Err",
+            "PackageName": "Unhappy Events",
+            "Application": "default_application_name"
+        }
+    ]
+}

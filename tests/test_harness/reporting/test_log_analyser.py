@@ -14,12 +14,55 @@ from test_harness.reporting.log_analyser import (
     grok_line_priority,
     yield_grok_metrics_from_file_buffer,
     yield_grok_metrics_from_files,
+    parse_log_string_to_pv_results_dataframe,
 )
 from test_harness.utils import check_dict_equivalency
 
 
 # test resources folder
 test_resources = Path(__file__).parent.parent / "test_files"
+
+# unhappy logs file
+unhappy_logs_file = test_resources / "unhappy_jobs_test.logs"
+
+# verifier parse logs
+
+verifier_parse_logs = test_resources / "Verifier_parse_test.log"
+
+
+def test_parse_log_string_to_pv_results_dataframe() -> None:
+    """Tests `parse_log_string_to_pv_results_dataframe`
+    """
+    pv_results = parse_log_string_to_pv_results_dataframe(
+        verifier_parse_logs.read_text()
+    )
+    assert len(pv_results) == 5
+    expected_job_ids = [
+        ("13021f1d-0854-4948-ab55-c9f5b5977d23", True),
+        ("91adcba7-05ff-4361-9be7-c0de8e22b9f7", True),
+        ("854ca735-d000-49d9-941e-947d2728848e", False),
+        ("b5498ed4-a532-48c9-885f-d01671f95d60", False),
+        ("f5e96c8b-9bc1-4882-a482-72c36d4e767c", False)
+    ]
+    for job_id, pv_result in expected_job_ids:
+        assert job_id in pv_results.index
+        assert all(pv_results.loc[job_id, "PVResult"]) == pv_result
+
+
+def test_parse_log_string_to_pv_results_dataframe_un_happy() -> None:
+    """Tests `parse_log_string_to_pv_results_dataframe` with unhappy logs
+    """
+    pv_results = parse_log_string_to_pv_results_dataframe(
+        unhappy_logs_file.read_text()
+    )
+    assert len(pv_results) == 2
+    expected_job_ids = [
+        ("e365e78d-1b7a-49f1-b12d-165a64bae217", True),
+        ("296fea2e-db4b-48d2-b111-223694a5a64b", False),
+    ]
+    for job_id, pv_result in expected_job_ids:
+        assert job_id in pv_results.index
+        assert all(pv_results.loc[job_id, "PVResult"]) == pv_result
 
 
 @pytest.mark.parametrize(
@@ -178,7 +221,7 @@ def test_grok_line_priority_prioritised_patterns(
 
 def test_yield_grok_metrics_from_file_buffer(
     grok_priority_patterns: list[Grok],
-    expected_verifier_grok_results: list[dict[str, str]]
+    expected_verifier_grok_results: list[dict[str, str]],
 ) -> None:
     """Tests `yield_grok_metrics_from_file_buffer`
 
@@ -197,18 +240,14 @@ def test_yield_grok_metrics_from_file_buffer(
             )
         )
     for result, expected_result in zip(
-        results,
-        expected_verifier_grok_results
+        results, expected_verifier_grok_results
     ):
-        check_dict_equivalency(
-            result,
-            expected_result
-        )
+        check_dict_equivalency(result, expected_result)
 
 
 def test_yield_grok_metrics_from_files(
     grok_priority_patterns: list[Grok],
-    expected_verifier_grok_results: list[dict[str, str]]
+    expected_verifier_grok_results: list[dict[str, str]],
 ) -> None:
     """Tests `yield_grok_metrics_from_files`
 
@@ -222,15 +261,10 @@ def test_yield_grok_metrics_from_files(
     log_file_path = test_resources / "test.log"
     results = list(
         yield_grok_metrics_from_files(
-            [log_file_path] * 2,
-            grok_priority_patterns
+            [log_file_path] * 2, grok_priority_patterns
         )
     )
     for result, expected_result in zip(
-        results,
-        expected_verifier_grok_results * 2
+        results, expected_verifier_grok_results * 2
     ):
-        check_dict_equivalency(
-            result,
-            expected_result
-        )
+        check_dict_equivalency(result, expected_result)

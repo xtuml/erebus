@@ -6,6 +6,41 @@ from typing import TextIO, Any, Generator
 import pandas as pd
 from pygrok import Grok
 
+# Grok patterns for functional tests log scraping
+pv_success_groks = (
+    Grok(
+        "svdc_job_success :"
+        " JobId = %{UUID:JobId} : JobName = %{WORD:JobName}"
+    ),
+)
+
+pv_failure_groks = (
+    Grok(
+        "svdc_job_failed"
+        " : FailureReason = %{FAILURE_REASON:FailureReason}"
+        "for Job = %{UUID:JobId}",
+        custom_patterns={
+            "FAILURE_REASON": "[a-zA-Z ]+"
+        }
+    ),
+    Grok(
+        "aeordering_job_failed"
+        " : JobId = %{UUID:JobId}"
+        " : FailureReason = %{FAILURE_REASON:FailureReason}",
+        custom_patterns={
+            "FAILURE_REASON": "[a-zA-Z ]+"
+        }
+    ),
+    Grok(
+        "svdc_job_alarm"
+        " : Alarm Condition = ALARM: %{FAILURE_REASON:Alarm}"
+        " : JobId = %{UUID:JobId} with Job Name = %{FAILURE_REASON:JobName}",
+        custom_patterns={
+            "FAILURE_REASON": "[a-zA-Z ]+"
+        }
+    ),
+)
+
 
 def logs_validity_df_to_results(
     log_string: str, validity_df: pd.DataFrame
@@ -42,37 +77,28 @@ def parse_log_string_to_pv_results_dataframe(log_string: str) -> pd.DataFrame:
     """
     # split log string into lines
     log_lines = log_string.splitlines()
-    svdc_job_success = []
-    svdc_job_failed = []
-    aeo_job_failed = []
+    job_success = []
+    job_failed = []
     for line in log_lines:
-        if "svdc_job_success" in line:
-            line = line.split(" : ")[1:]
-            svdc_job_success.append(line_split_to_dict(line))
-        elif "svdc_job_failed" in line:
-            line = line.split(" : ")[1:]
-            svdc_job_failed.append(line_split_to_dict(line))
-        elif "aeordering_job_failed" in line:
-            line = line.split(" : ")[1:]
-            aeo_job_failed.append(line_split_to_dict(line))
-        else:
-            pass
+        success_grok = grok_line_priority(line, pv_success_groks)
+        if success_grok:
+            job_success.append(success_grok)
+            continue
+        failure_grok = grok_line_priority(line, pv_failure_groks)
+        if failure_grok:
+            job_failed.append(failure_grok)
     # create dataframes for success and failures
-    svdc_job_success_df = pd.DataFrame.from_records(
-        svdc_job_success
+    job_success_df = pd.DataFrame.from_records(
+        job_success
     ).drop_duplicates(ignore_index=True)
-    svdc_job_success_df["PVResult"] = True
-    svdc_job_failed_df = pd.DataFrame.from_records(
-        svdc_job_failed
+    job_success_df["PVResult"] = True
+    job_failed_df = pd.DataFrame.from_records(
+        job_failed
     ).drop_duplicates(ignore_index=True)
-    svdc_job_failed_df["PVResult"] = False
-    aeo_job_failed_df = pd.DataFrame.from_records(
-        aeo_job_failed
-    ).drop_duplicates(ignore_index=True)
-    aeo_job_failed_df["PVResult"] = False
+    job_failed_df["PVResult"] = False
     # concatenate datframes
     results_df = pd.concat(
-        [svdc_job_success_df, svdc_job_failed_df, aeo_job_failed_df],
+        [job_success_df, job_failed_df],
         sort=False,
     )
     # aggregate results by job id
