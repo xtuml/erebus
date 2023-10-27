@@ -6,6 +6,15 @@ on:
       ## TODO consider whether this should be on all commits or just on PRs (depending on speed)
       - '**'
 
+
+
+permissions:
+  contents: read
+  packages: read
+  deployments: read
+  
+
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
