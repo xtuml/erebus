@@ -34,8 +34,7 @@ jobs:
 
       - name: Build and run containers
         run: |
-          docker pull ghcr.io/smartdcsitlimited/protocol-verifier-http-server:latest
-          docker-compose -f ./docker-compose-end-to-end-test.yml up -d
+          docker compose pull
 
           # sudo docker compose --progress plain -f ./docker-compose-end-to-end-test.yml up -d
 
