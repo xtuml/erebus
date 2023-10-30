@@ -73,5 +73,6 @@ services:
      - "./uml_file_store:/test_harness_app/test_harness/uml_file_store"
      - "./test_file_store:/test_harness_app/test_harness/test_file_store"
      - "./profile_store:/test_harness_app/test_harness/profile_store"
+     - "./logs/reception:/test_harness_app/test_harness/log_file_store"
     ports:
      - 8800:8800
