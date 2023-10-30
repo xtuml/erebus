@@ -57,6 +57,13 @@ jobs:
           mkdir -p config
           cp ./test_harness/config/default_config.config ./config/config.config
           sed -i 's/host\.docker\.internal/httpserver/g' ./config/config.config
+
+          mkdir -p aerconfig
+          cp ./end_to_end_test_configs/aer_config.json ./aerconfig/config.json
+
+          mkdir -p aeo_svdc_config
+          cp ./end_to_end_test_configs/aeosvdc_config.json ./aeo_svdc_config/config.json
+
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
           timeout 1m ./end-to-end-curl-commands.sh
           # It takes this long to get any meaningful output from the test harness
