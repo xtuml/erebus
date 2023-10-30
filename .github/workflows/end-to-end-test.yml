@@ -54,14 +54,16 @@ jobs:
 
       - name: Do test
         run: |
-          pip install git+ssh://git@github.com/SmartDCSITlimited/test-event-generator.git 
-          # docker compose -f ./docker-compose-end-to-end-test.yml pull
-          docker compose -f ./docker-compose-end-to-end-test.yml up -d
           sleep 1
           echo "you made it!"
+          mkdir -p config
+          ls -haltr
+          whoami
+          id
+          cp ./test_harness/config/default_config.config ./config/config.config
+          sed -i 's/host\.docker\.internal/httpserver/g' ./config/config.config
+          docker compose -f ./docker-compose-end-to-end-test.yml up -d
           timeout 1m ./end-to-end-curl-commands.sh
-          # # curl --location --request POST 'http://127.0.0.1:8800/uploadUML' --form 'file1=@"./tests/test_harness/test_files/test_uml_1.puml"'
-          # curl -X POST -d '{"TestName": "demo4", "TestConfig":{"event_gen_options":{"invalid":false}, "type":"Performance", "performance_options": {"num_files_per_sec":10, "total_jobs":100, "shard":true}}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness
           docker compose -f ./docker-compose-end-to-end-test.yml down
