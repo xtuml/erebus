@@ -9,6 +9,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      SSH_AUTH_SOCK: $SSH_AUTH_SOCK
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,8 +34,27 @@ jobs:
       #   with:
       #     compose-file: ./docker-compose-end-to-end-test.yml
 
+      # - name: sort out SSH keys
+      #   uses: shimataro/ssh-key-action@v2
+      #   with:
+      #     key: ${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}
+      #     # This is unnecessary because github is always added to known_hosts automatically
+      #     known_hosts: unnecessary
+          
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-agent -a ${SSH_AUTH_SOCK} > /dev/null
+          ssh-add - <<< "${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}"
+          echo "${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+
       - name: Do test
         run: |
+          pip install git+ssh://git@github.com/SmartDCSITlimited/test-event-generator.git 
           # docker compose -f ./docker-compose-end-to-end-test.yml pull
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
           sleep 1
