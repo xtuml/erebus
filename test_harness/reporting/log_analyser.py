@@ -2,9 +2,13 @@
 """Methods to analyse logs
 """
 from typing import TextIO, Any, Generator
+import logging
+import os
 
 import pandas as pd
 from pygrok import Grok
+
+logger = logging.getLogger(__name__)
 
 
 def logs_validity_df_to_results(
@@ -230,8 +234,16 @@ def yield_grok_metrics_from_files(
     :yield: Yields dictionaries that relate to the grok match patterns given
     :rtype: :class:`Generator`[`dict`[`str`, `str` | `Any`], `Any`, `None`]
     """
-    for file in file_paths:
-        with open(file, "r", encoding="utf-8") as file_buffer:
-            yield from yield_grok_metrics_from_file_buffer(
-                file_buffer, grok_priorities
-            )
+    try:
+        for file in file_paths:
+            with open(file, "r", encoding="utf-8") as file_buffer:
+                yield from yield_grok_metrics_from_file_buffer(
+                    file_buffer, grok_priorities
+                )
+    except FileNotFoundError as e:
+        logger.error(e.strerror)
+        logger.error(
+            "The following files were found in the cache"
+            f" {[i for i in os.walk(os.path.dirname(e.filename))]}"
+        )
+        raise e
