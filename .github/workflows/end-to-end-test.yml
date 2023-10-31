@@ -77,7 +77,16 @@ jobs:
           date
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs -t
-          ls *
-          docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
+          ls -haltr *
+          ls -haltr logs/*
+          # docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
           docker compose -f ./docker-compose-end-to-end-test.yml down
 
+
+      - name: Save the whole repo to know exactly what happened in there
+        uses: actions/upload-artifact@v3
+        with:
+          name: whole-repo
+          path: |
+            **/*
+            !/home/runner/work/test-harness/test-harness/$SSH_AUTH_SOCK
