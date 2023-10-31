@@ -95,3 +95,17 @@ class PVResultsHandlerItem(NamedTuple):
     """
 
     time_completed: datetime
+
+
+class TemplateOptions(NamedTuple):
+    invariant_matched: bool = True
+    """Whether the invariants match
+    """
+    invariant_length: int = 1
+    """The length of the invariants
+    """
+
+
+class TemplateOptionsDict(TypedDict):
+    invariant_matched: NotRequired[bool]
+    invariant_length: NotRequired[int]

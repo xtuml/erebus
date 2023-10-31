@@ -1,6 +1,6 @@
 """Methods for generating test files using test event generator
 """
-from typing import Generator, Any, TypedDict, Iterator
+from typing import Generator, Any, TypedDict, Iterator, NamedTuple, Self
 from itertools import chain
 import json
 
@@ -170,17 +170,43 @@ def load_test_file_data_json_into_test_file_holder(
     )
 
 
+class UpdateableIterator:
+    def __init__(self) -> None:
+        self._data: list[Any] = []
+        self._index = 0
+
+    def add(self, data: Any) -> None:
+        self._data.append(data)
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(self):
+        try:
+            next_iter = self._data[self._index]
+            self._index += 1
+            return next_iter
+        except IndexError:
+            raise StopIteration
+
+
+class SequenceTypeData(NamedTuple):
+    """Named tuple that holds the data, validity and options of
+    the sequence type
+    """
+    job_sequences: Iterator[
+        tuple[list[dict], None, None, None]
+    ] | UpdateableIterator
+    validity: bool
+    options: dict[str, Any] = {}
+
+
 def update_test_files_holder_with_test_file(
     test_files_holder: dict[
         str,
         dict[
             str,
-            tuple[
-                Iterator[
-                    tuple[list[dict], None, None, None],
-                ],
-                bool
-            ]
+            SequenceTypeData
         ]
     ],
     test_file_data: TestJobFile
@@ -202,26 +228,21 @@ def update_test_files_holder_with_test_file(
     ]:
         test_files_holder[
            test_file_data["job_name"]
-        ][test_file_data["sequence_type"]] = (
-            [],
-            test_file_data["validity"]
+        ][test_file_data["sequence_type"]] = SequenceTypeData(
+            job_sequences=UpdateableIterator(),
+            validity=test_file_data["validity"],
+            options={} if "options" not in test_file_data else (
+                test_file_data["options"]
+            )
         )
-
-    previous_tuple = test_files_holder[
-        test_file_data["job_name"]
-    ][test_file_data["sequence_type"]]
 
     test_files_holder[
         test_file_data["job_name"]
-    ][test_file_data["sequence_type"]] = (
-        iter([
-            *previous_tuple[0],
-            (
-                test_file_data["job_file"],
-                None,
-                None,
-                None
-            )
-        ]),
-        previous_tuple[1]
+    ][test_file_data["sequence_type"]].job_sequences.add(
+        (
+            test_file_data["job_file"],
+            None,
+            None,
+            None
+        )
     )
