@@ -12,6 +12,8 @@ import re
 
 from hypothesis import given, strategies as st
 import pytest
+import aioresponses
+import aiohttp
 
 from test_harness.utils import check_dict_equivalency
 from test_harness.simulator.simulator import (
@@ -32,7 +34,8 @@ from test_harness.protocol_verifier.simulator_data import (
     job_sequencer,
     generate_events_from_template_jobs,
     convert_list_dict_to_json_io_bytes,
-    convert_list_dict_to_pv_json_io_bytes
+    convert_list_dict_to_pv_json_io_bytes,
+    send_list_dict_as_json_wrap_url
 )
 
 uuid4hex = re.compile(
@@ -1207,3 +1210,53 @@ def test_convert_list_dict_to_pv_json_io_bytes(
             event_expected
         )
     assert msg_length == len(json_bytes)
+
+
+@pytest.mark.asyncio
+async def test_send_list_dict_as_json_wrap_url_pv_data(
+    job_list: list[dict[str, str | list[str]]]
+) -> None:
+    """Tests `send_list_dict_as_json_wrap_url` with
+    the list converter function set to `convert_list_dict_to_pv_json_io_bytes`
+    """
+    form_payload: dict[str, aiohttp.MultipartWriter] = {}
+
+    # callback function to grab data
+    def call_back(url, **kwargs) -> aioresponses.CallbackResult:
+        form_payload["data"] = kwargs["data"]
+        print("called back")
+        return aioresponses.CallbackResult(
+            status=200,
+        )
+
+    with aioresponses.aioresponses() as mock_responses:
+        mock_responses.post(
+            "http://test_url",
+            callback=call_back
+        )
+        async with aiohttp.ClientSession() as session:
+            send_func = send_list_dict_as_json_wrap_url(
+                "http://test_url",
+                session,
+                convert_list_dict_to_pv_json_io_bytes,
+            )
+            _ = await send_func(
+                job_list,
+                "test_job_id",
+                {}
+            )
+            # get the io data from the form payload
+            io_data = form_payload["data"]._parts[0][0]._value
+            bytes_data = io_data.read()
+            # check the data is as expected
+            msg_length = int.from_bytes(bytes_data[:4], "big")
+            json_bytes = bytes_data[4:]
+            json_dicts = json.loads(json_bytes.decode("utf-8"))
+            for event_actual, event_expected in zip(
+                json_dicts, job_list
+            ):
+                check_dict_equivalency(
+                    event_actual,
+                    event_expected
+                )
+            assert msg_length == len(json_bytes)
