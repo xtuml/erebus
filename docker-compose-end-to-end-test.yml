@@ -35,6 +35,7 @@ services:
       - GIN_MODE=release
     volumes:
       - "./aeo_svdc_config:/data/aeo_svdc_config"
+      - "./aeo_svdc_config/job_definitions:/data/aeo_svdc_config/job_definitions"
       - "./aerconfig:/data/aerconfig"
       - "./aerincoming:/data/events"
       - "./logs/verifier:/data/logs/verifier"
