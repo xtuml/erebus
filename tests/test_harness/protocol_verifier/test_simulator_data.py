@@ -32,6 +32,7 @@ from test_harness.protocol_verifier.simulator_data import (
     job_sequencer,
     generate_events_from_template_jobs,
     convert_list_dict_to_json_io_bytes,
+    convert_list_dict_to_pv_json_io_bytes
 )
 
 uuid4hex = re.compile(
@@ -1180,3 +1181,29 @@ def test_convert_list_dict_to_json_io_bytes(
             event_actual,
             event_expected
         )
+
+
+def test_convert_list_dict_to_pv_json_io_bytes(
+    job_list: list[dict[str, str | list[str]]]
+) -> None:
+    """Tests `convert_list_dict_to_json_io_bytes`
+
+    :param job_list: A list of event dicts in a job
+    :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+    """
+    io_bytes = convert_list_dict_to_pv_json_io_bytes(
+        job_list
+    )
+    assert isinstance(io_bytes, BytesIO)
+    bytes_array = io_bytes.read()
+    msg_length = int.from_bytes(bytes_array[:4], "big")
+    json_bytes = bytes_array[4:]
+    json_dicts = json.loads(json_bytes.decode("utf-8"))
+    for event_actual, event_expected in zip(
+        json_dicts, job_list
+    ):
+        check_dict_equivalency(
+            event_actual,
+            event_expected
+        )
+    assert msg_length == len(json_bytes)

@@ -302,9 +302,31 @@ def convert_list_dict_to_json_io_bytes(
     return io_bytes
 
 
+def convert_list_dict_to_pv_json_io_bytes(
+    list_dict: list[dict[str, Any]]
+) -> BytesIO:
+    """Method to convert a list of dicts into :class:`BytesIO`
+    suitable for ingestion directly by the PV
+
+    :param list_dict: The list of dictionaries
+    :type list_dict: `list`[`dict`[`str`, `Any`]]
+    :return: Returns the :class:`BytesIO` instance
+    :rtype: :class:`BytesIO`
+    """
+    pay_load = json.dumps(list_dict).encode("utf8")
+    msg_len = len(pay_load).to_bytes(4, byteorder="big")
+    io_bytes = BytesIO(
+        msg_len + pay_load
+    )
+    return io_bytes
+
+
 def send_list_dict_as_json_wrap_url(
     url: str,
-    session: aiohttp.ClientSession | None = None
+    session: aiohttp.ClientSession | None = None,
+    list_dict_converter: Callable[[list[dict[str, Any]]], BytesIO] = (
+        convert_list_dict_to_json_io_bytes
+    )
 ) -> Callable[
     [str],
     Callable[
@@ -318,6 +340,10 @@ def send_list_dict_as_json_wrap_url(
     :type url: `str`
     :param session: The session for HTTP requests, defaults to `None`
     :type session: `aiohttp`.`ClientSession` | `None`, optional
+    :param list_dict_converter: The function to convert a list of dicts to
+    :class:`BytesIO`, defaults to :func:`convert_list_dict_to_json_io_bytes`
+    :type list_dict_converter: :class:`Callable`[ [`list`[`dict`[`str`,
+    `Any`]]], :class:`BytesIO` ], optional
     :return: Returns an asynchrcnous function for sending list dictionaries
     as json packets
     :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
@@ -343,7 +369,7 @@ def send_list_dict_as_json_wrap_url(
         :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
         :class:`datetime`]
         """
-        file = convert_list_dict_to_json_io_bytes(list_dict)
+        file = list_dict_converter(list_dict)
         file_name = str(uuid4()) + ".json"
         result = await send_payload_async(
             file=file,

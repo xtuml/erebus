@@ -119,6 +119,12 @@ class HarnessConfig:
                 "non-default"
             ]["pv_test_timeout"]
         )
+        # flag to send as bytes
+        self.pv_send_as_pv_bytes = bool(
+            self.config_parser[
+                "non-default"
+            ]["pv_send_as_pv_bytes"]
+        )
 
     def parse_requests_config(self) -> None:
         """Method to parse requests to pv server config
