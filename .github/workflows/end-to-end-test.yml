@@ -75,7 +75,7 @@ jobs:
           sleep 120
           date
 
-          docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness
+          docker compose -f ./docker-compose-end-to-end-test.yml logs
           ls *
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
           docker compose -f ./docker-compose-end-to-end-test.yml down
