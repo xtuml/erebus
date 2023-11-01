@@ -110,8 +110,21 @@ class HarnessConfig:
             "pv_send_as_pv_bytes"
         ]
         self.pv_send_as_pv_bytes = (
-            True if pv_send_as_pv_bytes_raw == "True" else False
+            True if pv_send_as_pv_bytes_raw.lower() == "true" else False
         )
+        # flag to get metrics from kafka
+        metrics_from_kafka_raw = self.config_parser["non-default"][
+            "metrics_from_kafka"
+        ]
+        self.metrics_from_kafka = (
+            True if metrics_from_kafka_raw.lower() == "true" else False
+        )
+        self.kafka_metrics_host = self.config_parser["non-default"][
+            "kafka_metrics_host"
+        ]
+        self.kafka_metrics_topic = self.config_parser["non-default"][
+            "kafka_metrics_topic"
+        ]
 
     def parse_requests_config(self) -> None:
         """Method to parse requests to pv server config"""

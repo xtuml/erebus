@@ -25,22 +25,29 @@ from .types import (
     ReceptionCountsDict,
     ResultsDict,
 )
+from .kafka_metrics import consume_events_from_kafka_topic
 
 
 class PVPerformanceResults(PVResults):
     """Base class for perfromance test results extending :class:`PVResults`"""
 
     pv_grok_map = {
-        "reception_event_received_total": "AER_start",
-        "reception_event_written_total": "AER_end",
         "aeordering_events_processed_total": "AEOSVDC_start",
-        "svdc_job_success_total": "AEOSVDC_end",
-        "svdc_job_failed_total": "AEOSVDC_end",
-        "reception_event_received": "AER_start",
-        "reception_event_written": "AER_end",
         "aeordering_events_processed": "AEOSVDC_start",
-        "svdc_job_success": "AEOSVDC_end",
+        # "reception_event_invalid",
+        "reception_event_received_total": "AER_start",
+        "reception_event_received": "AER_start",
+        # "reception_event_valid",
+        "reception_event_written_total": "AER_end",
+        "reception_event_written": "AER_end",
+        "svdc_event_processed": "AEOSVDC_end",
+        "svdc_event_received": "AEOSVDC_start",
+        "svdc_happy_event_processed": "AEOSVDC_end",
+        "svdc_job_failed_total": "AEOSVDC_end",
         "svdc_job_failed": "AEOSVDC_end",
+        "svdc_job_success_total": "AEOSVDC_end",
+        "svdc_job_success": "AEOSVDC_end",
+        "svdc_unhappy_event_processed": "AEOSVDC_end",
     }
     process_error_fields_map = {
         "reception_file_process_error": "AER_file_process_error",
@@ -396,6 +403,24 @@ class PVPerformanceResults(PVResults):
         self.add_results_from_log_files(
             file_paths, self.reception_grok_priority_patterns
         )
+
+    def add_kafka_results_from_topic(
+        self,
+        host,
+        topic
+    ) -> None:
+        """Method to add results from kafka topic
+
+        :param host: Kafka host
+        :type host: `str`
+        :param topic: Kafka topic
+        :type topic: `str`
+        """
+        events = consume_events_from_kafka_topic(host, topic)
+        for result in events:
+            self.add_result(
+                result
+            )
 
     def calc_all_results(self, agg_time_window: float = 1.0) -> None:
         """Method to calculate al aggregated results. Data aggregations happen
