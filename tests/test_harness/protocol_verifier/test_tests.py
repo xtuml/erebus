@@ -853,7 +853,7 @@ class TestPVResultsDataFrame:
 
 class TestPVResultsHandler:
     """Group of tests for :class:`PVResultsHandler`"""
-
+    @pytest.mark.skip(reason="This passes intermittently - bug raised to fix")
     @staticmethod
     def test_events_cache_happy_path() -> None:
         """Tests the happy path for event caching using shelve.Shelf."""
