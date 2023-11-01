@@ -1,6 +1,8 @@
+"""Module to collect metrics from Kafka topics
+"""
 import re
 import datetime
-from typing import Generator, Any
+from typing import Generator, Any, Literal
 
 import kafka3
 
@@ -30,7 +32,21 @@ PATTERN = (
 
 
 # @njit
-def decode_data(data, datatypes):
+def decode_data(
+    data: bytearray, datatypes: tuple[Literal["string"] | Literal["timestamp"]]
+) -> tuple[str]:
+    """Decodes data from a byte array into a tuple of values
+
+    :param data: The data to decode
+    :type data: :class:`bytearray`
+    :param datatypes: The datatypes to decode the data into
+    :type datatypes: `tuple`[:class:`Literal`[`"string"`] |
+    `Literal`[`"timestamp"`]]
+    :raises ValueError: Raises an error if the datatype are not string or
+    timestamp
+    :return: Returns a tuple of the decoded values
+    :rtype: `tuple`[`str`]
+    """
     values = []
     for datatype in datatypes:
         if datatype == "string":
@@ -73,29 +89,6 @@ def decode_data(data, datatypes):
             raise ValueError
 
     return tuple(values)
-
-
-class Event:
-    __slots__ = [
-        "id",
-        "valid",
-        "received",
-        "validated",
-        "written",
-        "ordering_received",
-        "svdc_received",
-        "processed",
-    ]
-
-    def __init__(self, id) -> None:
-        self.id = id
-        self.valid = True
-        self.received = None
-        self.validated = None
-        self.written = None
-        self.ordering_received = None
-        self.svdc_received = None
-        self.processed = None
 
 
 def consume_events_from_kafka_topic(
@@ -175,6 +168,7 @@ def consume_events_from_kafka_topic(
                     # if label == "reception_event_received"
         raw_msgs = consumer.poll(timeout_ms=30000)
     return events
+
 
 # if __name__ == "__main__":
 #     results_generator = consume_events_from_kafka_topic(
