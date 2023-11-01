@@ -291,7 +291,8 @@ def job_sequencer(
 def convert_list_dict_to_json_io_bytes(
     list_dict: list[dict[str, Any]]
 ) -> list[BytesIO]:
-    """Method to convert a list of dicts into :class:`BytesIO`
+    """Method to convert a list of dicts into list with containing a single
+    :class:`BytesIO`
 
     :param list_dict: The list of dictionaries
     :type list_dict: `list`[`dict`[`str`, `Any`]]
@@ -307,8 +308,8 @@ def convert_list_dict_to_json_io_bytes(
 def convert_list_dict_to_pv_json_io_bytes(
     list_dict: list[dict[str, Any]]
 ) -> list[BytesIO]:
-    """Method to convert a list of dicts into :class:`BytesIO`
-    suitable for ingestion directly by the PV
+    """Method to convert a list of dicts into a list of :class:`BytesIO` for
+    each event suitable for ingestion directly by the PV
 
     :param list_dict: The list of dictionaries
     :type list_dict: `list`[`dict`[`str`, `Any`]]
