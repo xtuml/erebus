@@ -13,6 +13,8 @@ from datetime import datetime
 import logging
 import itertools
 from abc import ABC, abstractmethod
+import asyncio
+
 import aiohttp
 
 from test_harness.jobs.job_delivery import send_payload_async
@@ -288,43 +290,46 @@ def job_sequencer(
 
 def convert_list_dict_to_json_io_bytes(
     list_dict: list[dict[str, Any]]
-) -> BytesIO:
+) -> list[BytesIO]:
     """Method to convert a list of dicts into :class:`BytesIO`
 
     :param list_dict: The list of dictionaries
     :type list_dict: `list`[`dict`[`str`, `Any`]]
     :return: Returns the :class:`BytesIO` instance
-    :rtype: :class:`BytesIO`
+    :rtype: `list`[:class:`BytesIO`]
     """
     io_bytes = BytesIO(
         json.dumps(list_dict, indent=4).encode("utf8")
     )
-    return io_bytes
+    return [io_bytes]
 
 
 def convert_list_dict_to_pv_json_io_bytes(
     list_dict: list[dict[str, Any]]
-) -> BytesIO:
+) -> list[BytesIO]:
     """Method to convert a list of dicts into :class:`BytesIO`
     suitable for ingestion directly by the PV
 
     :param list_dict: The list of dictionaries
     :type list_dict: `list`[`dict`[`str`, `Any`]]
     :return: Returns the :class:`BytesIO` instance
-    :rtype: :class:`BytesIO`
+    :rtype: `list`[:class:`BytesIO`]
     """
-    pay_load = json.dumps(list_dict).encode("utf8")
-    msg_len = len(pay_load).to_bytes(4, byteorder="big")
-    io_bytes = BytesIO(
-        msg_len + pay_load
-    )
-    return io_bytes
+    io_bytes_list = []
+    for event in list_dict:
+        pay_load = json.dumps(event).encode("utf8")
+        msg_len = len(pay_load).to_bytes(4, byteorder="big")
+        io_bytes = BytesIO(
+            msg_len + pay_load
+        )
+        io_bytes_list.append(io_bytes)
+    return io_bytes_list
 
 
 def send_list_dict_as_json_wrap_url(
     url: str,
     session: aiohttp.ClientSession | None = None,
-    list_dict_converter: Callable[[list[dict[str, Any]]], BytesIO] = (
+    list_dict_converter: Callable[[list[dict[str, Any]]], list[BytesIO]] = (
         convert_list_dict_to_json_io_bytes
     )
 ) -> Callable[
@@ -369,15 +374,23 @@ def send_list_dict_as_json_wrap_url(
         :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
         :class:`datetime`]
         """
-        file = list_dict_converter(list_dict)
-        file_name = str(uuid4()) + ".json"
-        result = await send_payload_async(
-            file=file,
-            file_name=file_name,
-            url=url,
-            session=session
-        )
+        files = list_dict_converter(list_dict)
+        file_names = [
+            str(uuid4()) + ".json"
+            for _ in range(len(files))
+        ]
+        results = await asyncio.gather(*[
+            send_payload_async(
+                file=file,
+                file_name=file_name_sent,
+                url=url,
+                session=session
+            )
+            for file, file_name_sent in zip(files, file_names)
+        ])
         time_completed = datetime.now()
+        file_name = "-".join(file_names)
+        result = "-".join(results)
         return list_dict, file_name, job_id, job_info, result, time_completed
     return send_list_dict_as_json
 
