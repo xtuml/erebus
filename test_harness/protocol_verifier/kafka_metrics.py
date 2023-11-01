@@ -63,7 +63,11 @@ def decode_data(data, datatypes):
             data = data[8:]
 
             seconds = nanos / 1e9
-            values.append(datetime.datetime.fromtimestamp(seconds))
+            values.append(
+                datetime.datetime.fromtimestamp(seconds).strftime(
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            )
 
         else:
             raise ValueError
