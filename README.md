@@ -125,7 +125,7 @@ To change default values of these files a parameter can be copied under the `[no
     * `get_log_file_url` - The url of the endpoint that requests are sent to receive a named log file for a specified PV domain. Defaults to `http://host.docker.internal:9000/download/log-file`
 * Config relating to sending files to the HTTP server
     * `pv_send_url` - The url of the endpoint that requests are sent to to upload events for reception and verification. Defaults to `http://host.docker.internal:9000/upload/events`
-    * `pv_send_as_pv_bytes` - Boolean indicating whether to send data as pv bytes (True) or not (False). This will add a byte array of length 4 in big endian of the integer size of the sent payload in bytes
+    * `pv_send_as_pv_bytes` - Boolean indicating whether to send data as pv bytes (True) or not (False). If the final destination is the kafka ingestion by the PV this should be set to True otherwise it should just be set to False. If set to True this will split all sent files into discrete json events and will add a byte array of length 4 in big endian of the integer size of the sent payload in byte.
     * `pv_send_job_defs_url` - The url of the endpoint that requests are sent to to upload job definitions to. Defaults to `http://host.docker.internal:9000/upload/job-definitions`
 * Config that is dependent on the config set on the Protocol Verifier
     * `pv_config_update_time` - The amount of time to wait for the uploaded job definition to be seen by the Protocol Verifier. Defaults to `60` (seconds). This should be greater than the field `SpecUpdateRate` of the PV
