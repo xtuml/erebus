@@ -15,13 +15,13 @@ class HarnessConfig:
     :param config_path: The path to the config file, defaults to None
     :type config_path: Optional[str], optional
     """
+
     def __init__(
         self,
         config_path: Optional[str] = None,
-        store_config_path: Optional[str] = None
+        store_config_path: Optional[str] = None,
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         self.config_path = config_path
         self.store_config_path = store_config_path
         self.config_parser = ConfigParser()
@@ -43,47 +43,39 @@ class HarnessConfig:
         self.parse_config_to_attributes()
 
     def parse_config_to_attributes(self) -> None:
-        """Method to parse config to attributes
-        """
+        """Method to parse config to attributes"""
         # parse uml file store
-        uml_file_store_path = self.config_parser[
-            "non-default"
-        ]["uml_file_store"]
-        self.uml_file_store = self.calc_path(
-            uml_file_store_path,
+        uml_file_store_path = self.config_parser["non-default"][
             "uml_file_store"
+        ]
+        self.uml_file_store = self.calc_path(
+            uml_file_store_path, "uml_file_store"
         )
         # parse uml file store
-        profile_store_path = self.config_parser[
-            "non-default"
-        ]["profile_store"]
+        profile_store_path = self.config_parser["non-default"]["profile_store"]
         self.profile_store = self.calc_path(
-            profile_store_path,
-            "profile_store"
+            profile_store_path, "profile_store"
         )
         # parse report filestore path
-        report_file_store_path = self.config_parser[
-            "non-default"
-        ]["report_file_store"]
-        self.report_file_store = self.calc_path(
-            report_file_store_path,
+        report_file_store_path = self.config_parser["non-default"][
             "report_file_store"
+        ]
+        self.report_file_store = self.calc_path(
+            report_file_store_path, "report_file_store"
         )
         # parse log filestore path
-        log_file_store_path = self.config_parser[
-            "non-default"
-        ]["log_file_store"]
-        self.log_file_store = self.calc_path(
-            log_file_store_path,
+        log_file_store_path = self.config_parser["non-default"][
             "log_file_store"
+        ]
+        self.log_file_store = self.calc_path(
+            log_file_store_path, "log_file_store"
         )
         # parse test filestore path
-        test_file_store_path = self.config_parser[
-            "non-default"
-        ]["test_file_store"]
-        self.test_file_store = self.calc_path(
-            test_file_store_path,
+        test_file_store_path = self.config_parser["non-default"][
             "test_file_store"
+        ]
+        self.test_file_store = self.calc_path(
+            test_file_store_path, "test_file_store"
         )
         # parse config for request to server
         self.parse_requests_config()
@@ -92,64 +84,54 @@ class HarnessConfig:
         # parse config log retrieval
         self.parse_log_retrieval_config()
         # max files in memory
-        self.max_files_in_memory = int(self.config_parser[
-            "non-default"
-        ]["max_files_in_memory"])
+        self.max_files_in_memory = int(
+            self.config_parser["non-default"]["max_files_in_memory"]
+        )
         # url send pv files
-        self.pv_send_url = self.config_parser[
-            "non-default"
-        ]["pv_send_url"]
-        self.pv_send_job_defs_url = self.config_parser[
-            "non-default"
-        ]["pv_send_job_defs_url"]
-        self.pv_config_update_time = int(self.config_parser[
-            "non-default"
-        ]["pv_config_update_time"])
-        self.pv_clean_folders_url = self.config_parser[
-            "non-default"
-        ]["pv_clean_folders_url"]
+        self.pv_send_url = self.config_parser["non-default"]["pv_send_url"]
+        self.pv_send_job_defs_url = self.config_parser["non-default"][
+            "pv_send_job_defs_url"
+        ]
+        self.pv_config_update_time = int(
+            self.config_parser["non-default"]["pv_config_update_time"]
+        )
+        self.pv_clean_folders_url = self.config_parser["non-default"][
+            "pv_clean_folders_url"
+        ]
         self.pv_clean_folders_read_timeout = int(
-            self.config_parser[
-                "non-default"
-            ]["pv_clean_folders_read_timeout"]
+            self.config_parser["non-default"]["pv_clean_folders_read_timeout"]
         )
         # test timeout
         self.pv_test_timeout = int(
-            self.config_parser[
-                "non-default"
-            ]["pv_test_timeout"]
+            self.config_parser["non-default"]["pv_test_timeout"]
         )
         # flag to send as bytes
-        self.pv_send_as_pv_bytes = bool(
-            self.config_parser[
-                "non-default"
-            ]["pv_send_as_pv_bytes"]
+        pv_send_as_pv_bytes_raw = self.config_parser["non-default"][
+            "pv_send_as_pv_bytes"
+        ]
+        self.pv_send_as_pv_bytes = (
+            True if pv_send_as_pv_bytes_raw == "True" else False
         )
 
     def parse_requests_config(self) -> None:
-        """Method to parse requests to pv server config
-        """
-        self.requests_max_retries = int(self.config_parser[
-            "non-default"
-        ]["requests_max_retries"])
-        self.requests_timeout = int(self.config_parser[
-            "non-default"
-        ]["requests_timeout"])
+        """Method to parse requests to pv server config"""
+        self.requests_max_retries = int(
+            self.config_parser["non-default"]["requests_max_retries"]
+        )
+        self.requests_timeout = int(
+            self.config_parser["non-default"]["requests_timeout"]
+        )
 
     def parse_io_tracking_config(self):
         """TODO docstring."""
-        self.io_calc_interval_time = int(self.config_parser[
-            "non-default"
-        ]["io_calc_interval_time"])
-        self.io_read_timeout = float(self.config_parser[
-            "non-default"
-        ]["io_read_timeout"])
-        aer_io_url = self.config_parser[
-            "non-default"
-        ]["aer_io_url"]
-        ver_io_url = self.config_parser[
-            "non-default"
-        ]["ver_io_url"]
+        self.io_calc_interval_time = int(
+            self.config_parser["non-default"]["io_calc_interval_time"]
+        )
+        self.io_read_timeout = float(
+            self.config_parser["non-default"]["io_read_timeout"]
+        )
+        aer_io_url = self.config_parser["non-default"]["aer_io_url"]
+        ver_io_url = self.config_parser["non-default"]["ver_io_url"]
         self.io_urls = {
             "aer": aer_io_url,
             "ver": ver_io_url,
@@ -157,47 +139,44 @@ class HarnessConfig:
 
     def parse_log_retrieval_config(self):
         """TODO docstring."""
-        self.pv_finish_interval = int(self.config_parser[
-            "non-default"
-        ]["pv_finish_interval"])
-        self.log_calc_interval_time = int(self.config_parser[
-            "non-default"
-        ]["log_calc_interval_time"])
+        self.pv_finish_interval = int(
+            self.config_parser["non-default"]["pv_finish_interval"]
+        )
+        self.log_calc_interval_time = int(
+            self.config_parser["non-default"]["log_calc_interval_time"]
+        )
         self.log_urls = {
             "aer": {
-                "getFile": self.config_parser[
-                    "non-default"
-                ]["aer_get_file_url"],
-                "getFileNames": self.config_parser[
-                    "non-default"
-                ]["aer_get_file_names_url"]
+                "getFile": self.config_parser["non-default"][
+                    "aer_get_file_url"
+                ],
+                "getFileNames": self.config_parser["non-default"][
+                    "aer_get_file_names_url"
+                ],
             },
             "ver": {
-                "getFile": self.config_parser[
-                    "non-default"
-                ]["ver_get_file_url"],
-                "getFileNames": self.config_parser[
-                    "non-default"
-                ]["ver_get_file_names_url"]
+                "getFile": self.config_parser["non-default"][
+                    "ver_get_file_url"
+                ],
+                "getFileNames": self.config_parser["non-default"][
+                    "ver_get_file_names_url"
+                ],
             },
             "location": {
-                "getFile": self.config_parser[
-                    "non-default"
-                ]["get_log_file_url"],
-                "getFileNames": self.config_parser[
-                    "non-default"
-                ]["get_log_file_names_url"]
-            }
+                "getFile": self.config_parser["non-default"][
+                    "get_log_file_url"
+                ],
+                "getFileNames": self.config_parser["non-default"][
+                    "get_log_file_names_url"
+                ],
+            },
         }
-        self.pv_grok_exporter_url = self.config_parser[
-            "non-default"
-        ]["pv_grok_exporter_url"]
+        self.pv_grok_exporter_url = self.config_parser["non-default"][
+            "pv_grok_exporter_url"
+        ]
 
     @staticmethod
-    def calc_path(
-        given_path: str,
-        config_field: str
-    ) -> str:
+    def calc_path(given_path: str, config_field: str) -> str:
         """Method to get the absolute path given either an absolute or
         relative path
 
@@ -214,9 +193,7 @@ class HarnessConfig:
             calculated_path = given_path
         else:
             calculated_path = str(
-                Path(
-                    __file__
-                ).parent.parent.parent / given_path
+                Path(__file__).parent.parent.parent / given_path
             )
         if not os.path.exists(calculated_path):
             raise RuntimeError(
@@ -227,8 +204,8 @@ class HarnessConfig:
 
 
 class TestConfig:
-    """Class to hold test configuration
-    """
+    """Class to hold test configuration"""
+
     def __init__(self) -> None:
         self.set_default_config()
 
@@ -239,10 +216,8 @@ class TestConfig:
         :param yaml_file_path: The path to the yaml file
         :type yaml_file_path: `str`
         """
-        with open(yaml_file_path, 'r', encoding="utf-8") as file:
-            test_config = yaml.safe_load(
-                file
-            )
+        with open(yaml_file_path, "r", encoding="utf-8") as file:
+            test_config = yaml.safe_load(file)
         self.parse_from_dict(test_config)
 
     def parse_from_dict(self, test_config: dict[str, str | dict]) -> None:
@@ -281,14 +256,13 @@ class TestConfig:
                 setattr(self, attr_name, test_config[attr_name])
 
     def set_default_config(self) -> None:
-        """Method to set default config options
-        """
+        """Method to set default config options"""
         self.type = "Functional"
         self.max_different_sequences = 200
         self.event_gen_options = {
             "solution_limit": 100,
             "max_sol_time": 120,
-            "invalid": True
+            "invalid": True,
         }
         self.performance_options = {
             "num_files_per_sec": 100,
@@ -301,7 +275,7 @@ class TestConfig:
         config_dict_to_return = {
             "type": self.type,
             "max_different_sequences": 200,
-            "event_gen_options": self.event_gen_options
+            "event_gen_options": self.event_gen_options,
         }
         if self.type != "Functional":
             config_dict_to_return["performance_options"] = (
