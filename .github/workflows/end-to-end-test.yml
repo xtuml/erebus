@@ -60,9 +60,11 @@ jobs:
 
           mkdir -p aerconfig
           cp ./end_to_end_test_configs/aer_config.json ./aerconfig/config.json
+          cp ./end_to_end_test_configs/log-config-reception.xml ./aerconfig/
 
           mkdir -p aeo_svdc_config
           cp ./end_to_end_test_configs/aeosvdc_config.json ./aeo_svdc_config/config.json
+          cp ./end_to_end_test_configs/log-config-verifier.xml ./aeo_svdc_config/
 
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
           timeout 1m ./end-to-end-curl-commands.sh

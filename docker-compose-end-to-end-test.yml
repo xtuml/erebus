@@ -8,7 +8,7 @@ services:
     ## ARM built gitlab pipeline 
     #image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-image-builder/prod/aereception-arm:v1.0.0"
     volumes:
-      # - "./aerconfig:/root/config"
+      - "./aerconfig:/root/config"
       - "./aerincoming:/root/incoming"
       - "./verifier-incoming:/root/outgoing"
       - "./logs/reception:/var/log/reception"
