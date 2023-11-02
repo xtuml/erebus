@@ -478,7 +478,8 @@ class TestEvent:
         assert event_dict["eventId"] == event_event_id_map[id(events[1])]
         assert event_dict["jobId"] == job_id
         assert event_dict["timestamp"] != events[1].time_stamp
-        assert event_dict["previousEventIds"] == event_event_id_map[
+        assert len(event_dict["previousEventIds"]) == 1
+        assert event_dict["previousEventIds"][0] == event_event_id_map[
             id(events[0])
         ]
 

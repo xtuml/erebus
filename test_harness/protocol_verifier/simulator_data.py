@@ -671,15 +671,10 @@ class Event:
             "applicationName": self.application_name
         }
         if self.has_previous_event_id():
-            if len(self.prev_events) == 1:
-                event_dict["previousEventIds"] = event_event_id_map[
-                    id(self.prev_events[0])
-                ]
-            else:
-                event_dict["previousEventIds"] = [
-                    event_event_id_map[id(prev_event)]
-                    for prev_event in self.prev_events
-                ]
+            event_dict["previousEventIds"] = [
+                event_event_id_map[id(prev_event)]
+                for prev_event in self.prev_events
+            ]
         # add meta data if it exists
         event_dict = {
             **event_dict,
