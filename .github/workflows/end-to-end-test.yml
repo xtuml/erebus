@@ -69,26 +69,23 @@ jobs:
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
           timeout 1m ./end-to-end-curl-commands.sh
           # It takes this long to get any meaningful output from the test harness
-          # It's 120 seconds for the test harness to start the job ...
+          # It's 60 seconds for the test harness to start the job ...
           # ... and 10 seconds to run the job ...
           # ... and 60 seconds to ensure the test is finished ...
           # ... and another 50 seconds for grace time in starting up/waiting for logs/waiting for calculations
           echo "Sleeping to give the test harness time to work"
           date
-          sleep 240
+          sleep 180
           date
 
-          docker compose -f ./docker-compose-end-to-end-test.yml logs -t
-          ls -haltr *
-          ls -haltr logs/*
-          # docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
+          docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
           docker compose -f ./docker-compose-end-to-end-test.yml down
 
 
-      - name: Save the whole repo to know exactly what happened in there
-        uses: actions/upload-artifact@v3
-        with:
-          name: whole-repo
-          path: |
-            **/*
-            !/home/runner/work/test-harness/test-harness/$SSH_AUTH_SOCK
+      # - name: Save the whole repo to know exactly what happened in there
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: whole-repo
+      #     path: |
+      #       **/*
+      #       !/home/runner/work/test-harness/test-harness/$SSH_AUTH_SOCK
