@@ -390,7 +390,7 @@ def send_list_dict_as_json_wrap_url(
             for file, file_name_sent in zip(files, file_names)
         ])
         time_completed = datetime.now()
-        file_name = "-".join(file_names)
+        file_name = str(uuid4()) + ".json"
         result = "-".join(results)
         return list_dict, file_name, job_id, job_info, result, time_completed
     return send_list_dict_as_json
