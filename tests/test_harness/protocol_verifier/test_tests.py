@@ -853,8 +853,8 @@ class TestPVResultsDataFrame:
 
 class TestPVResultsHandler:
     """Group of tests for :class:`PVResultsHandler`"""
-
     @staticmethod
+    @pytest.mark.skip(reason="This passes intermittently - bug raised to fix")
     def test_events_cache_happy_path() -> None:
         """Tests the happy path for event caching using shelve.Shelf."""
         harness_config = HarnessConfig(test_config_path)

@@ -40,6 +40,8 @@ from test_harness.protocol_verifier.simulator_data import (
     generate_single_events,
     job_sequencer,
     send_list_dict_as_json_wrap_url,
+    convert_list_dict_to_json_io_bytes,
+    convert_list_dict_to_pv_json_io_bytes
 )
 from test_harness.simulator.simulator import (
     SimDatum,
@@ -275,7 +277,12 @@ class Test(ABC):
                 delays=self.delay_times,
                 simulation_data=self.sim_data_generator,
                 action_func=send_list_dict_as_json_wrap_url(
-                    url=self.harness_config.pv_send_url, session=session
+                    url=self.harness_config.pv_send_url, session=session,
+                    list_dict_converter=(
+                        convert_list_dict_to_pv_json_io_bytes
+                        if self.harness_config.pv_send_as_pv_bytes
+                        else convert_list_dict_to_json_io_bytes
+                    )
                 ),
                 results_handler=results_handler,
             )
@@ -634,6 +641,12 @@ class PerformanceTest(Test):
         """Method to get the PV sim data from the grok endpoint and read into
         results
         """
+        if self.harness_config.metrics_from_kafka:
+            self.results.add_kafka_results_from_topic(
+                self.harness_config.kafka_metrics_host,
+                self.harness_config.kafka_metrics_topic
+            )
+            return
         self.results.add_reception_results_from_log_files(
             file_paths=[
                 os.path.join(self.harness_config.log_file_store, file_name)
