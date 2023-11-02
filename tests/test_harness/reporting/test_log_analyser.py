@@ -49,8 +49,7 @@ def test_parse_log_string_to_pv_results_dataframe() -> None:
 
 
 def test_parse_log_string_to_pv_results_dataframe_svdc_failures() -> None:
-    """Tests `parse_log_string_to_pv_results_dataframe` with SVDC failures
-    """
+    """Tests `parse_log_string_to_pv_results_dataframe` with SVDC failures"""
     log_string = (
         "2023-11-02T18:44:44.951533Z 3 svdc_job_failed : FailureReason = one"
         " or more constraint checks have failed : JobId ="
@@ -73,16 +72,23 @@ def test_parse_log_string_to_pv_results_dataframe_svdc_failures() -> None:
         " matching start event definition for Job ="
         " 854ca735-d000-49d9-941e-947d2728848e, with audit event type = B :"
         " JobId = 854ca735-d000-49d9-941e-947d2728848e"
+        + "\n"
+        + "svdc_job_failed : FailureReason = JobId ="
+        " a5239839-c2e3-474b-81ab-88a007eb956f : EventType = SpyEvent :"
+        " FailureReason = Event type is not allowed for job name, Job Name ="
+        " simple_AND_job : JobId = a5239839-c2e3-474b-81ab-88a007eb956f with"
+        " Job Name = simple_AND_job"
     )
     pv_results = parse_log_string_to_pv_results_dataframe(
         log_string=log_string
     )
-    assert len(pv_results) == 4
+    assert len(pv_results) == 5
     expected_job_ids = [
         ("3843e246-7940-4e70-b173-4840cfc21386", False),
         ("3f01aeca-7b4a-4288-9078-8ce32d36fec7", False),
         ("b5498ed4-a532-48c9-885f-d01671f95d60", False),
         ("854ca735-d000-49d9-941e-947d2728848e", False),
+        ("a5239839-c2e3-474b-81ab-88a007eb956f", False),
     ]
     for job_id, pv_result in expected_job_ids:
         assert job_id in pv_results.index
