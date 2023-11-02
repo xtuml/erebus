@@ -41,7 +41,6 @@ class PVPerformanceResults(PVResults):
         "reception_event_written_total": "AER_end",
         "reception_event_written": "AER_end",
         "svdc_event_processed": "AEOSVDC_end",
-        "svdc_event_received": "AEOSVDC_start",
         "svdc_happy_event_processed": "AEOSVDC_end",
         "svdc_job_failed_total": "AEOSVDC_end",
         "svdc_job_failed": "AEOSVDC_end",
