@@ -55,7 +55,7 @@ ply==3.11
 prometheus-client==0.17.1
 protobuf==4.22.1
 py==1.11.0
-pyaml==23.7.0
+pyaml==23.9.7
 pygrok==1.0.0
 pyparsing==3.0.9
 pytest==7.4.3
