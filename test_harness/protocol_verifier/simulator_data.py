@@ -895,7 +895,7 @@ class Job:
                 for event in self.events
             },
             **{
-                id(event): str(uuid4)
+                id(event): str(uuid4())
                 for event in self.missing_events
             }
         }
