@@ -20,7 +20,7 @@ services:
     ## ARM built gitlab pipeline 
     #image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-image-builder/prod/aeo_svdc-arm:v1.0.0"
     volumes:
-      # - "./aeo_svdc_config:/root/config"
+      - "./aeo_svdc_config:/root/config"
       - "./InvariantStore:/root/InvariantStore"
       - "./verifier-incoming:/root/incoming"
       - "./verifier-processed:/root/processed"
