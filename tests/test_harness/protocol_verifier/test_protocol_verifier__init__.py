@@ -13,6 +13,8 @@ import logging
 from typing import Callable, Literal
 from io import BytesIO
 from ctypes import c_bool
+import concurrent.futures
+import time
 
 import pytest
 import responses
@@ -1141,8 +1143,7 @@ def test_puml_files_test_is_test_running_true() -> None:
         )
         is_test_running = Value(c_bool, False)
         
-        import concurrent.futures
-        import time                  
+   
 
         def test_is_test_running_value(is_test_running_local):
             for i in range(100):
