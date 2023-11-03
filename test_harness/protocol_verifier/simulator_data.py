@@ -550,6 +550,12 @@ class Event:
                 invariant_store.update(meta_data_name)
                 categories["invariants"][meta_data_name] = meta_data_value
             else:
+                if isinstance(meta_data_value, dict):
+                    # here as a fix for the fact that the
+                    # loop counts and branch counts are now parsed differently
+                    # should maybe introduce backwards compatibility flag
+                    if "value" in meta_data_value:
+                        meta_data_value = meta_data_value["value"]
                 categories["fixed"][meta_data_name] = meta_data_value
         return categories
 
