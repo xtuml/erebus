@@ -70,7 +70,7 @@ jobs:
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
 
           # this should return false as no tests are running
-          sleep 2
+          sleep 10
           curl 127.0.0.1:8800/isTestRunning
 
           # actual tests are set to run

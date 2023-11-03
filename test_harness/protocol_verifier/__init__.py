@@ -87,7 +87,7 @@ def puml_files_test(
     """
 
 #   setting thread-safe variable is_test_running to True
-    is_test_running = True  # noqa: F841
+    is_test_running.value = True  # noqa: F841
 
     # choose test from test config and run test
     test_class = (
@@ -149,7 +149,7 @@ def puml_files_test(
         "Cleaning Test Harness and PV directories"
     )
     test.clean_directories()
-    is_test_running = False  # noqa: F841
+    is_test_running.value = False  # noqa: F841
 
 
 def get_puml_file_paths(

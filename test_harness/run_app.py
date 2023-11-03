@@ -16,10 +16,11 @@ from test_harness.protocol_verifier import (
     get_puml_file_paths
 )
 from test_harness.utils import clean_directories
+from ctypes import c_bool
 
 logging.basicConfig(level=logging.INFO)
 
-is_test_running = multiValue("b", False)
+is_test_running = multiValue(c_bool, False)
 
 
 def run_harness_app(

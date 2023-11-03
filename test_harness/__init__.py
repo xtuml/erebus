@@ -11,7 +11,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 
 from test_harness.config.config import HarnessConfig, TestConfig
-from multiprocessing import Value as multiValue
+from multiprocessing import Value
 
 
 class HarnessApp(Flask):
@@ -48,7 +48,7 @@ class HarnessApp(Flask):
     def __init__(
         self,
         import_name: str,
-        is_test_running: multiValue,
+        is_test_running: Value,
         harness_config_path: Optional[str] = None,
         static_url_path: Optional[str] = None,
         static_folder: Optional[Union[str, os.PathLike]] = "static",
@@ -176,7 +176,7 @@ class HarnessApp(Flask):
     def test_is_running(self) -> Response:
         """Function to handle checking if a test is running
         """
-        return jsonify({"isTestRunning": self.is_test_running}), 200
+        return jsonify({"running": self.is_test_running.value}), 200
 
     def handle_start_test_json_request(
         self,
@@ -254,7 +254,7 @@ class HarnessApp(Flask):
 
 
 def create_app(
-    is_test_running: multiValue,
+    is_test_running: Value,
     harness_config_path: Optional[str] = None,
     test_config: Optional[Mapping] = None
 ) -> HarnessApp:
