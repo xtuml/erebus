@@ -1099,6 +1099,7 @@ def test_puml_files_test_functional_test_timeout(
             ]
         )
 
+
 @responses.activate
 def test_puml_files_test_is_test_running_true() -> None:
     """Tests that is_test_running is set to True when a test is invoked
@@ -1142,8 +1143,7 @@ def test_puml_files_test_is_test_running_true() -> None:
             body=b'test log',
         )
         is_test_running = Value(c_bool, False)
-        
-   
+
 
         def test_is_test_running_value(is_test_running_local):
             for i in range(100):
@@ -1154,7 +1154,8 @@ def test_puml_files_test_is_test_running_true() -> None:
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             # Start the load operations and mark each future with its URL
-            future_from_test = executor.submit(test_is_test_running_value,is_test_running)
+            future_from_test = executor.submit(test_is_test_running_value, 
+                                               is_test_running)
 
             puml_files_test(
                 puml_file_paths=[test_file_path],
@@ -1164,8 +1165,9 @@ def test_puml_files_test_is_test_running_true() -> None:
                 is_test_running=is_test_running
             )
 
-            assert future_from_test.result() == True
-        assert is_test_running.value == False
+            assert future_from_test.result()
+        assert not is_test_running.value
+
 
 @responses.activate
 def test_puml_files_performance_test_timeout(
