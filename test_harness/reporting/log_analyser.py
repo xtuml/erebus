@@ -22,9 +22,9 @@ pv_failure_groks = (
     Grok(
         "svdc_job_failed"
         " : FailureReason = %{FAILURE_REASON:FailureReason}"
-        "for Job = %{UUID:JobId}",
+        " : JobId = %{UUID:JobId}",
         custom_patterns={
-            "FAILURE_REASON": "[a-zA-Z ]+"
+            "FAILURE_REASON": ".*"
         }
     ),
     Grok(

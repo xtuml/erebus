@@ -390,7 +390,7 @@ def send_list_dict_as_json_wrap_url(
             for file, file_name_sent in zip(files, file_names)
         ])
         time_completed = datetime.now()
-        file_name = "-".join(file_names)
+        file_name = str(uuid4()) + ".json"
         result = "-".join(results)
         return list_dict, file_name, job_id, job_info, result, time_completed
     return send_list_dict_as_json
@@ -550,6 +550,12 @@ class Event:
                 invariant_store.update(meta_data_name)
                 categories["invariants"][meta_data_name] = meta_data_value
             else:
+                if isinstance(meta_data_value, dict):
+                    # here as a fix for the fact that the
+                    # loop counts and branch counts are now parsed differently
+                    # should maybe introduce backwards compatibility flag
+                    if "value" in meta_data_value:
+                        meta_data_value = meta_data_value["value"]
                 categories["fixed"][meta_data_name] = meta_data_value
         return categories
 
@@ -671,15 +677,10 @@ class Event:
             "applicationName": self.application_name
         }
         if self.has_previous_event_id():
-            if len(self.prev_events) == 1:
-                event_dict["previousEventIds"] = event_event_id_map[
-                    id(self.prev_events[0])
-                ]
-            else:
-                event_dict["previousEventIds"] = [
-                    event_event_id_map[id(prev_event)]
-                    for prev_event in self.prev_events
-                ]
+            event_dict["previousEventIds"] = [
+                event_event_id_map[id(prev_event)]
+                for prev_event in self.prev_events
+            ]
         # add meta data if it exists
         event_dict = {
             **event_dict,
@@ -900,7 +901,7 @@ class Job:
                 for event in self.events
             },
             **{
-                id(event): str(uuid4)
+                id(event): str(uuid4())
                 for event in self.missing_events
             }
         }
