@@ -26,7 +26,7 @@ from plotly.graph_objects import Figure
 from requests import ReadTimeout
 import requests
 import numpy as np
-from kafka3 import KafkaProducer
+from aiokafka import AIOKafkaProducer
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import clean_directories
@@ -276,9 +276,10 @@ class Test(ABC):
         :type results_handler: `list`[:class:`Job`]
         """
         if self.harness_config.message_bus_protocol == "KAFKA":
-            kafka_producer = KafkaProducer(
+            kafka_producer = AIOKafkaProducer(
                 bootstrap_servers=self.harness_config.kafka_message_bus_host
             )
+            await kafka_producer.start()
             self.simulator = Simulator(
                 delays=self.delay_times,
                 simulation_data=self.sim_data_generator,

@@ -15,8 +15,7 @@ from abc import ABC, abstractmethod
 import asyncio
 
 import aiohttp
-from kafka3 import KafkaProducer
-from kafka3.errors import KafkaTimeoutError
+from aiokafka import AIOKafkaProducer
 
 from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import (
@@ -465,7 +464,7 @@ def send_list_dict_as_json_wrap_send_function(
 async def send_payload_kafka(
     file: bytes,
     file_name: str,
-    kafka_producer: KafkaProducer,
+    kafka_producer: AIOKafkaProducer,
     kafka_topic: str
 ) -> Literal['', 'KafkaTimeoutError']:
     """Async method to send a payload to a kafka producer
@@ -476,19 +475,19 @@ async def send_payload_kafka(
     :type producer: :class:`KafkaProducer`
     """
     try:
-        kafka_producer.send(
-            kafka_topic,
-            file
+        await kafka_producer.send_and_wait(
+            topic=kafka_topic,
+            value=file
         )
         result =""
         logging.getLogger().debug(
             f"Sent file {file_name} payload to kafka topic {kafka_topic}"
         )
-    except KafkaTimeoutError as error:
+    except Exception as error:
         logging.getLogger().warning(
             "Error sending payload to kafka: %s", error
         )
-        result = "KafkaTimeoutError"
+        result = str(error)
     return result
 
 
