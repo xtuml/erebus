@@ -1144,7 +1144,6 @@ def test_puml_files_test_is_test_running_true() -> None:
         )
         is_test_running = Value(c_bool, False)
 
-
         def test_is_test_running_value(is_test_running_local):
             for i in range(100):
                 if is_test_running_local.value:
@@ -1154,7 +1153,7 @@ def test_puml_files_test_is_test_running_true() -> None:
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             # Start the load operations and mark each future with its URL
-            future_from_test = executor.submit(test_is_test_running_value, 
+            future_from_test = executor.submit(test_is_test_running_value,
                                                is_test_running)
 
             puml_files_test(
