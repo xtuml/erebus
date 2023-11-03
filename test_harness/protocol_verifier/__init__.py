@@ -8,6 +8,7 @@ import os
 import asyncio
 import logging
 import time
+from multiprocessing import Value as multiValue
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.generate_test_files import (
@@ -25,7 +26,8 @@ from test_harness.simulator.simulator_profile import Profile
 def full_pv_test(
     harness_config: HarnessConfig,
     test_config: TestConfig,
-    test_output_directory: str
+    test_output_directory: str,
+    is_test_running: multiValue
 ) -> None:
     """Full protocol verifier test for the config provided
 
@@ -54,7 +56,8 @@ def full_pv_test(
         harness_config=harness_config,
         test_config=test_config,
         profile=profile,
-        test_file_paths=test_file_paths
+        test_file_paths=test_file_paths,
+        is_test_running=is_test_running
     )
 
 
@@ -63,6 +66,7 @@ def puml_files_test(
     test_output_directory: str,
     harness_config: HarnessConfig,
     test_config: TestConfig,
+    is_test_running: multiValue,
     profile: Profile | None = None,
     test_file_paths: list[str] | None = None
 ) -> None:
@@ -81,6 +85,10 @@ def puml_files_test(
     :param test_file_paths: list of test file paths, defults to `None`
     :type test_file_paths: `list`[`str`] | `None`, optional
     """
+
+#   setting thread-safe variable is_test_running to True
+    is_test_running = True
+
     # choose test from test config and run test
     test_class = (
         FunctionalTest if test_config.type == "Functional"
@@ -141,6 +149,7 @@ def puml_files_test(
         "Cleaning Test Harness and PV directories"
     )
     test.clean_directories()
+    is_test_running = False
 
 
 def get_puml_file_paths(

@@ -16,6 +16,7 @@ from io import BytesIO
 import pytest
 import responses
 from aioresponses import aioresponses, CallbackResult
+from multiprocessing import Value as multiValue
 import pandas as pd
 import aiohttp
 
@@ -147,7 +148,8 @@ def test_puml_files_test() -> None:
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
+            is_test_running=multiValue("b", False)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -222,7 +224,8 @@ def test_puml_files_test_send_as_pv_bytes() -> None:
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
+            is_test_running=multiValue("b", False)
         )
         for form_payload in form_payloads:
             io_data = form_payload._parts[0][0]._value
@@ -354,7 +357,8 @@ def test_puml_files_test_functional_extra_job_invariants() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_file_paths=[test_file_path_einv]
+            test_file_paths=[test_file_path_einv],
+            is_test_running=multiValue("b", False)
         )
         results = pd.read_csv(
             os.path.join(harness_config.report_file_store, "Results.csv")
@@ -439,7 +443,8 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_file_paths=[test_file_path_einv]
+            test_file_paths=[test_file_path_einv],
+            is_test_running=multiValue("b", False)
         )
         results = pd.read_csv(
             os.path.join(
@@ -720,7 +725,8 @@ def test_puml_files_test_with_location_log_urls(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
+            is_test_running=multiValue("b", False)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -847,7 +853,8 @@ def test_puml_files_performance_with_input_profile(
                 test_output_directory=harness_config.report_file_store,
                 harness_config=harness_config,
                 test_config=test_config,
-                profile=profile
+                profile=profile,
+                is_test_running=multiValue("b", False)
             )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -960,7 +967,8 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_file_paths=[test_uml_1_events]
+            test_file_paths=[test_uml_1_events],
+            is_test_running=multiValue("b", False)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -1073,7 +1081,8 @@ def test_puml_files_test_functional_test_timeout(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
+            is_test_running=multiValue("b", False)
         )
         assert (
             "Protocol Verifier failed to finish within the test timeout of "
@@ -1155,7 +1164,8 @@ def test_puml_files_performance_test_timeout(
                 test_output_directory=harness_config.report_file_store,
                 harness_config=harness_config,
                 test_config=test_config,
-                profile=profile
+                profile=profile,
+                is_test_running=multiValue("b", False)
             )
         assert (
             "Protocol Verifier failed to finish within the test timeout of "

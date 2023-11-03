@@ -6,6 +6,7 @@ import threading
 import logging
 import sys
 import os
+from multiprocessing import Value as multiValue
 
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -18,6 +19,8 @@ from test_harness.utils import clean_directories
 
 logging.basicConfig(level=logging.INFO)
 
+is_test_running = multiValue("b", False)
+
 
 def run_harness_app(
     harness_config_path: HarnessConfig | None = None
@@ -28,7 +31,8 @@ def run_harness_app(
     :type harness_config_path: :class:`HarnessConfig` | `None`, optional
     """
     harness_app = create_app(
-        harness_config_path=harness_config_path
+        harness_config_path=harness_config_path,
+        is_test_running=is_test_running
     )
     thread = threading.Thread(
         target=harness_app.run,
@@ -52,7 +56,8 @@ def run_harness_app(
                 test_config=test_to_run["TestConfig"],
                 test_output_directory=test_to_run[
                     "TestOutputDirectory"
-                ]
+                ],
+                is_test_running=is_test_running
             )
             if success:
                 logging.getLogger().info(
@@ -63,6 +68,7 @@ def run_harness_app(
 
 
 def main(
+    is_test_running: multiValue,
     puml_file_paths: list[str] | None = None,
     harness_config_path: str | None = None,
     test_config_yaml_path: str | None = None,
@@ -103,7 +109,8 @@ def main(
             puml_file_paths=puml_file_paths,
             test_output_directory=test_output_directory,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
+            is_test_running=is_test_running
         )
     except Exception as error:
         clean_directories(

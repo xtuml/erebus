@@ -11,6 +11,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 
 from test_harness.config.config import HarnessConfig, TestConfig
+from multiprocessing import Value as multiValue
 
 
 class HarnessApp(Flask):
@@ -47,6 +48,7 @@ class HarnessApp(Flask):
     def __init__(
         self,
         import_name: str,
+        is_test_running: multiValue,
         harness_config_path: Optional[str] = None,
         static_url_path: Optional[str] = None,
         static_folder: Optional[Union[str, os.PathLike]] = "static",
@@ -60,6 +62,7 @@ class HarnessApp(Flask):
         """Constructor method
         """
         self.harness_config = HarnessConfig(config_path=harness_config_path)
+        self.is_test_running = is_test_running
         super().__init__(
             import_name,
             static_url_path,
@@ -170,6 +173,9 @@ class HarnessApp(Flask):
         except BadRequest as error:
             return error.get_response()
 
+    def test_is_running(self) -> Response:
+        return jsonify({"isTestRunning": self.is_test_running}), 200
+
     def handle_start_test_json_request(
         self,
         request_json: dict
@@ -246,6 +252,7 @@ class HarnessApp(Flask):
 
 
 def create_app(
+    is_test_running: multiValue,
     harness_config_path: Optional[str] = None,
     test_config: Optional[Mapping] = None
 ) -> HarnessApp:
@@ -262,7 +269,8 @@ def create_app(
     app = HarnessApp(
         __name__,
         harness_config_path=harness_config_path,
-        instance_relative_config=True
+        instance_relative_config=True,
+        is_test_running=is_test_running
     )
     app.config.from_mapping()
 
@@ -301,6 +309,10 @@ def create_app(
     @app.route("/startTest", methods=["POST"])
     def start_test() -> None:
         return app.start_test()
+
+    @app.route("/isTestRunning", methods=["GET"])
+    def test_is_running() -> None:
+        return app.test_is_running()
 
     return app
 
