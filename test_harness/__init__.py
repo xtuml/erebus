@@ -174,6 +174,8 @@ class HarnessApp(Flask):
             return error.get_response()
 
     def test_is_running(self) -> Response:
+        """Function to handle checking if a test is running
+        """
         return jsonify({"isTestRunning": self.is_test_running}), 200
 
     def handle_start_test_json_request(
