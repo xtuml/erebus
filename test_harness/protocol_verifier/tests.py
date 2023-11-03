@@ -285,7 +285,7 @@ class Test(ABC):
                 action_func=send_list_dict_as_json_wrap_send_function(
                         send_function=send_payload_kafka,
                         list_dict_converter=convert_list_dict_to_pv_json_io_bytes,
-                        kafka_host=self.harness_config.kafka_message_bus_host,
+                        kafka_topic=self.harness_config.kafka_message_bus_host,
                         kafka_producer=kafka_producer,
                     ),
                 results_handler=results_handler,
