@@ -17,6 +17,7 @@ import pytest
 from flask.testing import FlaskClient, FlaskCliRunner
 from pygrok import Grok
 from requests import PreparedRequest
+from multiprocessing import Value as multiValue
 
 from test_harness.protocol_verifier.tests import (
     PVPerformanceResults,
@@ -42,7 +43,8 @@ def test_app() -> Generator[HarnessApp, None, None]:
     app = create_app(
         harness_config_path=str(
             Path(__file__).parent / "config/test_config.config"
-        )
+        ),
+        is_test_running=multiValue("b", False)
     )
     app.config.update({"TESTING": True})
 
