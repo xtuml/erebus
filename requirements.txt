@@ -79,7 +79,7 @@ tqdm==4.65.0
 types-PyYAML==6.0.12.12
 typing_extensions==4.7.1
 tzdata==2023.3
-urllib3==2.0.2
+urllib3==2.0.7
 Werkzeug==2.2.3
 wrapt==1.15.0
 yarl==1.9.2
