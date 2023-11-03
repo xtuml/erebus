@@ -1177,8 +1177,8 @@ def test_convert_list_dict_to_json_io_bytes(
     )
     assert len(io_bytes_list) == 1
     io_bytes = io_bytes_list[0]
-    assert isinstance(io_bytes, BytesIO)
-    json_string = io_bytes.read().decode("utf-8")
+    assert isinstance(io_bytes, bytes)
+    json_string = io_bytes.decode("utf-8")
     json_dicts = json.loads(json_string)
     for event_actual, event_expected in zip(
         json_dicts, job_list
@@ -1204,8 +1204,8 @@ def test_convert_list_dict_to_pv_json_io_bytes(
     for io_bytes, event_expected in zip(
         io_bytes_list, job_list
     ):
-        assert isinstance(io_bytes, BytesIO)
-        bytes_array = io_bytes.read()
+        assert isinstance(io_bytes, bytes)
+        bytes_array = io_bytes
         msg_length = int.from_bytes(bytes_array[:4], "big")
         json_bytes = bytes_array[4:]
         event_actual = json.loads(json_bytes.decode("utf-8"))
