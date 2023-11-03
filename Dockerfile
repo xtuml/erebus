@@ -1,5 +1,6 @@
 FROM python:3.11-slim-bullseye
 
+
 # install pre-requisites and setup folders
 RUN apt-get update && yes "yes" | apt-get upgrade && \
     yes "yes" | apt-get install openssh-client && \
@@ -10,6 +11,8 @@ RUN apt-get update && yes "yes" | apt-get upgrade && \
     ssh-keyscan github.com >> /root/.ssh/known_hosts && \
     mkdir /test_harness_app && \
     mkdir /config
+
+RUN --mount=type=ssh pip install git+ssh://git@github.com/SmartDCSITlimited/test-event-generator.git 
 
 WORKDIR /test_harness_app
 
