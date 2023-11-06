@@ -18,22 +18,17 @@ import aiohttp
 from aiokafka import AIOKafkaProducer
 
 from test_harness.jobs.job_delivery import send_payload_async
-from test_harness.simulator.simulator import (
-    SimDatum,
-    Batch,
-    async_do_nothing
-)
+from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
 
 
 class PVSimDatumTransformer(ABC):
     """Base abstract class to provide a base for transforming PV list of event
     dicts to a generator of :class:`SimDatum`
     """
+
     @abstractmethod
     def get_sim_datum(
-        self,
-        event: list[dict],
-        job_info: dict[str, str | bool]
+        self, event: list[dict], job_info: dict[str, str | bool]
     ) -> Generator[SimDatum, Any, None]:
         """Abstract method to generate sim datums
 
@@ -49,10 +44,9 @@ class EventSimDatumTransformer(PVSimDatumTransformer):
     """Subclass to provide a transformation from PV list of event
     dicts to a generator of :class:`SimDatum`
     """
+
     def get_sim_datum(
-        self,
-        event: list[dict],
-        job_info: dict[str, str | bool]
+        self, event: list[dict], job_info: dict[str, str | bool]
     ) -> Generator[SimDatum, Any, None]:
         """Method to generate sim datums for a single event
 
@@ -64,11 +58,7 @@ class EventSimDatumTransformer(PVSimDatumTransformer):
         """
         job_id = event[0]["jobId"]
         yield SimDatum(
-                kwargs={
-                    "list_dict": event,
-                    "job_id": job_id,
-                    "job_info": job_info
-                }
+            kwargs={"list_dict": event, "job_id": job_id, "job_info": job_info}
         )
 
 
@@ -76,15 +66,13 @@ class BatchJobSimDatumTransformer(PVSimDatumTransformer):
     """Subclass of SimDatumTransformer to get the correct :class:`SimDatum`'s
     when jobs are batched together
     """
+
     def __init__(self) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         self.batch_jobs: dict[str, Batch] = {}
 
     def get_sim_datum(
-        self,
-        event: list[dict],
-        job_info: dict[str, str | bool]
+        self, event: list[dict], job_info: dict[str, str | bool]
     ) -> Generator[SimDatum, Any, None]:
         """Method to generate the sim datums. Will continue to batch events
         until the correct batch number for the job (i.e. the number of events
@@ -105,16 +93,14 @@ class BatchJobSimDatumTransformer(PVSimDatumTransformer):
         job_id = event[0]["jobId"]
         if self.batch_jobs[job_id].update_batcher(event):
             yield SimDatum(
-                    kwargs={
-                        "list_dict": self.batch_jobs[job_id].batch_output,
-                        "job_id": job_id,
-                        "job_info": job_info
-                    }
+                kwargs={
+                    "list_dict": self.batch_jobs[job_id].batch_output,
+                    "job_id": job_id,
+                    "job_info": job_info,
+                }
             )
         else:
-            yield SimDatum(
-                action_func=async_do_nothing
-            )
+            yield SimDatum(action_func=async_do_nothing)
 
     def initialise_batch(self, job_id: str, length: int) -> None:
         """Method to initialise a batch for a given job id and batch length
@@ -127,21 +113,19 @@ class BatchJobSimDatumTransformer(PVSimDatumTransformer):
         """
         self.batch_jobs[job_id] = Batch(
             length=length,
-            batch_concat=lambda x: list(itertools.chain.from_iterable(x))
+            batch_concat=lambda x: list(itertools.chain.from_iterable(x)),
         )
 
 
 def generate_events_from_template_jobs(
     template_jobs: list["Job"],
     sequence_generator: Callable[
-        [list[Generator[SimDatum, Any, None]]],
-        Generator[SimDatum, Any, None]
+        [list[Generator[SimDatum, Any, None]]], Generator[SimDatum, Any, None]
     ],
     generator_function: Callable[
-        [list["Job"]],
-        list[Generator[SimDatum, Any, None]]
+        [list["Job"]], list[Generator[SimDatum, Any, None]]
     ],
-    sequencer_kwargs: dict[str, Any] | None = None
+    sequencer_kwargs: dict[str, Any] | None = None,
 ) -> Generator[SimDatum, Any, None]:
     """Method to generate the :class:`SimDatum` data from template jobs
 
@@ -169,7 +153,7 @@ def generate_events_from_template_jobs(
 
 
 def generate_job_batch_events(
-    template_jobs: list["Job"]
+    template_jobs: list["Job"],
 ) -> list[Generator[SimDatum, Any, None]]:
     """Method to generate job batch :class:`SimDatum`'s using
     :class:`BatchJobSimDatumTransformer`
@@ -187,18 +171,19 @@ def generate_job_batch_events(
         job_id_data_map = job.create_job_id_data_map()
         for job_id, named_job_id in job.job_ids.named_uuids.items():
             sim_datum_transformer.initialise_batch(
-                job_id=job_id_data_map[job_id],
-                length=named_job_id.count
+                job_id=job_id_data_map[job_id], length=named_job_id.count
             )
-        generators.append(job.generate_simulation_job_events(
-            job_id_data_map=job_id_data_map,
-            sim_datum_transformer=sim_datum_transformer
-        ))
+        generators.append(
+            job.generate_simulation_job_events(
+                job_id_data_map=job_id_data_map,
+                sim_datum_transformer=sim_datum_transformer,
+            )
+        )
     return generators
 
 
 def generate_single_events(
-    template_jobs: list["Job"]
+    template_jobs: list["Job"],
 ) -> list[Generator[SimDatum, Any, None]]:
     """Method to generate non-batched single events
 
@@ -213,10 +198,12 @@ def generate_single_events(
     generators = []
     for job in template_jobs:
         job_id_data_map = job.create_job_id_data_map()
-        generators.append(job.generate_simulation_job_events(
-            job_id_data_map=job_id_data_map,
-            sim_datum_transformer=sim_datum_transformer
-        ))
+        generators.append(
+            job.generate_simulation_job_events(
+                job_id_data_map=job_id_data_map,
+                sim_datum_transformer=sim_datum_transformer,
+            )
+        )
     return generators
 
 
@@ -239,7 +226,7 @@ def simple_sequencer(
 def job_sequencer(
     generated_events: list[Generator[SimDatum, Any, None]],
     min_interval_between_job_events: float,
-    desired_job_event_gap: float = 1.0
+    desired_job_event_gap: float = 1.0,
 ) -> Generator[SimDatum, Any, None]:
     """Method to sequence jobs so that the events in each job have a desired
     gap (in seconds
@@ -267,7 +254,7 @@ def job_sequencer(
             "placed in order"
         )
     rate = round(ratio)
-    chunk_generated_events = generated_events[: rate]
+    chunk_generated_events = generated_events[:rate]
     num_chunk_events = rate
     num_jobs = len(generated_events)
     finish_counter = {}
@@ -328,13 +315,12 @@ def send_list_dict_as_json_wrap_url(
     session: aiohttp.ClientSession | None = None,
     list_dict_converter: Callable[[list[dict[str, Any]]], list[bytes]] = (
         convert_list_dict_to_json_io_bytes
-    )
+    ),
 ) -> Callable[
     [str],
     Callable[
-        [list[dict[str, Any]]],
-        Awaitable[tuple[list[dict[str, Any]], str]]
-    ]
+        [list[dict[str, Any]]], Awaitable[tuple[list[dict[str, Any]], str]]
+    ],
 ]:
     """Closure to provide an asynchronous function given an input url
 
@@ -352,6 +338,7 @@ def send_list_dict_as_json_wrap_url(
     :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
     :class:`Awaitable`[`tuple`[`list`[`dict`[`str`, `Any`]], `str`]] ]
     """
+
     async def send_list_dict_as_json(
         list_dict: list[dict[str, Any]],
         job_id: str,
@@ -373,23 +360,23 @@ def send_list_dict_as_json_wrap_url(
         :class:`datetime`]
         """
         files = list_dict_converter(list_dict)
-        file_names = [
-            str(uuid4()) + ".json"
-            for _ in range(len(files))
-        ]
-        results = await asyncio.gather(*[
-            send_payload_async(
-                file=file,
-                file_name=file_name_sent,
-                url=url,
-                session=session
-            )
-            for file, file_name_sent in zip(files, file_names)
-        ])
+        file_names = [str(uuid4()) + ".json" for _ in range(len(files))]
+        results = await asyncio.gather(
+            *[
+                send_payload_async(
+                    file=file,
+                    file_name=file_name_sent,
+                    url=url,
+                    session=session,
+                )
+                for file, file_name_sent in zip(files, file_names)
+            ]
+        )
         time_completed = datetime.now()
         file_name = str(uuid4()) + ".json"
         result = "".join(results)
         return list_dict, file_name, job_id, job_info, result, time_completed
+
     return send_list_dict_as_json
 
 
@@ -398,13 +385,12 @@ def send_list_dict_as_json_wrap_send_function(
     list_dict_converter: Callable[[list[dict[str, Any]]], list[bytes]] = (
         convert_list_dict_to_json_io_bytes
     ),
-    **send_kwargs: Any
+    **send_kwargs: Any,
 ) -> Callable[
     [str],
     Callable[
-        [list[dict[str, Any]]],
-        Awaitable[tuple[list[dict[str, Any]], str]]
-    ]
+        [list[dict[str, Any]]], Awaitable[tuple[list[dict[str, Any]], str]]
+    ],
 ]:
     """Closure to provide an asynchronous function given an input url
 
@@ -422,6 +408,7 @@ def send_list_dict_as_json_wrap_send_function(
     :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
     :class:`Awaitable`[`tuple`[`list`[`dict`[`str`, `Any`]], `str`]] ]
     """
+
     async def send_list_dict_as_json(
         list_dict: list[dict[str, Any]],
         job_id: str,
@@ -443,30 +430,27 @@ def send_list_dict_as_json_wrap_send_function(
         :class:`datetime`]
         """
         files = list_dict_converter(list_dict)
-        file_names = [
-            str(uuid4()) + ".json"
-            for _ in range(len(files))
-        ]
-        results = await asyncio.gather(*[
-            send_function(
-                file,
-                file_name_sent,
-                **send_kwargs
-            )
-            for file, file_name_sent in zip(files, file_names)
-        ])
+        file_names = [str(uuid4()) + ".json" for _ in range(len(files))]
+        results = await asyncio.gather(
+            *[
+                send_function(file, file_name_sent, **send_kwargs)
+                for file, file_name_sent in zip(files, file_names)
+            ]
+        )
         time_completed = datetime.now()
         file_name = str(uuid4()) + ".json"
         result = "".join(results)
         return list_dict, file_name, job_id, job_info, result, time_completed
+
     return send_list_dict_as_json
+
 
 async def send_payload_kafka(
     file: bytes,
     file_name: str,
     kafka_producer: AIOKafkaProducer,
-    kafka_topic: str
-) -> Literal['', 'KafkaTimeoutError']:
+    kafka_topic: str,
+) -> Literal["", "KafkaTimeoutError"]:
     """Async method to send a payload to a kafka producer
 
     :param file: The file to send
@@ -475,11 +459,8 @@ async def send_payload_kafka(
     :type producer: :class:`KafkaProducer`
     """
     try:
-        await kafka_producer.send_and_wait(
-            topic=kafka_topic,
-            value=file
-        )
-        result =""
+        await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
+        result = ""
         logging.getLogger().debug(
             f"Sent file {file_name} payload to kafka topic {kafka_topic}"
         )
@@ -492,8 +473,8 @@ async def send_payload_kafka(
 
 
 class MetaDataCategory(TypedDict):
-    """Dictionary for categories of event meta data
-    """
+    """Dictionary for categories of event meta data"""
+
     invariants: dict[str, str]
     """Set of meta data names
     """
@@ -525,6 +506,7 @@ class Event:
     :type meta_data: `dict`[`str`, `Any`], optional
 
     """
+
     attribute_mappings = {
         "jobName": "job_name",
         "jobId": "job_id",
@@ -532,23 +514,22 @@ class Event:
         "eventId": "event_id",
         "timestamp": "time_stamp",
         "applicationName": "application_name",
-        "previousEventIds": "previous_event_ids"
+        "previousEventIds": "previous_event_ids",
     }
 
     def __init__(
-            self,
-            job: Job | None = None,
-            job_name: str = "",
-            job_id: str = "",
-            event_type: str = "",
-            event_id: str = "",
-            time_stamp: str = "",
-            application_name: str = "",
-            previous_event_ids: str | list[str] = "",
-            meta_data: dict[str, Any] | None = None,
-            ) -> None:
-        """Constructor method
-        """
+        self,
+        job: Job | None = None,
+        job_name: str = "",
+        job_id: str = "",
+        event_type: str = "",
+        event_id: str = "",
+        time_stamp: str = "",
+        application_name: str = "",
+        previous_event_ids: str | list[str] = "",
+        meta_data: dict[str, Any] | None = None,
+    ) -> None:
+        """Constructor method"""
         if job is None:
             job = Job()
         self.job = job
@@ -563,8 +544,7 @@ class Event:
         self.prev_events = []
 
     def parse_from_input_dict(
-        self,
-        input_dict: dict[str, str | list[str], dict]
+        self, input_dict: dict[str, str | list[str], dict]
     ) -> None:
         """Updates the instances attributes given an input dictionary
 
@@ -590,7 +570,7 @@ class Event:
         """
         return {
             **self.categorised_meta_data["fixed"],
-            **self.categorised_meta_data["invariants"]
+            **self.categorised_meta_data["invariants"],
         }
 
     @property
@@ -603,10 +583,7 @@ class Event:
         return self._categorised_meta_data
 
     @categorised_meta_data.setter
-    def categorised_meta_data(
-        self,
-        input_dict: dict[str, Any]
-    ) -> None:
+    def categorised_meta_data(self, input_dict: dict[str, Any]) -> None:
         """Property setter for meta data from an input meta data dictionary
         from a template. Uses :class:`categorise_meta_data` to categorise the
         input
@@ -615,14 +592,12 @@ class Event:
         :type input_dict: `dict`[`str`, `Any`]
         """
         self._categorised_meta_data = self.categorise_meta_data(
-            input_dict,
-            self.job.invariants
+            input_dict, self.job.invariants
         )
 
     @staticmethod
     def categorise_meta_data(
-        input_dict: dict[str, Any],
-        invariant_store: NamedUUIDStore
+        input_dict: dict[str, Any], invariant_store: NamedUUIDStore
     ) -> MetaDataCategory:
         """Method to categorise data within a given input dictionary into:
         * fixed - entries whose value is not a string
@@ -636,10 +611,7 @@ class Event:
         :return: Returns a dictionary with the categorised values and keys
         :rtype: :class:`MetaDataCategory`
         """
-        categories = MetaDataCategory(
-            invariants={},
-            fixed={}
-        )
+        categories = MetaDataCategory(invariants={}, fixed={})
         for meta_data_name, meta_data_value in input_dict.items():
             if isinstance(meta_data_value, str):
                 invariant_store.update(meta_data_name)
@@ -689,8 +661,7 @@ class Event:
         return False
 
     def link_prev_events(
-        self,
-        event_id_map: dict[str, "Event"]
+        self, event_id_map: dict[str, "Event"]
     ) -> list["Event"]:
         """Method to link to previous events. Finds missing events that are in
         previous event ids but not in event id map and creates and updates the
@@ -708,14 +679,14 @@ class Event:
             self.add_prev_event(
                 prev_event_id=self.previous_event_ids,
                 event_id_map=event_id_map,
-                missing_events=missing_events
+                missing_events=missing_events,
             )
         else:
             for prev_event_id in self.previous_event_ids:
                 self.add_prev_event(
                     prev_event_id=prev_event_id,
                     event_id_map=event_id_map,
-                    missing_events=missing_events
+                    missing_events=missing_events,
                 )
         return missing_events
 
@@ -723,7 +694,7 @@ class Event:
         self,
         prev_event_id: str,
         event_id_map: dict[str, "Event"],
-        missing_events: list["Event"]
+        missing_events: list["Event"],
     ) -> None:
         """Method to add a an event to the attribute `prev_events`. Updates a
         `missing_events` list with newly created events that were not found in
@@ -746,7 +717,7 @@ class Event:
         self,
         event_event_id_map: dict[int, str],
         job_id_data_map: dict[str, str],
-        invariant_name_data_map: dict[str, str]
+        invariant_name_data_map: dict[str, str],
     ) -> dict[str, str | list | dict]:
         """Method to generate an event dict with an event to event id map and
         given job id
@@ -768,8 +739,8 @@ class Event:
             "jobId": job_id,
             "eventType": self.event_type,
             "eventId": event_event_id_map[id(self)],
-            "timestamp": datetime.utcnow().isoformat(timespec='seconds') + 'Z',
-            "applicationName": self.application_name
+            "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            "applicationName": self.application_name,
         }
         if self.has_previous_event_id():
             event_dict["previousEventIds"] = [
@@ -780,9 +751,8 @@ class Event:
         event_dict = {
             **event_dict,
             **self.generate_meta_data(
-                self.categorised_meta_data,
-                invariant_name_data_map
-            )
+                self.categorised_meta_data, invariant_name_data_map
+            ),
         }
         return event_dict
 
@@ -791,7 +761,7 @@ class Event:
         event_event_id_map: dict[int, str],
         job_id_data_map: dict[str, str],
         sim_datum_transformer: PVSimDatumTransformer,
-        invariant_name_data_map: dict[str, str]
+        invariant_name_data_map: dict[str, str],
     ) -> Generator[SimDatum, Any, None]:
         """Method to generate a :class:`SimDatum` from an event dict
 
@@ -812,12 +782,11 @@ class Event:
         event_dict = self.make_event_dict(
             event_event_id_map=event_event_id_map,
             job_id_data_map=job_id_data_map,
-            invariant_name_data_map=invariant_name_data_map
+            invariant_name_data_map=invariant_name_data_map,
         )
         try:
             yield from sim_datum_transformer.get_sim_datum(
-                event=[event_dict],
-                job_info=self.job.job_info
+                event=[event_dict], job_info=self.job.job_info
             )
         except AttributeError as error:
             logging.getLogger().error(
@@ -832,19 +801,14 @@ class NamedUUID:
     :param name: _description_
     :type name: str
     """
-    def __init__(
-        self,
-        name: str
-    ) -> None:
-        """Constructor method
-        """
+
+    def __init__(self, name: str) -> None:
+        """Constructor method"""
         self.name = name
         self._counter = 0
 
     @staticmethod
-    def create_random_data(
-        length: int = 1
-    ) -> str:
+    def create_random_data(length: int = 1) -> str:
         """Method to create a uuid4 string
 
         :return: Returns a uuid4 string
@@ -853,8 +817,7 @@ class NamedUUID:
         return str(uuid4()) * length
 
     def update_counter(self) -> None:
-        """Method to update the counter
-        """
+        """Method to update the counter"""
         self._counter += 1
 
     @property
@@ -868,11 +831,10 @@ class NamedUUID:
 
 
 class NamedUUIDStore:
-    """Class to store named UUID and create random data
-    """
+    """Class to store named UUID and create random data"""
+
     def __init__(self) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         self.named_uuids: dict[str, NamedUUID] = {}
 
     def update(self, name: str) -> NamedUUID:
@@ -901,14 +863,10 @@ class NamedUUIDStore:
 
 
 class Job:
-    """Describes a group of related events, contains proccessing them
-    """
-    def __init__(
-        self,
-        job_info: dict[str, str | bool] | None = None
-    ):
-        """Constructor method
-        """
+    """Describes a group of related events, contains proccessing them"""
+
+    def __init__(self, job_info: dict[str, str | bool] | None = None):
+        """Constructor method"""
         self.events: list[Event] = []
         self.missing_events: list[Event] = []
         self.job_info = job_info
@@ -944,7 +902,7 @@ class Job:
             input_job_info = {
                 "SequenceName": "Default",
                 "Category": "ValidSols",
-                "Validity": True
+                "Validity": True,
             }
         self._job_info = input_job_info
 
@@ -973,15 +931,13 @@ class Job:
         :rtype: :class:`Generator`[:class:`SimDatum`, `Any`, `None`]
         """
         event_event_id_map = self.create_new_event_event_id_map()
-        invariant_name_data_map = (
-            self.invariants.create_name_data_map()
-        )
+        invariant_name_data_map = self.invariants.create_name_data_map()
         for event in self.events:
             yield from event.generate_simulation_event_dict(
                 event_event_id_map=event_event_id_map,
                 job_id_data_map=job_id_data_map,
                 sim_datum_transformer=sim_datum_transformer,
-                invariant_name_data_map=invariant_name_data_map
+                invariant_name_data_map=invariant_name_data_map,
             )
 
     def create_new_event_event_id_map(self) -> dict[int, str]:
@@ -991,20 +947,11 @@ class Job:
         :rtype: `dict`[`int`, `str`]
         """
         return {
-            **{
-                id(event): str(uuid4())
-                for event in self.events
-            },
-            **{
-                id(event): str(uuid4())
-                for event in self.missing_events
-            }
+            **{id(event): str(uuid4()) for event in self.events},
+            **{id(event): str(uuid4()) for event in self.missing_events},
         }
 
-    def parse_input_jobfile(
-        self,
-        input_jobfile: list[dict]
-    ) -> None:
+    def parse_input_jobfile(self, input_jobfile: list[dict]) -> None:
         """Creates a Job object from a loaded JSON job file
 
         :param input_jobfile: A loaded JSON job file

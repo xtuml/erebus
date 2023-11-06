@@ -40,12 +40,11 @@ from test_harness.protocol_verifier.simulator_data import (
     generate_job_batch_events,
     generate_single_events,
     job_sequencer,
-    send_list_dict_as_json_wrap_url,
     send_list_dict_as_json_wrap_send_function,
     convert_list_dict_to_json_io_bytes,
     convert_list_dict_to_pv_json_io_bytes,
     send_payload_kafka,
-    send_payload_async
+    send_payload_async,
 )
 from test_harness.simulator.simulator import (
     SimDatum,
@@ -284,17 +283,18 @@ class Test(ABC):
                 delays=self.delay_times,
                 simulation_data=self.sim_data_generator,
                 action_func=send_list_dict_as_json_wrap_send_function(
-                        send_function=send_payload_kafka,
-                        list_dict_converter=convert_list_dict_to_pv_json_io_bytes,
-                        kafka_topic=self.harness_config.kafka_message_bus_topic,
-                        kafka_producer=kafka_producer,
-                    ),
+                    send_function=send_payload_kafka,
+                    list_dict_converter=convert_list_dict_to_pv_json_io_bytes,
+                    kafka_topic=self.harness_config.kafka_message_bus_topic,
+                    kafka_producer=kafka_producer,
+                ),
                 results_handler=results_handler,
             )
             # set the sim start time
             self.time_start = datetime.now()
             results_handler.results_holder.time_start = self.time_start
             await self.simulator.simulate()
+            await kafka_producer.stop()
         else:
             connector = aiohttp.TCPConnector(limit=2000)
             async with aiohttp.ClientSession(connector=connector) as session:
@@ -671,7 +671,7 @@ class PerformanceTest(Test):
         if self.harness_config.metrics_from_kafka:
             self.results.add_kafka_results_from_topic(
                 self.harness_config.kafka_metrics_host,
-                self.harness_config.kafka_metrics_topic
+                self.harness_config.kafka_metrics_topic,
             )
             return
         self.results.add_reception_results_from_log_files(
