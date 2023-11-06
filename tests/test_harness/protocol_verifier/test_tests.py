@@ -1193,7 +1193,9 @@ def test_run_test_performance() -> None:
 
 @responses.activate
 def test_run_test_performance_kafka(monkeypatch) -> None:
-    """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus"""
+    """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
+    mocked out
+    """
     harness_config = HarnessConfig(test_config_path)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
@@ -1201,6 +1203,7 @@ def test_run_test_performance_kafka(monkeypatch) -> None:
     harness_config.pv_send_as_pv_bytes = True
     test_config = TestConfig()
 
+    # mocks for kafka producer functionality called
     async def mock_send_wait(*agrs, **kwargs):
         return ""
 
@@ -1210,6 +1213,7 @@ def test_run_test_performance_kafka(monkeypatch) -> None:
     async def mock_stop(*agrs, **kwargs):
         return None
 
+    # monkey patches for kafka producer
     monkeypatch.setattr(
         aiokafka.AIOKafkaProducer, "send_and_wait", mock_send_wait
     )
@@ -1219,6 +1223,7 @@ def test_run_test_performance_kafka(monkeypatch) -> None:
     monkeypatch.setattr(
         aiokafka.AIOKafkaProducer, "stop", mock_stop
     )
+
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
