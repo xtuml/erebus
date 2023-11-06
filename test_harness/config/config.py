@@ -121,6 +121,8 @@ class HarnessConfig:
         ]
 
     def parse_message_bus_config(self) -> None:
+        """Method to parse message bus config from config file
+        """
         message_bus_protocol = self.config_parser["non-default"][
             "message_bus_protocol"
         ]
