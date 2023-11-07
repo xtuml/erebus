@@ -1,8 +1,5 @@
 """Methods for generating test files using test event generator
 """
-from typing import (
-    Any, Iterator, NamedTuple, Self
-)
 from itertools import chain
 import json
 
@@ -12,7 +9,8 @@ from test_event_generator.io.run import (  # pylint: disable=E0401
 
 from test_harness.config.config import TestConfig
 from test_harness.protocol_verifier.types import (
-    TestJobFile, TemplateJobsDataAndValidityTuple, GeneratedJobData
+    TestJobFile, TemplateJobsDataAndValidityTuple,
+    SequenceTypeData, UpdateableIterator
 )
 
 
@@ -129,43 +127,6 @@ def load_test_file_data_json_into_test_file_holder(
         test_files_holder=test_files_holder,
         test_file_data=test_file_data
     )
-
-
-class UpdateableIterator(Iterator):
-    def __init__(self) -> None:
-        self._data: list[Any] = []
-        self._index = 0
-
-    def add(self, data: Any) -> None:
-        self._data.append(data)
-
-    def __iter__(self) -> Self:
-        return self
-
-    def __next__(self):
-        try:
-            next_iter = self._data[self._index]
-            self._index += 1
-            return next_iter
-        except IndexError:
-            raise StopIteration
-
-
-class SequenceTypeData(NamedTuple):
-    """Named tuple that holds the job data, validity and options of
-    the sequence type
-    """
-    job_sequences: (
-        Iterator[GeneratedJobData] | UpdateableIterator[GeneratedJobData]
-    )
-    """An Iterator of the generated job sequences and data
-    """
-    validity: bool
-    """The validity of the generated job sequences
-    """
-    options: dict[str, Any] = {}
-    """The options for the template jobs
-    """
 
 
 def update_test_files_holder_with_test_file(

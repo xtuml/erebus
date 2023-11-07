@@ -3,7 +3,7 @@ This is a module for assorted types with no have behaviour attached.
 
 """
 from datetime import datetime
-from typing import TypedDict, NotRequired, NamedTuple, Any, Iterator
+from typing import TypedDict, NotRequired, NamedTuple, Any, Iterator, Self
 
 from matplotlib import pyplot as plt
 
@@ -172,4 +172,62 @@ class TemplateJobsDataAndValidityTuple(NamedTuple):
     """
     validity: bool
     """The validity of the template
+    """
+
+
+class UpdateableIterator(Iterator):
+    """Class to allow for an iterator to be updated
+    """
+    def __init__(self) -> None:
+        """Constructor method
+        """
+        self._data: list[Any] = []
+        self._index = 0
+
+    def add(self, data: Any) -> None:
+        """Method to add data to the iterator
+
+        :param data: The data to add
+        :type data: `Any`
+        """
+        self._data.append(data)
+
+    def __iter__(self) -> Self:
+        """Method to return the iterator
+
+        :return: The iterator
+        :rtype: `Self`
+        """
+        return self
+
+    def __next__(self) -> Any:
+        """Method to return the next item in the iterator
+
+        :raises StopIteration: Raises a :class:`StopIteration` if the end of
+        the iterator is reached
+        :return: The next item in the iterator
+        :rtype: `Any`
+        """
+        try:
+            next_iter = self._data[self._index]
+            self._index += 1
+            return next_iter
+        except IndexError:
+            raise StopIteration
+
+
+class SequenceTypeData(NamedTuple):
+    """Named tuple that holds the job data, validity and options of
+    the sequence type
+    """
+    job_sequences: (
+        Iterator[GeneratedJobData] | UpdateableIterator[GeneratedJobData]
+    )
+    """An Iterator of the generated job sequences and data
+    """
+    validity: bool
+    """The validity of the generated job sequences
+    """
+    options: dict[str, Any] = {}
+    """The options for the template jobs
     """
