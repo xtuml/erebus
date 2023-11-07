@@ -64,6 +64,7 @@ from .pvperformanceresults import PVPerformanceResults
 # from .pvresultsdaskdataframe import PVResultsDaskDataFrame
 from .pvresultsdataframe import PVResultsDataFrame
 from .pvfunctionalresults import PVFunctionalResults
+from .types import TemplateOptions
 
 
 class Test(ABC):
@@ -159,6 +160,7 @@ class Test(ABC):
             counter < (self.test_config.max_different_sequences)
             and flattened_keys
         ):
+            counter += 1
             try:
                 flattened_key: str = choice(flattened_keys)
                 try:
@@ -171,7 +173,16 @@ class Test(ABC):
                         "Category": job_name_sol_type[1],
                         "Validity": flattened_test_files[flattened_key][1],
                     }
-                    job = Job(job_info=job_info)
+                    job_options = {}
+                    if len(flattened_test_files[flattened_key]) == 3:
+                        job_options = flattened_test_files[
+                            flattened_key
+                        ][2]
+                    job = Job(
+                        job_info=job_info,
+                        job_options=TemplateOptions(**job_options)
+                    )
+
                     job.parse_input_jobfile(job_sequence)
                     self.job_templates.append(job)
                 except StopIteration:

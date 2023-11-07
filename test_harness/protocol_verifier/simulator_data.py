@@ -19,6 +19,7 @@ from aiokafka import AIOKafkaProducer
 
 from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
+from test_harness.protocol_verifier.types import TemplateOptions
 
 
 class PVSimDatumTransformer(ABC):
@@ -171,7 +172,8 @@ def generate_job_batch_events(
         job_id_data_map = job.create_job_id_data_map()
         for job_id, named_job_id in job.job_ids.named_uuids.items():
             sim_datum_transformer.initialise_batch(
-                job_id=job_id_data_map[job_id], length=named_job_id.count
+                job_id=job_id_data_map[job_id].get_data(),
+                length=named_job_id.count,
             )
         generators.append(
             job.generate_simulation_job_events(
@@ -647,7 +649,7 @@ class Event:
         """
         meta_data = {**categorised_meta_data["fixed"]}
         for name in categorised_meta_data["invariants"]:
-            meta_data[name] = invariant_name_data_map[name]
+            meta_data[name] = invariant_name_data_map[name].get_data()
         return meta_data
 
     def has_previous_event_id(self) -> bool:
@@ -716,8 +718,8 @@ class Event:
     def make_event_dict(
         self,
         event_event_id_map: dict[int, str],
-        job_id_data_map: dict[str, str],
-        invariant_name_data_map: dict[str, str],
+        job_id_data_map: dict[str, UUIDString],
+        invariant_name_data_map: dict[str, UUIDString],
     ) -> dict[str, str | list | dict]:
         """Method to generate an event dict with an event to event id map and
         given job id
@@ -725,15 +727,16 @@ class Event:
         :param event_event_id_map: The map from the `id` call of an event
         (producing a unique integer) to the event id
         :type event_event_id_map: `dict`[`int`, `str`]
-        :param job_id_data_map: The map from job id to randomised job id
-        :type job_id_data_map: `dict`[`str`, `str`]
+        :param job_id_data_map: The map from job id to randomised job id as a
+        `UUIDString` class
+        :type job_id_data_map: `dict`[`str`, :class:`UUIDString`]
         :param invariant_name_data_map: The map from invariant name to
-        randomised invariant data
-        :type invariant_name_data_map: `dict`[`str`, `str`]
+        randomised invariant data as a `UUIDString` class
+        :type invariant_name_data_map: `dict`[`str`, `UUIDString`]
         :return: Returns a dictionary of the event dict
         :rtype: `dict`[`str`, `str` | `list` | `dict`]
         """
-        job_id = job_id_data_map[self.job_id]
+        job_id = job_id_data_map[self.job_id].get_data()
         event_dict = {
             "jobName": self.job_name,
             "jobId": job_id,
@@ -759,17 +762,18 @@ class Event:
     def generate_simulation_event_dict(
         self,
         event_event_id_map: dict[int, str],
-        job_id_data_map: dict[str, str],
+        job_id_data_map: dict[str, UUIDString],
         sim_datum_transformer: PVSimDatumTransformer,
-        invariant_name_data_map: dict[str, str],
+        invariant_name_data_map: dict[str, UUIDString],
     ) -> Generator[SimDatum, Any, None]:
         """Method to generate a :class:`SimDatum` from an event dict
 
         :param event_event_id_map: The map from the `id` call of an event
         (producing a unique integer) to the event id
         :type event_event_id_map: `dict`[`int`, `str`]
-        :param job_id_data_map: The map from job id to randomised job id
-        :type job_id_data_map: `dict`[`str`, `str`]
+        :param job_id_data_map: The map from job id to randomised job id as a
+        `UUIDString` class
+        :type job_id_data_map: `dict`[`str`, :class:`UUIDString`]
         :param sim_datum_transformer: The arbitrary transformer class to
         transform the data into the required :class:`SimDatum` to generate
         :type sim_datum_transformer: :class:`SimDatumTransformer`
@@ -795,26 +799,108 @@ class Event:
             raise error
 
 
-class NamedUUID:
-    """Class to hold named uuid and create a randomised string when requested
+class UUIDString(ABC):
+    """Abstract class to hold a UUID string"""
 
-    :param name: _description_
-    :type name: str
-    """
-
-    def __init__(self, name: str) -> None:
+    def __init__(
+        self,
+        length: int = 1,
+    ) -> None:
         """Constructor method"""
-        self.name = name
-        self._counter = 0
+        self.length = length
 
-    @staticmethod
-    def create_random_data(length: int = 1) -> str:
-        """Method to create a uuid4 string
+    @abstractmethod
+    def get_data(self) -> str:
+        """Method to get a randomised string
 
-        :return: Returns a uuid4 string
+        :return: Returns a randomised string
         :rtype: `str`
         """
-        return str(uuid4()) * length
+        pass
+
+
+class MatchedUUIDString(UUIDString):
+    """Class to hold a UUID string that is the same
+    each time `get_data` is called
+
+    :param length: the number of lengths of the standard uuid to set the
+    string, defaults to 1
+    :type length: `int`, optional
+    """
+    def __init__(
+        self,
+        length: int = 1,
+    ) -> None:
+        """Constructor method
+        """
+        super().__init__(length=length)
+        self._uuid = str(uuid4()) * self.length
+
+    def get_data(self) -> str:
+        """Method to get a randomised string
+
+        :return: Returns a randomised string
+        :rtype: `str`
+        """
+        return self._uuid
+
+
+class UnmatchedUUIDString(UUIDString):
+    """Class to hold a UUID string that is different each time `get_data` is
+    called
+
+    :param length: the number of lengths of the standard uuid to set the
+    string, defaults to 1
+    :type length: `int`, optional
+    """
+    def __init__(
+        self,
+        length: int = 1,
+    ) -> None:
+        """Constructor method"""
+        super().__init__(length=length)
+
+    def get_data(self) -> str:
+        """Method to get a randomised string
+
+        :return: Returns a randomised string
+        :rtype: `str`
+        """
+        return str(uuid4()) * self.length
+
+
+class NamedUUID:
+    """Class to hold named uuid and create a randomised data when requested"""
+
+    def __init__(
+        self, name: str, length: int = 1, matched_uuids: bool = True
+    ) -> None:
+        """_summary_
+
+        :param name: The name of the uuid
+        :type name: `str`
+        :param length: the number of lengths of the standard uuid to set the
+        string, defaults to 1
+        :type length: `int`, optional
+        :param matched_uuids: Boolean indicating whether the uuids will be
+        matched or unmatched, defaults to True
+        :type matched_uuids: `bool`, optional
+        """
+        self.name = name
+        self.length = length
+        self.matched_uuids = matched_uuids
+        self._counter = 0
+
+    def create_random_data(self) -> UUIDString:
+        """Method to create a uuid string class
+
+        :return: Returns a uuid string class
+        :rtype: :class:`UUIDString`
+        """
+        if self.matched_uuids:
+            return MatchedUUIDString(length=self.length)
+        else:
+            return UnmatchedUUIDString(length=self.length)
 
     def update_counter(self) -> None:
         """Method to update the counter"""
@@ -833,9 +919,13 @@ class NamedUUID:
 class NamedUUIDStore:
     """Class to store named UUID and create random data"""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, matched_uuids: bool = True, uuid_lengths: int = 1
+    ) -> None:
         """Constructor method"""
         self.named_uuids: dict[str, NamedUUID] = {}
+        self.matched_uuids = matched_uuids
+        self.uuid_lengths = uuid_lengths
 
     def update(self, name: str) -> NamedUUID:
         """Method to update named uuids given a name
@@ -846,15 +936,17 @@ class NamedUUIDStore:
         :rtype: :class:`NamedUUID`
         """
         if name not in self.named_uuids:
-            self.named_uuids[name] = NamedUUID(name)
+            self.named_uuids[name] = NamedUUID(
+                name, self.uuid_lengths, self.matched_uuids
+            )
         self.named_uuids[name].update_counter()
         return self.named_uuids[name]
 
-    def create_name_data_map(self) -> dict[str, str]:
+    def create_name_data_map(self) -> dict[str, UUIDString]:
         """Creates a map from named UUID to a randomised uuid4
 
         :return: Returns the map of named UUID to uuid4
-        :rtype: `dict`[`str`, `str`]
+        :rtype: `dict`[`str`, :class:`UUIDString`]
         """
         return {
             name: named_uuid.create_random_data()
@@ -865,15 +957,25 @@ class NamedUUIDStore:
 class Job:
     """Describes a group of related events, contains proccessing them"""
 
-    def __init__(self, job_info: dict[str, str | bool] | None = None):
+    def __init__(
+        self,
+        job_info: dict[str, str | bool] | None = None,
+        job_options: TemplateOptions | None = None,
+    ) -> None:
         """Constructor method"""
         self.events: list[Event] = []
         self.missing_events: list[Event] = []
         self.job_info = job_info
-        self.invariants = NamedUUIDStore()
+        self.template_options = (
+            TemplateOptions() if job_options is None else job_options
+        )
+        self.invariants = NamedUUIDStore(
+            matched_uuids=self.template_options.invariant_matched,
+            uuid_lengths=self.template_options.invariant_length,
+        )
         self.job_ids = NamedUUIDStore()
 
-    def create_job_id_data_map(self) -> dict[str, str]:
+    def create_job_id_data_map(self) -> dict[str, UUIDString]:
         """Creates a map from job id to a randomised uuid4
 
         :return: Returns the map of job id to uuid4
@@ -916,7 +1018,7 @@ class Job:
 
     def generate_simulation_job_events(
         self,
-        job_id_data_map: dict[str, str],
+        job_id_data_map: dict[str, UUIDString],
         sim_datum_transformer: PVSimDatumTransformer,
     ) -> Generator[SimDatum, Any, None]:
         """Method to generate :class:`SimDatum`'s for each event in the job

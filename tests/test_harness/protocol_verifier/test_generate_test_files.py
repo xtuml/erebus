@@ -190,3 +190,37 @@ def test_get_test_events_from_test_file_jsons() -> None:
         job_tuples[1][0],
         test_file_2["job_file"]
     )
+
+
+def test_load_test_file_data_json_into_test_file_holder_options() -> None:
+    """Tests `load_test_file_data_json_into_test_file_holder` with one file
+    and options given in the file
+    """
+    test_file_path = test_file_resources / "test_event_file_EINV_options.json"
+    with open(test_file_path, 'r', encoding="utf-8") as file:
+        test_file = json.load(file)
+    test_file_holder = {}
+    load_test_file_data_json_into_test_file_holder(
+        test_file_path,
+        test_file_holder
+    )
+    assert test_file_holder
+    assert len(test_file_holder) == 1
+    assert "test_uml_1 + test_uml_2" in test_file_holder
+    jobs_data = test_file_holder["test_uml_1 + test_uml_2"]
+    assert jobs_data
+    assert len(jobs_data) == 1
+    assert "UnMatchedEINVS" in jobs_data
+    job_data = jobs_data["UnMatchedEINVS"]
+    assert job_data
+    assert not job_data[1]
+    job_tuples = [*job_data[0]]
+    assert len(job_tuples) == 1
+    check_dict_equivalency(
+        job_tuples[0][0],
+        test_file["job_file"]
+    )
+    options = job_data[2]
+    assert options
+    assert options["invariant_matched"] is False
+    assert options["invariant_length"] == 2

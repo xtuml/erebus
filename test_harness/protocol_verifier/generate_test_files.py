@@ -1,23 +1,17 @@
 """Methods for generating test files using test event generator
 """
-from typing import Generator, Any, TypedDict, Iterator
 from itertools import chain
 import json
 
-import matplotlib.pyplot as plt
 from test_event_generator.io.run import (  # pylint: disable=E0401
     puml_file_to_test_events
 )
+
 from test_harness.config.config import TestConfig
-
-
-class TestJobFile(TypedDict):
-    """Typed dict that type hints for an expected test event list job json file
-    """
-    job_file: list[dict[str, str | list | dict]]
-    job_name: str
-    sequence_type: str
-    validity: bool
+from test_harness.protocol_verifier.types import (
+    TestJobFile, TemplateJobsDataAndValidityTuple,
+    SequenceTypeData, UpdateableIterator
+)
 
 
 def generate_test_events_from_puml_file(
@@ -27,14 +21,7 @@ def generate_test_events_from_puml_file(
     str,
     dict[
         str,
-        tuple[
-            Generator[
-                tuple[list[dict], list[str], plt.Figure | None, str],
-                Any,
-                None
-            ],
-            bool
-        ]
+        TemplateJobsDataAndValidityTuple
     ]
 ]:
     """Method to generate test cases given a puml file path.
@@ -44,9 +31,7 @@ def generate_test_events_from_puml_file(
     :param test_config: Configuration for tests
     :type test_config: :class:`TestConfig`
     :return: Returns the dictionary of job defintions mapped to test cases
-    :rtype: `dict`[ `str`, `dict`[ `str`, `tuple`[ :class:`Generator`[
-    `tuple`[`list`[`dict`], `list`[`str`], :class:`plt`.`Figure` | `None`,
-    `str`], `Any`, `None` ], `bool` ] ] ]
+    :rtype: `dict`[ `str`, `dict`[ `str`, `TemplateJobsDataAndValidityTuple`]]
     """
     test_events = puml_file_to_test_events(
         file_path=puml_file_path,
@@ -62,14 +47,7 @@ def generate_test_events_from_puml_files(
     str,
     dict[
         str,
-        tuple[
-            Generator[
-                tuple[list[dict], list[str], plt.Figure | None, str],
-                Any,
-                None
-            ],
-            bool
-        ]
+        TemplateJobsDataAndValidityTuple
     ]
 ]:
     """Method to generate test cases given a list of puml file paths
@@ -79,9 +57,7 @@ def generate_test_events_from_puml_files(
     :param test_config: Configuration for tests
     :type test_config: :class:`TestConfig`
     :return: Returns the dictionary of job defintions mapped to test cases
-    :rtype: `dict`[ `str`, `dict`[ `str`, `tuple`[ :class:`Generator`[
-    `tuple`[`list`[`dict`], `list`[`str`], :class:`plt`.`Figure` | `None`,
-    `str`], `Any`, `None` ], `bool` ] ] ]
+    :rtype: `dict`[ `str`, `dict`[ `str`, `TemplateJobsDataAndValidityTuple`]]]
     """
     return dict(chain.from_iterable(
         generate_test_events_from_puml_file(
@@ -98,12 +74,7 @@ def get_test_events_from_test_file_jsons(
     str,
     dict[
         str,
-        tuple[
-            Iterator[
-                tuple[list[dict], None, None, None]
-            ],
-            bool
-        ]
+        TemplateJobsDataAndValidityTuple
     ]
 ]:
     """Method to generate the dictionary that holds the template test events
@@ -114,19 +85,13 @@ def get_test_events_from_test_file_jsons(
     :return: Returns a results holder dictionary that can be used in the test
     harness
     :rtype: `dict`[ `str`, `dict`[ `str`,
-    `tuple`[ `Iterator`[ `tuple`[`list`[`dict`], `None`, `None`, `None`] ],
-    `bool` ] ] ]
+    `TemplateJobsDataAndValidityTuple` ] ]
     """
     test_files_holder: dict[
         str,
         dict[
             str,
-            tuple[
-                Iterator[
-                    tuple[list[dict], None, None, None]
-                ],
-                bool
-            ]
+            TemplateJobsDataAndValidityTuple
         ]
     ] = {}
     for test_file_path in test_file_paths:
@@ -143,12 +108,7 @@ def load_test_file_data_json_into_test_file_holder(
         str,
         dict[
             str,
-            tuple[
-                Iterator[
-                    tuple[list[dict], None, None, None]
-                ],
-                bool
-            ]
+            TemplateJobsDataAndValidityTuple
         ]
     ]
 ) -> None:
@@ -159,8 +119,7 @@ def load_test_file_data_json_into_test_file_holder(
     :param test_files_holder: Results holder dictionary that can be used in
     the test harness
     :type test_files_holder: `dict`[ `str`, `dict`[ `str`,
-    `tuple`[ `Iterator`[ `tuple`[`list`[`dict`], `None`, `None`, `None`] ],
-    `bool` ] ] ]
+    `TemplateJobsDataAndValidityTuple` ] ]
     """
     with open(test_file_path, 'r', encoding="utf-8") as file:
         test_file_data: TestJobFile = json.load(file)
@@ -175,12 +134,7 @@ def update_test_files_holder_with_test_file(
         str,
         dict[
             str,
-            tuple[
-                Iterator[
-                    tuple[list[dict], None, None, None],
-                ],
-                bool
-            ]
+            SequenceTypeData
         ]
     ],
     test_file_data: TestJobFile
@@ -189,9 +143,7 @@ def update_test_files_holder_with_test_file(
 
     :param test_files_holder: Results holder dictionary that can be used in
     the test harness
-    :type test_files_holder: `dict`[ `str`, `dict`[ `str`,
-    `tuple`[ `Iterator`[ `tuple`[`list`[`dict`], `None`, `None`, `None`] ],
-    `bool` ] ] ]
+    :type test_files_holder: `dict`[ `str`, `dict`[ `str`, `SequenceTypeData`]]
     :param test_file_data: The test file data as a python dictionary
     :type test_file_data: :class:`TestJobFile`
     """
@@ -202,26 +154,21 @@ def update_test_files_holder_with_test_file(
     ]:
         test_files_holder[
            test_file_data["job_name"]
-        ][test_file_data["sequence_type"]] = (
-            [],
-            test_file_data["validity"]
+        ][test_file_data["sequence_type"]] = SequenceTypeData(
+            job_sequences=UpdateableIterator(),
+            validity=test_file_data["validity"],
+            options={} if "options" not in test_file_data else (
+                test_file_data["options"]
+            )
         )
-
-    previous_tuple = test_files_holder[
-        test_file_data["job_name"]
-    ][test_file_data["sequence_type"]]
 
     test_files_holder[
         test_file_data["job_name"]
-    ][test_file_data["sequence_type"]] = (
-        iter([
-            *previous_tuple[0],
-            (
-                test_file_data["job_file"],
-                None,
-                None,
-                None
-            )
-        ]),
-        previous_tuple[1]
+    ][test_file_data["sequence_type"]].job_sequences.add(
+        (
+            test_file_data["job_file"],
+            None,
+            None,
+            None
+        )
     )
