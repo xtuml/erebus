@@ -178,7 +178,7 @@ def generate_job_batch_events(
         for job_id, named_job_id in job.job_ids.named_uuids.items():
             sim_datum_transformer.initialise_batch(
                 job_id=job_id_data_map[job_id].get_data(),
-                length=named_job_id.count
+                length=named_job_id.count,
             )
         generators.append(
             job.generate_simulation_job_events(
@@ -692,11 +692,19 @@ class UUIDString(ABC):
 
 
 class MatchedUUIDString(UUIDString):
+    """Class to hold a UUID string that is the same
+    each time `get_data` is called
+
+    :param length: the number of lengths of the standard uuid to set the
+    string, defaults to 1
+    :type length: `int`, optional
+    """
     def __init__(
         self,
         length: int = 1,
     ) -> None:
-        """Constructor method"""
+        """Constructor method
+        """
         super().__init__(length=length)
         self._uuid = str(uuid4()) * self.length
 
@@ -710,6 +718,13 @@ class MatchedUUIDString(UUIDString):
 
 
 class UnmatchedUUIDString(UUIDString):
+    """Class to hold a UUID string that is different each time `get_data` is
+    called
+
+    :param length: the number of lengths of the standard uuid to set the
+    string, defaults to 1
+    :type length: `int`, optional
+    """
     def __init__(
         self,
         length: int = 1,
@@ -732,7 +747,17 @@ class NamedUUID:
     def __init__(
         self, name: str, length: int = 1, matched_uuids: bool = True
     ) -> None:
-        """Constructor method"""
+        """_summary_
+
+        :param name: The name of the uuid
+        :type name: `str`
+        :param length: the number of lengths of the standard uuid to set the
+        string, defaults to 1
+        :type length: `int`, optional
+        :param matched_uuids: Boolean indicating whether the uuids will be
+        matched or unmatched, defaults to True
+        :type matched_uuids: `bool`, optional
+        """
         self.name = name
         self.length = length
         self.matched_uuids = matched_uuids
@@ -783,7 +808,9 @@ class NamedUUIDStore:
         :rtype: :class:`NamedUUID`
         """
         if name not in self.named_uuids:
-            self.named_uuids[name] = NamedUUID(name)
+            self.named_uuids[name] = NamedUUID(
+                name, self.uuid_lengths, self.matched_uuids
+            )
         self.named_uuids[name].update_counter()
         return self.named_uuids[name]
 
@@ -800,6 +827,8 @@ class NamedUUIDStore:
 
 
 class TemplateOptions(NamedTuple):
+    """Named tuple to hold template options
+    """
     invariant_matched: bool = True
     """Whether the invariants match
     """
@@ -809,6 +838,8 @@ class TemplateOptions(NamedTuple):
 
 
 class TemplateOptionDict(TypedDict):
+    """Typed dictionary to hold template options
+    """
     invariant_matched: NotRequired[bool]
     invariant_length: NotRequired[int]
 

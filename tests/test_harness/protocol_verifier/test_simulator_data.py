@@ -14,11 +14,7 @@ from hypothesis import given, strategies as st
 import pytest
 
 from test_harness.utils import check_dict_equivalency
-from test_harness.simulator.simulator import (
-    Batch,
-    SimDatum,
-    async_do_nothing
-)
+from test_harness.simulator.simulator import Batch, SimDatum, async_do_nothing
 from test_harness.protocol_verifier.simulator_data import (
     BatchJobSimDatumTransformer,
     EventSimDatumTransformer,
@@ -34,38 +30,30 @@ from test_harness.protocol_verifier.simulator_data import (
     convert_list_dict_to_json_io_bytes,
 )
 
-uuid4hex = re.compile(
-            '[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z', re.I
-        )
+uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 
 
 class TestBatchJobSimDatumTransformer:
-    """Group of tests for :class:`BatchJobSimDatumTransformer`
-    """
+    """Group of tests for :class:`BatchJobSimDatumTransformer`"""
+
     @staticmethod
     def test_initialise_batch() -> None:
         """Tests the method
         :class:`BatchJobSimDatumTransformer`.`initialise_batch`
         """
         transformer = BatchJobSimDatumTransformer()
-        transformer.initialise_batch(
-            job_id="1",
-            length=3
-        )
+        transformer.initialise_batch(job_id="1", length=3)
         assert "1" in transformer.batch_jobs
         batch = transformer.batch_jobs["1"]
         assert isinstance(batch, Batch)
         assert batch._length == 3
         for actual, expected in zip(
-            batch.batch_concat([[1, 2, 3], [4, 5, 6]]),
-            [1, 2, 3, 4, 5, 6]
+            batch.batch_concat([[1, 2, 3], [4, 5, 6]]), [1, 2, 3, 4, 5, 6]
         ):
             assert actual == expected
 
     @staticmethod
-    def test_get_sim_datum(
-        job_list: list[dict[str, str | list[str]]]
-    ) -> None:
+    def test_get_sim_datum(job_list: list[dict[str, str | list[str]]]) -> None:
         """Tests the method
         :class:`BatchJobSimDatumTransformer`.`get_sim_datum`
 
@@ -74,23 +62,15 @@ class TestBatchJobSimDatumTransformer:
         """
         transformer = BatchJobSimDatumTransformer()
         job_id = job_list[0]["jobId"]
-        transformer.initialise_batch(
-            job_id=job_id,
-            length=len(job_list)
-        )
+        transformer.initialise_batch(job_id=job_id, length=len(job_list))
         sim_datums: list[SimDatum] = []
         job_info = {}
         # check sim datums are correct
         for index, event in enumerate(job_list):
             sim_datum = next(
-                transformer.get_sim_datum(
-                    [event],
-                    job_info=job_info
-                )
+                transformer.get_sim_datum([event], job_info=job_info)
             )
-            assert event in (
-                transformer.batch_jobs[job_id].batch_list[index]
-            )
+            assert event in (transformer.batch_jobs[job_id].batch_list[index])
             assert isinstance(sim_datum, SimDatum)
             assert not sim_datum.args
             sim_datums.append(sim_datum)
@@ -108,12 +88,10 @@ class TestBatchJobSimDatumTransformer:
 
 
 class TestEventSimDatumTransformer:
-    """Group of tests for :class:`EventSimDatumTransformer`
-    """
+    """Group of tests for :class:`EventSimDatumTransformer`"""
+
     @staticmethod
-    def test_get_sim_datum(
-        job_list: list[dict[str, str | list[str]]]
-    ) -> None:
+    def test_get_sim_datum(job_list: list[dict[str, str | list[str]]]) -> None:
         """Tests the method
         :class:`EventSimDatumTransformer`.`get_sim_datum`
 
@@ -125,10 +103,7 @@ class TestEventSimDatumTransformer:
         job_info = {}
         event_list = [job_list[0]]
         sim_datum = next(
-            transformer.get_sim_datum(
-                event_list,
-                job_info=job_info
-            )
+            transformer.get_sim_datum(event_list, job_info=job_info)
         )
         assert isinstance(sim_datum, SimDatum)
         assert not sim_datum.args
@@ -146,22 +121,44 @@ class TestNamedUUID:
     * :class:`NamedUUID`
     * :class:`NamedUUIDStore`
     """
-    @staticmethod
-    def test_create_random_data() -> None:
-        """Tests the method :class:`NamedUUID`.`create_random_data`
-        """
-        random_data = NamedUUID.create_random_data()
-        is_uuid = bool(uuid4hex.match(
-                random_data.replace("-", "")
-            ))
-        assert is_uuid
 
     @staticmethod
-    @given(
-        st.lists(
-            st.text()
-        )
-    )
+    def test_create_random_data() -> None:
+        """Tests the method :class:`NamedUUID`.`create_random_data`"""
+        named_uuid = NamedUUID("test")
+        random_data = named_uuid.create_random_data()
+        got_first_uuid_string = random_data.get_data()
+        is_uuid = bool(uuid4hex.match(got_first_uuid_string.replace("-", "")))
+        assert is_uuid
+        got_second_uuid_string = random_data.get_data()
+        assert got_first_uuid_string == got_second_uuid_string
+
+    @staticmethod
+    def test_create_random_data_length() -> None:
+        """Tests the method :class:`NamedUUID`.`create_random_data`
+        with the length input set to 2
+        """
+        named_uuid = NamedUUID("test", length=2)
+        random_data = named_uuid.create_random_data()
+        got_uuid_string = random_data.get_data()
+        assert len(got_uuid_string) == 72
+        assert got_uuid_string[:36] == got_uuid_string[36:]
+
+    @staticmethod
+    def test_create_random_data_unmatched() -> None:
+        """Tests the method :class:`NamedUUID`.`create_random_data` with the
+        matched_uuids input set to False
+        """
+        named_uuid = NamedUUID("test", matched_uuids=False)
+        random_data = named_uuid.create_random_data()
+        got_first_uuid_string = random_data.get_data()
+        is_uuid = bool(uuid4hex.match(got_first_uuid_string.replace("-", "")))
+        assert is_uuid
+        got_second_uuid_string = random_data.get_data()
+        assert got_first_uuid_string != got_second_uuid_string
+
+    @staticmethod
+    @given(st.lists(st.text()))
     def test_update_invariants(names: list[str]) -> None:
         """Tests the method :class:`NamedUUIDStore`.`update`
 
@@ -169,21 +166,14 @@ class TestNamedUUID:
         :type names: `list`[`str`]
         """
         named_uuid_store = NamedUUIDStore()
-        named_uuids = [
-            named_uuid_store.update(name)
-            for name in names
-        ]
+        named_uuids = [named_uuid_store.update(name) for name in names]
         assert len(set(names)) == len(named_uuid_store.named_uuids)
         for named_uuid in named_uuids:
             assert named_uuid.name in named_uuid_store.named_uuids
             assert named_uuid_store.named_uuids[named_uuid.name] == named_uuid
 
     @staticmethod
-    @given(
-        st.lists(
-            st.text()
-        )
-    )
+    @given(st.lists(st.text()))
     def test_create_name_data_map(names: list[str]) -> None:
         """Tests the method
         :class:`NamedUUIDStore`.`create_name_data_map`
@@ -192,26 +182,51 @@ class TestNamedUUID:
         :type names: `list`[`str`]
         """
         named_uuid_store = NamedUUIDStore()
-        named_uuids = [
-            named_uuid_store.update(name)
-            for name in names
-        ]
-        named_uuid_name_data_map = (
-            named_uuid_store.create_name_data_map()
-        )
+        named_uuids = [named_uuid_store.update(name) for name in names]
+        named_uuid_name_data_map = named_uuid_store.create_name_data_map()
         assert len(set(names)) == len(named_uuid_name_data_map)
         for named_uuid in named_uuids:
             assert named_uuid.name in named_uuid_name_data_map
-            random_data = named_uuid_name_data_map[named_uuid.name]
-            is_uuid = bool(uuid4hex.match(
-                    random_data.replace("-", "")
-                ))
+            got_random_data_1 = named_uuid_name_data_map[
+                named_uuid.name
+            ].get_data()
+            got_random_data_2 = named_uuid_name_data_map[
+                named_uuid.name
+            ].get_data()
+            is_uuid = bool(uuid4hex.match(got_random_data_1.replace("-", "")))
             assert is_uuid
+            assert got_random_data_1 == got_random_data_2
+
+    @staticmethod
+    @given(st.lists(st.text()))
+    def test_create_name_data_map_unmatched(names: list[str]) -> None:
+        """Tests the method
+        :class:`NamedUUIDStore`.`create_name_data_map` with the unmatched_uuids
+        input set to False
+
+        :param names: List of names of named uuids
+        :type names: `list`[`str`]
+        """
+        named_uuid_store = NamedUUIDStore(matched_uuids=False)
+        named_uuids = [named_uuid_store.update(name) for name in names]
+        named_uuid_name_data_map = named_uuid_store.create_name_data_map()
+        assert len(set(names)) == len(named_uuid_name_data_map)
+        for named_uuid in named_uuids:
+            assert named_uuid.name in named_uuid_name_data_map
+            got_random_data_1 = named_uuid_name_data_map[
+                named_uuid.name
+            ].get_data()
+            got_random_data_2 = named_uuid_name_data_map[
+                named_uuid.name
+            ].get_data()
+            is_uuid = bool(uuid4hex.match(got_random_data_1.replace("-", "")))
+            assert is_uuid
+            assert got_random_data_1 != got_random_data_2
 
 
 class TestEvent:
-    """Group of tests for :class:`Event`
-    """
+    """Group of tests for :class:`Event`"""
+
     @staticmethod
     def test_parse_from_input_dict_no_prev_event(
         job_list: list[dict[str, str | list[str]]]
@@ -222,9 +237,7 @@ class TestEvent:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         event = Event()
-        event.parse_from_input_dict(
-            input_dict=copy(job_list[0])
-        )
+        event.parse_from_input_dict(input_dict=copy(job_list[0]))
         for dict_key, attribute_name in Event.attribute_mappings.items():
             attr_value = getattr(event, attribute_name)
             if attribute_name == "previous_event_ids":
@@ -245,9 +258,7 @@ class TestEvent:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         event = Event()
-        event.parse_from_input_dict(
-            input_dict=copy(job_list[1])
-        )
+        event.parse_from_input_dict(input_dict=copy(job_list[1]))
         for dict_key, attribute_name in Event.attribute_mappings.items():
             attr_value = getattr(event, attribute_name)
             assert attr_value == job_list[1][dict_key]
@@ -264,9 +275,7 @@ class TestEvent:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         event = Event()
-        event.parse_from_input_dict(
-            input_dict=copy(job_list[-1])
-        )
+        event.parse_from_input_dict(input_dict=copy(job_list[-1]))
         for dict_key, attribute_name in Event.attribute_mappings.items():
             attr_value = getattr(event, attribute_name)
             assert attr_value == job_list[-1][dict_key]
@@ -286,7 +295,7 @@ class TestEvent:
             "timestamp": "test o'clock",
             "applicationName": "test application",
             "previousEventIds": ["0", "2"],
-            "X": {"dataItemType": "LOOPCOUNT"}
+            "X": {"dataItemType": "LOOPCOUNT"},
         }
         event = Event()
         event.parse_from_input_dict(input_dict.copy())
@@ -313,7 +322,7 @@ class TestEvent:
         events[-1].add_prev_event(
             prev_event_id=events[-1].previous_event_ids,
             event_id_map=event_id_map,
-            missing_events=missing_events
+            missing_events=missing_events,
         )
         assert events[0] in events[-1].prev_events
         assert not missing_events
@@ -331,7 +340,7 @@ class TestEvent:
         events: list[Event] = []
         event_id_map = {}
         missing_events: list[Event] = []
-        for event_dict in job_list[1: 2]:
+        for event_dict in job_list[1:2]:
             event = Event()
             event.parse_from_input_dict(event_dict)
             event_id_map[event.event_id] = event
@@ -339,7 +348,7 @@ class TestEvent:
         events[-1].add_prev_event(
             prev_event_id=events[-1].previous_event_ids,
             event_id_map=event_id_map,
-            missing_events=missing_events
+            missing_events=missing_events,
         )
         assert len(missing_events) == 1
         assert missing_events[0] in events[-1].prev_events
@@ -350,7 +359,7 @@ class TestEvent:
         job_list: list[dict[str, str | list[str]]],
         events: list[Event],
         event_id_map: dict,
-        missing_events: list[Event]
+        missing_events: list[Event],
     ) -> None:
         """Helper method to make :class:`Event` instances from a job list
 
@@ -384,10 +393,7 @@ class TestEvent:
         event_id_map = {}
         missing_events: list[Event] = []
         TestEvent.make_events_from_job_list(
-            job_list,
-            events,
-            event_id_map,
-            missing_events
+            job_list, events, event_id_map, missing_events
         )
         assert not missing_events
         assert not events[0].prev_events
@@ -413,27 +419,24 @@ class TestEvent:
         event_id_map = {}
         missing_events: list[Event] = []
         TestEvent.make_events_from_job_list(
-            job_list,
-            events,
-            event_id_map,
-            missing_events
+            job_list, events, event_id_map, missing_events
         )
         event_event_id_map = {
-            id(event): str(index)
-            for index, event in enumerate(events)
+            id(event): str(index) for index, event in enumerate(events)
         }
-        job_id = "1"
-        job_id_data_map = {job_id: job_id}
+        job_ids = NamedUUIDStore()
+        job_ids.update("1")
+        job_id_data_map = job_ids.create_name_data_map()
         invariant_name_data_map = {}
         event_dict = events[0].make_event_dict(
             event_event_id_map=event_event_id_map,
             job_id_data_map=job_id_data_map,
-            invariant_name_data_map=invariant_name_data_map
+            invariant_name_data_map=invariant_name_data_map,
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[0][field]
         assert event_dict["eventId"] == event_event_id_map[id(events[0])]
-        assert event_dict["jobId"] == job_id
+        assert event_dict["jobId"] == job_id_data_map["1"].get_data()
         assert event_dict["timestamp"] != events[0].time_stamp
         assert "previousEventIds" not in event_dict
 
@@ -452,31 +455,28 @@ class TestEvent:
         event_id_map = {}
         missing_events: list[Event] = []
         TestEvent.make_events_from_job_list(
-            job_list,
-            events,
-            event_id_map,
-            missing_events
+            job_list, events, event_id_map, missing_events
         )
         event_event_id_map = {
-            id(event): str(index)
-            for index, event in enumerate(events)
+            id(event): str(index) for index, event in enumerate(events)
         }
-        job_id = "1"
-        job_id_data_map = {job_id: job_id}
+        job_ids = NamedUUIDStore()
+        job_ids.update("1")
+        job_id_data_map = job_ids.create_name_data_map()
         invariant_name_data_map = {}
         event_dict = events[1].make_event_dict(
             event_event_id_map=event_event_id_map,
             job_id_data_map=job_id_data_map,
-            invariant_name_data_map=invariant_name_data_map
+            invariant_name_data_map=invariant_name_data_map,
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[1][field]
         assert event_dict["eventId"] == event_event_id_map[id(events[1])]
-        assert event_dict["jobId"] == job_id
+        assert event_dict["jobId"] == job_id_data_map["1"].get_data()
         assert event_dict["timestamp"] != events[1].time_stamp
-        assert event_dict["previousEventIds"] == event_event_id_map[
-            id(events[0])
-        ]
+        assert (
+            event_dict["previousEventIds"] == event_event_id_map[id(events[0])]
+        )
 
     @staticmethod
     def test_make_event_dict_mulitple_previous_events(
@@ -493,38 +493,35 @@ class TestEvent:
         event_id_map = {}
         missing_events: list[Event] = []
         TestEvent.make_events_from_job_list(
-            job_list,
-            events,
-            event_id_map,
-            missing_events
+            job_list, events, event_id_map, missing_events
         )
         event_event_id_map = {
-            id(event): str(index)
-            for index, event in enumerate(events)
+            id(event): str(index) for index, event in enumerate(events)
         }
-        job_id = "1"
-        job_id_data_map = {job_id: job_id}
+        job_ids = NamedUUIDStore()
+        job_ids.update("1")
+        job_id_data_map = job_ids.create_name_data_map()
         invariant_name_data_map = {}
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
             job_id_data_map=job_id_data_map,
-            invariant_name_data_map=invariant_name_data_map
+            invariant_name_data_map=invariant_name_data_map,
         )
         for field in ["jobName", "eventType", "applicationName"]:
             assert event_dict[field] == job_list_copy[-1][field]
         assert event_dict["eventId"] == event_event_id_map[id(events[-1])]
-        assert event_dict["jobId"] == job_id
+        assert event_dict["jobId"] == job_id_data_map["1"].get_data()
         assert event_dict["timestamp"] != events[-1].time_stamp
         assert len(event_dict["previousEventIds"]) == 2
         for index in [1, 2]:
-            assert event_event_id_map[
-                id(events[index])
-            ] in event_dict["previousEventIds"]
+            assert (
+                event_event_id_map[id(events[index])]
+                in event_dict["previousEventIds"]
+            )
 
     @staticmethod
     def test_make_event_dict_meta_data() -> None:
-        """Tests :class:`Event`.`make_event_dict` with meta data
-        """
+        """Tests :class:`Event`.`make_event_dict` with meta data"""
         input_dict = {
             "jobName": "test",
             "jobId": "1",
@@ -533,32 +530,28 @@ class TestEvent:
             "timestamp": "test o'clock",
             "applicationName": "test application",
             "previousEventIds": ["1", "2"],
-            "X": {"dataItemType": "LOOPCOUNT"}
+            "X": {"dataItemType": "LOOPCOUNT"},
         }
         events: list[Event] = []
         event_id_map = {}
         missing_events: list[Event] = []
         TestEvent.make_events_from_job_list(
-            [input_dict.copy()],
-            events,
-            event_id_map,
-            missing_events
+            [input_dict.copy()], events, event_id_map, missing_events
         )
         event_event_id_map = {
             id(event): str(index)
             for index, event in enumerate(events + missing_events)
         }
-        job_id = "1"
-        job_id_data_map = {job_id: job_id}
+        job_ids = NamedUUIDStore()
+        job_ids.update("1")
+        job_id_data_map = job_ids.create_name_data_map()
         invariant_name_data_map = {}
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
             job_id_data_map=job_id_data_map,
-            invariant_name_data_map=invariant_name_data_map
+            invariant_name_data_map=invariant_name_data_map,
         )
-        fields_to_check = [
-            "jobId", "jobName", "eventType", "applicationName", "X"
-        ]
+        fields_to_check = ["jobName", "eventType", "applicationName", "X"]
         check_dict_equivalency(
             {
                 key: value
@@ -569,8 +562,9 @@ class TestEvent:
                 key: value
                 for key, value in input_dict.items()
                 if key in fields_to_check
-            }
+            },
         )
+        assert event_dict["jobId"] == job_id_data_map["1"].get_data()
 
     @staticmethod
     @given(
@@ -580,18 +574,14 @@ class TestEvent:
                 st.integers(),
                 st.floats(),
                 st.dictionaries(
-                    st.characters(exclude_characters=":"),
-                    st.text()
+                    st.characters(exclude_characters=":"), st.text()
                 ),
             )
         ),
-        st.lists(
-            st.text()
-        )
+        st.lists(st.text()),
     )
     def test_categorise_meta_data(
-        non_string_type: list,
-        string_type: list
+        non_string_type: list, string_type: list
     ) -> None:
         """Tests :class:`Event`.`categorise_meta_data`
 
@@ -600,23 +590,16 @@ class TestEvent:
         :param string_type: A list of strings
         :type string_type: `list`[`str`]
         """
-        string_type_dict = {
-            str(i): val
-            for i, val in enumerate(string_type)
-        }
+        string_type_dict = {str(i): val for i, val in enumerate(string_type)}
         num_string_type = len(string_type)
         non_string_type_dict = {
             str(i + num_string_type): val
             for i, val in enumerate(non_string_type)
         }
         num_non_string_type = len(non_string_type)
-        input_dict = {
-            **string_type_dict,
-            **non_string_type_dict
-        }
+        input_dict = {**string_type_dict, **non_string_type_dict}
         categorised_meta_data = Event.categorise_meta_data(
-            input_dict,
-            NamedUUIDStore()
+            input_dict, NamedUUIDStore()
         )
         assert len(categorised_meta_data["fixed"]) == num_non_string_type
         assert len(categorised_meta_data["invariants"]) == num_string_type
@@ -635,20 +618,14 @@ class TestEvent:
                 st.integers(),
                 st.floats(),
                 st.dictionaries(
-                    st.text(
-                        st.characters(exclude_characters=":")
-                    ),
-                    st.text()
+                    st.text(st.characters(exclude_characters=":")), st.text()
                 ),
             )
         ),
-        st.lists(
-            st.text()
-        )
+        st.lists(st.text()),
     )
     def test_generate_meta_data(
-        non_string_type: list[Any],
-        string_type: list[str]
+        non_string_type: list[Any], string_type: list[str]
     ) -> None:
         """Tests :class:`Event`.`generate_meta_data`
 
@@ -657,27 +634,19 @@ class TestEvent:
         :param string_type: A list of strings
         :type string_type: `list`[`str`]
         """
-        string_type_dict = {
-            str(i): val
-            for i, val in enumerate(string_type)
-        }
+        string_type_dict = {str(i): val for i, val in enumerate(string_type)}
         num_string_type = len(string_type)
         non_string_type_dict = {
             str(i + num_string_type): val
             for i, val in enumerate(non_string_type)
         }
-        input_dict = {
-            **string_type_dict,
-            **non_string_type_dict
-        }
+        input_dict = {**string_type_dict, **non_string_type_dict}
         invariant_store = NamedUUIDStore()
         categorised_meta_data = Event.categorise_meta_data(
-            input_dict,
-            invariant_store
+            input_dict, invariant_store
         )
         generated_meta_data = Event.generate_meta_data(
-            categorised_meta_data,
-            invariant_store.create_name_data_map()
+            categorised_meta_data, invariant_store.create_name_data_map()
         )
         fixed_dict = {
             key: generated_meta_data.pop(key)
@@ -686,9 +655,7 @@ class TestEvent:
         check_dict_equivalency(non_string_type_dict, fixed_dict)
         for key in string_type_dict.keys():
             value = generated_meta_data.pop(key)
-            is_uuid = bool(uuid4hex.match(
-                    value.replace("-", "")
-                ))
+            is_uuid = bool(uuid4hex.match(value.replace("-", "")))
             assert is_uuid
         assert not generated_meta_data
 
@@ -700,19 +667,14 @@ class TestEvent:
                 st.integers(),
                 st.floats(),
                 st.dictionaries(
-                    st.characters(exclude_characters=":"),
-                    st.text()
+                    st.characters(exclude_characters=":"), st.text()
                 ),
             )
         ),
-        st.lists(
-            st.text(),
-            min_size=1
-        )
+        st.lists(st.text(), min_size=1),
     )
     def test_generate_meta_data_not_in_invariant_map(
-        non_string_type: list[Any],
-        string_type: list[str]
+        non_string_type: list[Any], string_type: list[str]
     ) -> None:
         """Tests :class:`Event`.`generate_meta_data` when data is not in the
         invariant map
@@ -722,28 +684,18 @@ class TestEvent:
         :param string_type: A list of strings
         :type string_type: `list`[`str`]
         """
-        string_type_dict = {
-            str(i): val
-            for i, val in enumerate(string_type)
-        }
+        string_type_dict = {str(i): val for i, val in enumerate(string_type)}
         num_string_type = len(string_type)
         non_string_type_dict = {
             str(i + num_string_type): val
             for i, val in enumerate(non_string_type)
         }
-        input_dict = {
-            **string_type_dict,
-            **non_string_type_dict
-        }
+        input_dict = {**string_type_dict, **non_string_type_dict}
         categorised_meta_data = Event.categorise_meta_data(
-            input_dict,
-            NamedUUIDStore()
+            input_dict, NamedUUIDStore()
         )
         with pytest.raises(KeyError):
-            Event.generate_meta_data(
-                categorised_meta_data,
-                {}
-            )
+            Event.generate_meta_data(categorised_meta_data, {})
 
     @staticmethod
     def test_make_event_dict_meta_data_string_type() -> None:
@@ -759,36 +711,30 @@ class TestEvent:
             "applicationName": "test application",
             "previousEventIds": ["1", "2"],
             "X": "some invariant",
-            "Y": 12
+            "Y": 12,
         }
         events: list[Event] = []
         event_id_map = {}
         missing_events: list[Event] = []
         TestEvent.make_events_from_job_list(
-            [input_dict.copy()],
-            events,
-            event_id_map,
-            missing_events
+            [input_dict.copy()], events, event_id_map, missing_events
         )
         event_event_id_map = {
             id(event): str(index)
             for index, event in enumerate(events + missing_events)
         }
-        job_id = "1"
-        job_id_data_map = {job_id: job_id}
+        job_ids = NamedUUIDStore()
+        job_ids.update("1")
+        job_id_data_map = job_ids.create_name_data_map()
         invariant_store = NamedUUIDStore()
         invariant_store.update("X")
-        invaraint_name_data_map = (
-            invariant_store.create_name_data_map()
-        )
+        invaraint_name_data_map = invariant_store.create_name_data_map()
         event_dict = events[-1].make_event_dict(
             event_event_id_map=event_event_id_map,
             job_id_data_map=job_id_data_map,
-            invariant_name_data_map=invaraint_name_data_map
+            invariant_name_data_map=invaraint_name_data_map,
         )
-        fields_to_check = [
-            "jobId", "jobName", "eventType", "applicationName", "Y"
-        ]
+        fields_to_check = ["jobName", "eventType", "applicationName", "Y"]
         check_dict_equivalency(
             {
                 key: value
@@ -799,21 +745,19 @@ class TestEvent:
                 key: value
                 for key, value in input_dict.items()
                 if key in fields_to_check
-            }
+            },
         )
-        is_uuid = bool(uuid4hex.match(
-                    event_dict["X"].replace("-", "")
-                ))
+        assert event_dict["jobId"] == job_id_data_map["1"].get_data()
+        is_uuid = bool(uuid4hex.match(event_dict["X"].replace("-", "")))
         assert is_uuid
 
 
 class TestJob:
-    """Group of tests for :class:`Job`
-    """
+    """Group of tests for :class:`Job`"""
+
     @staticmethod
     def test_update_missing_events() -> None:
-        """Tests :class:`Job`.`update_missing_events`
-        """
+        """Tests :class:`Job`.`update_missing_events`"""
         job = Job()
         event = Event()
         job.update_missing_events([event])
@@ -856,10 +800,7 @@ class TestJob:
         assert len(job.invariants.named_uuids) == 1
         assert "X" in job.invariants.named_uuids
         assert len(events[0].meta_data) == 2
-        assert all(
-            name in events[0].meta_data
-            for name in ["X", "Y"]
-        )
+        assert all(name in events[0].meta_data for name in ["X", "Y"])
         assert len(events[0].categorised_meta_data["fixed"]) == 1
         assert len(events[0].categorised_meta_data["invariants"]) == 1
         assert "Y" in events[0].categorised_meta_data["fixed"]
@@ -944,7 +885,7 @@ def test_generate_job_batch_events(
     assert len(generators) == 1
     sim_datums = list(generators[0])
     assert len(sim_datums) == 4
-    for sim_datum in sim_datums[: -1]:
+    for sim_datum in sim_datums[:-1]:
         assert sim_datum.action_func == async_do_nothing
         assert not sim_datum.args
         assert not sim_datum.kwargs
@@ -983,14 +924,14 @@ def test_generate_job_batch_events_multiple_job_ids(
         assert "job_info" in sim_datum.kwargs
         assert "job_id" in sim_datum.kwargs
     assert sim_datums[1].kwargs["job_id"] != sim_datums[3].kwargs["job_id"]
-    assert len(set(
-        event["jobId"]
-        for event in sim_datums[1].kwargs["list_dict"]
-    )) == 1
-    assert len(set(
-        event["jobId"]
-        for event in sim_datums[3].kwargs["list_dict"]
-    )) == 1
+    assert (
+        len(set(event["jobId"] for event in sim_datums[1].kwargs["list_dict"]))
+        == 1
+    )
+    assert (
+        len(set(event["jobId"] for event in sim_datums[3].kwargs["list_dict"]))
+        == 1
+    )
 
 
 def test_generate_single_events(
@@ -1039,25 +980,29 @@ def test_generate_single_events_multiple_job_ids(
         assert len(sim_datum.kwargs["list_dict"]) == 1
         assert "job_info" in sim_datum.kwargs
         assert "job_id" in sim_datum.kwargs
-    job_1_ids = set(
-        sim_datum.kwargs["job_id"]
-        for sim_datum in sim_datums[:2]
-    )
-    job_2_ids = set(
-        sim_datum.kwargs["job_id"]
-        for sim_datum in sim_datums[2:]
-    )
+    job_1_ids = set(sim_datum.kwargs["job_id"] for sim_datum in sim_datums[:2])
+    job_2_ids = set(sim_datum.kwargs["job_id"] for sim_datum in sim_datums[2:])
     assert job_1_ids != job_2_ids
     assert len(job_1_ids) == 1
     assert len(job_2_ids) == 1
-    assert len(set(
-        sim_datum.kwargs["list_dict"][0]["jobId"]
-        for sim_datum in sim_datums[:2]
-    )) == 1
-    assert len(set(
-        sim_datum.kwargs["list_dict"][0]["jobId"]
-        for sim_datum in sim_datums[2:]
-    )) == 1
+    assert (
+        len(
+            set(
+                sim_datum.kwargs["list_dict"][0]["jobId"]
+                for sim_datum in sim_datums[:2]
+            )
+        )
+        == 1
+    )
+    assert (
+        len(
+            set(
+                sim_datum.kwargs["list_dict"][0]["jobId"]
+                for sim_datum in sim_datums[2:]
+            )
+        )
+        == 1
+    )
 
 
 def test_simple_sequencer(
@@ -1070,12 +1015,9 @@ def test_simple_sequencer(
     :type list_generated_sim_datum:
     `list`[:class:`Generator`[:class:`SimDatum`, `Any`, `None`]]
     """
-    result = list(simple_sequencer(
-            list_generated_sim_datum
-        ))
+    result = list(simple_sequencer(list_generated_sim_datum))
     for sim_datum, expected_args in zip(
-        result,
-        ["a", "b", "aa", "bb", "aaa", "bbb"]
+        result, ["a", "b", "aa", "bb", "aaa", "bbb"]
     ):
         assert isinstance(sim_datum, SimDatum)
         assert len(sim_datum.args) == 1
@@ -1095,13 +1037,12 @@ def test_job_sequencer(
     generated_sequence = job_sequencer(
         generated_events=list_generated_sim_datum,
         min_interval_between_job_events=1,
-        desired_job_event_gap=2
+        desired_job_event_gap=2,
     )
 
     result = list(generated_sequence)
     for sim_datum, expected_args in zip(
-        result,
-        ["a", "aa", "b", "bb", "aaa", "bbb"]
+        result, ["a", "aa", "b", "bb", "aaa", "bbb"]
     ):
         assert isinstance(sim_datum, SimDatum)
         assert len(sim_datum.args) == 1
@@ -1118,24 +1059,22 @@ def test_generate_events_from_template_jobs_job_batch(
     """
     job = Job()
     job.parse_input_jobfile(job_list)
-    jobs = [
-        deepcopy(job)
-        for _ in range(4)
-    ]
+    jobs = [deepcopy(job) for _ in range(4)]
     generated_sim_data = generate_events_from_template_jobs(
         jobs,
         job_sequencer,
         generate_job_batch_events,
         sequencer_kwargs={
             "min_interval_between_job_events": 0.5,
-            "desired_job_event_gap": 1.0
-        }
+            "desired_job_event_gap": 1.0,
+        },
     )
     sim_data = list(generated_sim_data)
     assert all(
         (
             isinstance(sim_datum, SimDatum)
-            and not sim_datum.args and not sim_datum.kwargs
+            and not sim_datum.args
+            and not sim_datum.kwargs
             and sim_datum.action_func == async_do_nothing
         )
         for index, sim_datum in enumerate(sim_data)
@@ -1167,16 +1106,9 @@ def test_convert_list_dict_to_json_io_bytes(
     :param job_list: A list of event dicts in a job
     :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
     """
-    io_bytes = convert_list_dict_to_json_io_bytes(
-        job_list
-    )
+    io_bytes = convert_list_dict_to_json_io_bytes(job_list)
     assert isinstance(io_bytes, BytesIO)
     json_string = io_bytes.read().decode("utf-8")
     json_dicts = json.loads(json_string)
-    for event_actual, event_expected in zip(
-        json_dicts, job_list
-    ):
-        check_dict_equivalency(
-            event_actual,
-            event_expected
-        )
+    for event_actual, event_expected in zip(json_dicts, job_list):
+        check_dict_equivalency(event_actual, event_expected)
