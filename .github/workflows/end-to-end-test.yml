@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     env:
       SSH_AUTH_SOCK: $SSH_AUTH_SOCK
     steps:
