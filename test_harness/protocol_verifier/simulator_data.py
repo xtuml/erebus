@@ -12,8 +12,6 @@ from typing import (
     Callable,
     Awaitable,
     TypedDict,
-    NamedTuple,
-    NotRequired,
 )
 import json
 from uuid import uuid4
@@ -25,6 +23,7 @@ import aiohttp
 
 from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
+from test_harness.protocol_verifier.types import TemplateOptions
 
 
 class PVSimDatumTransformer(ABC):
@@ -824,24 +823,6 @@ class NamedUUIDStore:
             name: named_uuid.create_random_data()
             for name, named_uuid in self.named_uuids.items()
         }
-
-
-class TemplateOptions(NamedTuple):
-    """Named tuple to hold template options
-    """
-    invariant_matched: bool = True
-    """Whether the invariants match
-    """
-    invariant_length: int = 1
-    """The length of the invariants
-    """
-
-
-class TemplateOptionDict(TypedDict):
-    """Typed dictionary to hold template options
-    """
-    invariant_matched: NotRequired[bool]
-    invariant_length: NotRequired[int]
 
 
 class Job:
