@@ -83,12 +83,13 @@ class HarnessConfig:
         self.parse_io_tracking_config()
         # parse config log retrieval
         self.parse_log_retrieval_config()
+        # message bus
+        self.parse_message_bus_config()
         # max files in memory
         self.max_files_in_memory = int(
             self.config_parser["non-default"]["max_files_in_memory"]
         )
-        # url send pv files
-        self.pv_send_url = self.config_parser["non-default"]["pv_send_url"]
+        # url send pv job defs
         self.pv_send_job_defs_url = self.config_parser["non-default"][
             "pv_send_job_defs_url"
         ]
@@ -105,13 +106,6 @@ class HarnessConfig:
         self.pv_test_timeout = int(
             self.config_parser["non-default"]["pv_test_timeout"]
         )
-        # flag to send as bytes
-        pv_send_as_pv_bytes_raw = self.config_parser["non-default"][
-            "pv_send_as_pv_bytes"
-        ]
-        self.pv_send_as_pv_bytes = (
-            True if pv_send_as_pv_bytes_raw.lower() == "true" else False
-        )
         # flag to get metrics from kafka
         metrics_from_kafka_raw = self.config_parser["non-default"][
             "metrics_from_kafka"
@@ -125,6 +119,33 @@ class HarnessConfig:
         self.kafka_metrics_topic = self.config_parser["non-default"][
             "kafka_metrics_topic"
         ]
+
+    def parse_message_bus_config(self) -> None:
+        """Method to parse message bus config from config file
+        """
+        message_bus_protocol = self.config_parser["non-default"][
+            "message_bus_protocol"
+        ]
+        pv_send_as_pv_bytes_raw = self.config_parser["non-default"][
+            "pv_send_as_pv_bytes"
+        ]
+        self.pv_send_as_pv_bytes = (
+            True if pv_send_as_pv_bytes_raw.lower() == "true" else False
+        )
+        if message_bus_protocol.lower() == "kafka":
+            self.message_bus_protocol = "KAFKA"
+            self.kafka_message_bus_host = self.config_parser["non-default"][
+                "kafka_message_bus_host"
+            ]
+            self.kafka_message_bus_topic = self.config_parser["non-default"][
+                "kafka_message_bus_topic"
+            ]
+            self.pv_send_as_pv_bytes = True
+        else:
+            self.message_bus_protocol = "HTTP"
+            self.pv_send_url = self.config_parser["non-default"][
+                "pv_send_url"
+            ]
 
     def parse_requests_config(self) -> None:
         """Method to parse requests to pv server config"""

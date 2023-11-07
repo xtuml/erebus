@@ -123,10 +123,17 @@ To change default values of these files a parameter can be copied under the `[no
     * `ver_get_file_names_url` - The url of the endpoint that requests are sent to to obtain the names of the Verifier log files. Defaults to `http://host.docker.internal:9000/download/verifier-log-file-names`
     * `get_log_file_names_url` - The url of the endpoint that requests are sent to to obtain the names of log files. Defaults to `http://host.docker.internal:9000/download/log-file-names`
     * `get_log_file_url` - The url of the endpoint that requests are sent to receive a named log file for a specified PV domain. Defaults to `http://host.docker.internal:9000/download/log-file`
-* Config relating to sending files to the HTTP server
-    * `pv_send_url` - The url of the endpoint that requests are sent to to upload events for reception and verification. Defaults to `http://host.docker.internal:9000/upload/events`
-    * `pv_send_as_pv_bytes` - Boolean indicating whether to send data as pv bytes (True) or not (False). If the final destination is the kafka ingestion by the PV this should be set to True otherwise it should just be set to False. If set to True this will split all sent files into discrete json events and will add a byte array of length 4 in big endian of the integer size of the sent payload in byte.
-    * `pv_send_job_defs_url` - The url of the endpoint that requests are sent to to upload job definitions to. Defaults to `http://host.docker.internal:9000/upload/job-definitions`
+* Config relating to sending files
+    * `message_bus_protocol` - The protocol to use for sending data to the application being tested. Currently supports the following two values (this will default to HTTP if any inccorect config is given):
+        * HTTP - use the HTTP protocol to send data
+        * KAFKA - use kafka to send data
+    * Config relating to sending files to Kafka (if `message_bus_protocol` is set to "KAFKA")
+        * `kafka_message_bus_host` - The kafka host to send message to. Defaults to  `host.docker.internal:9092`
+        * `kafka_message_bus_topic` The kafka topic to send messages to. Defaults to  `default.AEReception_service0`
+    * Config relating to sending files to the HTTP server (if `message_bus_protocol` is set to "HTTP")
+        * `pv_send_url` - The url of the endpoint that requests are sent to to upload events for reception and verification. Defaults to `http://host.docker.internal:9000/upload/events`
+        * `pv_send_job_defs_url` - The url of the endpoint that requests are sent to to upload job definitions to. Defaults to `http://host.docker.internal:9000/upload/job-definitions`
+    * `pv_send_as_pv_bytes` - Boolean indicating whether to send data as pv bytes (True) or not (False). If the final destination is the kafka ingestion by the PV this is always set to True regardless of user input otherwise it should just be set to False. If set to True this will split all sent files into discrete json events and will add a byte array of length 4 in big endian of the integer size of the sent payload in byte.
 * Config that is dependent on the config set on the Protocol Verifier
     * `pv_config_update_time` - The amount of time to wait for the uploaded job definition to be seen by the Protocol Verifier. Defaults to `60` (seconds). This should be greater than the field `SpecUpdateRate` of the PV
     * `pv_finish_interval` - The amount of time thats is required for the Verifier logs to not have updated so that the Test Harness can finish the test. Defaults to `30`. It is recommended that this value be greater than the value of the fields (of the PV config) `MaximumJobTime` and `JobCompletePeriod`

@@ -86,7 +86,7 @@ async def delayed_send_payload(
 
 
 async def send_payload_async(
-    file: io.BytesIO,
+    file: bytes,
     file_name: str,
     url: str = "http://host.docker.internal:9000/upload/events",
     session: aiohttp.ClientSession | None = None
@@ -108,7 +108,7 @@ async def send_payload_async(
     form_data = aiohttp.FormData()
     form_data.add_field(
         'upload',
-        file,
+        io.BytesIO(file),
         filename=file_name,
         content_type='application/octet-stream'
     )
