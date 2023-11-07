@@ -14,8 +14,9 @@ from typing import Callable, Literal
 
 import pytest
 import responses
-from aioresponses import aioresponses
+from aioresponses import aioresponses, CallbackResult
 import pandas as pd
+import aiohttp
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier import (
@@ -149,6 +150,76 @@ def test_puml_files_test() -> None:
                     file.replace("-", "").replace(".json", "")
                 ))
             assert any([file_in_files, is_uuid])
+
+        clean_directories([harness_config.report_file_store])
+
+
+@responses.activate
+def test_puml_files_test_send_as_pv_bytes() -> None:
+    """Tests method `puml_test_files` with send as pv bytes set to true
+    """
+    harness_config = HarnessConfig(test_config_path)
+    harness_config.pv_send_as_pv_bytes = True
+    test_config = TestConfig()
+    test_config.parse_from_dict({
+        "event_gen_options": {
+            "invalid": False
+        }
+    })
+    form_payloads: list[aiohttp.MultipartWriter] = []
+
+    # callback function to grab data
+    def call_back(url, **kwargs) -> CallbackResult:
+        form_payloads.append(kwargs["data"])
+        print("called back")
+        return CallbackResult(
+            status=200,
+        )
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True,
+            callback=call_back
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b'test log',
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        puml_files_test(
+            puml_file_paths=[test_file_path],
+            test_output_directory=harness_config.report_file_store,
+            harness_config=harness_config,
+            test_config=test_config
+        )
+        for form_payload in form_payloads:
+            io_data = form_payload._parts[0][0]._value
+            bytes_data = io_data.read()
+            # check the data is as expected
+            msg_length = int.from_bytes(bytes_data[:4], "big")
+            json_bytes = bytes_data[4:]
+            assert msg_length == len(json_bytes)
 
         clean_directories([harness_config.report_file_store])
 

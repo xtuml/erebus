@@ -26,6 +26,7 @@ from plotly.graph_objects import Figure
 from requests import ReadTimeout
 import requests
 import numpy as np
+from aiokafka import AIOKafkaProducer
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import clean_directories
@@ -39,7 +40,11 @@ from test_harness.protocol_verifier.simulator_data import (
     generate_job_batch_events,
     generate_single_events,
     job_sequencer,
-    send_list_dict_as_json_wrap_url,
+    send_list_dict_as_json_wrap_send_function,
+    convert_list_dict_to_json_io_bytes,
+    convert_list_dict_to_pv_json_io_bytes,
+    send_payload_kafka,
+    send_payload_async,
 )
 from test_harness.simulator.simulator import (
     SimDatum,
@@ -280,13 +285,19 @@ class Test(ABC):
         :param results_handler: A list of the template jobs to send
         :type results_handler: `list`[:class:`Job`]
         """
-        connector = aiohttp.TCPConnector(limit=2000)
-        async with aiohttp.ClientSession(connector=connector) as session:
+        if self.harness_config.message_bus_protocol == "KAFKA":
+            kafka_producer = AIOKafkaProducer(
+                bootstrap_servers=self.harness_config.kafka_message_bus_host
+            )
+            await kafka_producer.start()
             self.simulator = Simulator(
                 delays=self.delay_times,
                 simulation_data=self.sim_data_generator,
-                action_func=send_list_dict_as_json_wrap_url(
-                    url=self.harness_config.pv_send_url, session=session
+                action_func=send_list_dict_as_json_wrap_send_function(
+                    send_function=send_payload_kafka,
+                    list_dict_converter=convert_list_dict_to_pv_json_io_bytes,
+                    kafka_topic=self.harness_config.kafka_message_bus_topic,
+                    kafka_producer=kafka_producer,
                 ),
                 results_handler=results_handler,
             )
@@ -294,6 +305,29 @@ class Test(ABC):
             self.time_start = datetime.now()
             results_handler.results_holder.time_start = self.time_start
             await self.simulator.simulate()
+            await kafka_producer.stop()
+        else:
+            connector = aiohttp.TCPConnector(limit=2000)
+            async with aiohttp.ClientSession(connector=connector) as session:
+                self.simulator = Simulator(
+                    delays=self.delay_times,
+                    simulation_data=self.sim_data_generator,
+                    action_func=send_list_dict_as_json_wrap_send_function(
+                        send_function=send_payload_async,
+                        list_dict_converter=(
+                            convert_list_dict_to_pv_json_io_bytes
+                            if self.harness_config.pv_send_as_pv_bytes
+                            else convert_list_dict_to_json_io_bytes
+                        ),
+                        url=self.harness_config.pv_send_url,
+                        session=session,
+                    ),
+                    results_handler=results_handler,
+                )
+                # set the sim start time
+                self.time_start = datetime.now()
+                results_handler.results_holder.time_start = self.time_start
+                await self.simulator.simulate()
 
     async def stop_test(self) -> None:
         """Method to stop the test after a a certain amount of time if all the
@@ -645,6 +679,12 @@ class PerformanceTest(Test):
         """Method to get the PV sim data from the grok endpoint and read into
         results
         """
+        if self.harness_config.metrics_from_kafka:
+            self.results.add_kafka_results_from_topic(
+                self.harness_config.kafka_metrics_host,
+                self.harness_config.kafka_metrics_topic,
+            )
+            return
         self.results.add_reception_results_from_log_files(
             file_paths=[
                 os.path.join(self.harness_config.log_file_store, file_name)

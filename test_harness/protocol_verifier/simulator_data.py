@@ -5,21 +5,17 @@
 """Methods to create simulator data
 """
 from __future__ import annotations
-from io import BytesIO
-from typing import (
-    Generator,
-    Any,
-    Callable,
-    Awaitable,
-    TypedDict,
-)
+from typing import Generator, Any, Callable, Awaitable, TypedDict, Literal
 import json
 from uuid import uuid4
 from datetime import datetime
 import logging
 import itertools
 from abc import ABC, abstractmethod
+import asyncio
+
 import aiohttp
+from aiokafka import AIOKafkaProducer
 
 from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
@@ -283,20 +279,45 @@ def job_sequencer(
 
 def convert_list_dict_to_json_io_bytes(
     list_dict: list[dict[str, Any]]
-) -> BytesIO:
-    """Method to convert a list of dicts into :class:`BytesIO`
+) -> list[bytes]:
+    """Method to convert a list of dicts into list with containing a single
+    :class:`bytes`
 
     :param list_dict: The list of dictionaries
     :type list_dict: `list`[`dict`[`str`, `Any`]]
-    :return: Returns the :class:`BytesIO` instance
-    :rtype: :class:`BytesIO`
+    :return: Returns the :class:`bytes` instance
+    :rtype: `list`[:class:`bytes`]
     """
-    io_bytes = BytesIO(json.dumps(list_dict, indent=4).encode("utf8"))
-    return io_bytes
+    io_bytes = json.dumps(list_dict, indent=4).encode("utf8")
+    return [io_bytes]
+
+
+def convert_list_dict_to_pv_json_io_bytes(
+    list_dict: list[dict[str, Any]]
+) -> list[bytes]:
+    """Method to convert a list of dicts into a list of :class:`bytes` for
+    each event suitable for ingestion directly by the PV
+
+    :param list_dict: The list of dictionaries
+    :type list_dict: `list`[`dict`[`str`, `Any`]]
+    :return: Returns the :class:`bytes` instance
+    :rtype: `list`[:class:`bytes`]
+    """
+    io_bytes_list = []
+    for event in list_dict:
+        pay_load = json.dumps(event).encode("utf8")
+        msg_len = len(pay_load).to_bytes(4, byteorder="big")
+        io_bytes = msg_len + pay_load
+        io_bytes_list.append(io_bytes)
+    return io_bytes_list
 
 
 def send_list_dict_as_json_wrap_url(
-    url: str, session: aiohttp.ClientSession | None = None
+    url: str,
+    session: aiohttp.ClientSession | None = None,
+    list_dict_converter: Callable[[list[dict[str, Any]]], list[bytes]] = (
+        convert_list_dict_to_json_io_bytes
+    ),
 ) -> Callable[
     [str],
     Callable[
@@ -309,6 +330,11 @@ def send_list_dict_as_json_wrap_url(
     :type url: `str`
     :param session: The session for HTTP requests, defaults to `None`
     :type session: `aiohttp`.`ClientSession` | `None`, optional
+    :param list_dict_converter: The function to convert a list of dicts to
+    a list of :class:`bytes`, defaults to
+    :func:`convert_list_dict_to_json_io_bytes`
+    :type list_dict_converter: :class:`Callable`[ [`list`[`dict`[`str`,
+    `Any`]]], `list`[:class:`bytes`] ], optional
     :return: Returns an asynchrcnous function for sending list dictionaries
     as json packets
     :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
@@ -335,15 +361,117 @@ def send_list_dict_as_json_wrap_url(
         :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
         :class:`datetime`]
         """
-        file = convert_list_dict_to_json_io_bytes(list_dict)
-        file_name = str(uuid4()) + ".json"
-        result = await send_payload_async(
-            file=file, file_name=file_name, url=url, session=session
+        files = list_dict_converter(list_dict)
+        file_names = [str(uuid4()) + ".json" for _ in range(len(files))]
+        results = await asyncio.gather(
+            *[
+                send_payload_async(
+                    file=file,
+                    file_name=file_name_sent,
+                    url=url,
+                    session=session,
+                )
+                for file, file_name_sent in zip(files, file_names)
+            ]
         )
         time_completed = datetime.now()
+        file_name = str(uuid4()) + ".json"
+        result = "".join(results)
         return list_dict, file_name, job_id, job_info, result, time_completed
 
     return send_list_dict_as_json
+
+
+def send_list_dict_as_json_wrap_send_function(
+    send_function: Callable[[Any, Any], Awaitable[str]],
+    list_dict_converter: Callable[[list[dict[str, Any]]], list[bytes]] = (
+        convert_list_dict_to_json_io_bytes
+    ),
+    **send_kwargs: Any,
+) -> Callable[
+    [str],
+    Callable[
+        [list[dict[str, Any]]], Awaitable[tuple[list[dict[str, Any]], str]]
+    ],
+]:
+    """Closure to provide an asynchronous function given an input url
+
+    :param send_function: The function to send the payload
+    :type send_function: :class:`Callable`[ [`Any`, `Any`], `Awaitable`[`str`]
+    :param list_dict_converter: The function to convert a list of dicts to
+    a list of :class:`bytes`, defaults to
+    :func:`convert_list_dict_to_json_io_bytes`
+    :type list_dict_converter: :class:`Callable`[ [`list`[`dict`[`str`,
+    `Any`]]], `list`[:class:`bytes`] ], optional
+    :param send_kwargs: Keyword arguments for the send function
+    :type send_kwargs: `Any`
+    :return: Returns an asynchrcnous function for sending list dictionaries
+    as json packets
+    :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
+    :class:`Awaitable`[`tuple`[`list`[`dict`[`str`, `Any`]], `str`]] ]
+    """
+
+    async def send_list_dict_as_json(
+        list_dict: list[dict[str, Any]],
+        job_id: str,
+        job_info: dict[str, str | None],
+    ) -> tuple[
+        list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
+    ]:
+        """Async method to send a list of dicts as a json payload
+
+        :param list_dict: The list of dictionaries
+        :type list_dict: `list`[`dict`[`str`, `Any`]]
+        :param url: The url to send the payload to
+        :type url: `str`
+        :return: Returns a tuple of:
+        * the list of dicts sent
+        * the file name given
+        * the result of the request
+        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
+        :class:`datetime`]
+        """
+        files = list_dict_converter(list_dict)
+        file_names = [str(uuid4()) + ".json" for _ in range(len(files))]
+        results = await asyncio.gather(
+            *[
+                send_function(file, file_name_sent, **send_kwargs)
+                for file, file_name_sent in zip(files, file_names)
+            ]
+        )
+        time_completed = datetime.now()
+        file_name = str(uuid4()) + ".json"
+        result = "".join(results)
+        return list_dict, file_name, job_id, job_info, result, time_completed
+
+    return send_list_dict_as_json
+
+
+async def send_payload_kafka(
+    file: bytes,
+    file_name: str,
+    kafka_producer: AIOKafkaProducer,
+    kafka_topic: str,
+) -> Literal["", "KafkaTimeoutError"]:
+    """Async method to send a payload to a kafka producer
+
+    :param file: The file to send
+    :type file: :class:`bytes`
+    :param producer: The kafka producer
+    :type producer: :class:`KafkaProducer`
+    """
+    try:
+        await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
+        result = ""
+        logging.getLogger().debug(
+            f"Sent file {file_name} payload to kafka topic {kafka_topic}"
+        )
+    except Exception as error:
+        logging.getLogger().warning(
+            "Error sending payload to kafka: %s", error
+        )
+        result = str(error)
+    return result
 
 
 class MetaDataCategory(TypedDict):
@@ -491,6 +619,12 @@ class Event:
                 invariant_store.update(meta_data_name)
                 categories["invariants"][meta_data_name] = meta_data_value
             else:
+                if isinstance(meta_data_value, dict):
+                    # here as a fix for the fact that the
+                    # loop counts and branch counts are now parsed differently
+                    # should maybe introduce backwards compatibility flag
+                    if "value" in meta_data_value:
+                        meta_data_value = meta_data_value["value"]
                 categories["fixed"][meta_data_name] = meta_data_value
         return categories
 
@@ -612,15 +746,10 @@ class Event:
             "applicationName": self.application_name,
         }
         if self.has_previous_event_id():
-            if len(self.prev_events) == 1:
-                event_dict["previousEventIds"] = event_event_id_map[
-                    id(self.prev_events[0])
-                ]
-            else:
-                event_dict["previousEventIds"] = [
-                    event_event_id_map[id(prev_event)]
-                    for prev_event in self.prev_events
-                ]
+            event_dict["previousEventIds"] = [
+                event_event_id_map[id(prev_event)]
+                for prev_event in self.prev_events
+            ]
         # add meta data if it exists
         event_dict = {
             **event_dict,
@@ -921,7 +1050,7 @@ class Job:
         """
         return {
             **{id(event): str(uuid4()) for event in self.events},
-            **{id(event): str(uuid4) for event in self.missing_events},
+            **{id(event): str(uuid4()) for event in self.missing_events},
         }
 
     def parse_input_jobfile(self, input_jobfile: list[dict]) -> None:
