@@ -832,7 +832,7 @@ class Job:
         self,
         job_info: dict[str, str | bool] | None = None,
         job_options: TemplateOptions | None = None,
-    ):
+    ) -> None:
         """Constructor method"""
         self.events: list[Event] = []
         self.missing_events: list[Event] = []

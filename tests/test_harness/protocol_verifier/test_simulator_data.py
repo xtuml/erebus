@@ -29,6 +29,7 @@ from test_harness.protocol_verifier.simulator_data import (
     generate_events_from_template_jobs,
     convert_list_dict_to_json_io_bytes,
 )
+from test_harness.protocol_verifier.types import TemplateOptions
 
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 
@@ -869,6 +870,42 @@ class TestJob:
         for event in job.events:
             assert id(event) in event_event_id_map
             assert isinstance(event_event_id_map[id(event)], str)
+
+    @staticmethod
+    def test_generate_simulation_job_events_with_options(
+        job_list_with_meta_data: list[dict[str, str | list[str]]]
+    ) -> None:
+        """Tests :class:`Job`.`generate_simulation_job_events` with options
+        specified of invariant_matched and invariant_length
+
+        :param job_list_with_meta_data: A list of event dicts in a job with
+        meta data
+        :type job_list_with_meta_data: `list`[`dict`[`str`, `str`  |
+        `list`[`str`]]]
+        """
+        options = TemplateOptions(
+            invariant_matched=False,
+            invariant_length=2
+        )
+        job = Job(
+            job_options=options
+        )
+        job.parse_input_jobfile(job_list_with_meta_data)
+        job_id_data_map = job.create_job_id_data_map()
+        events = [
+            event_sim_datum.kwargs["list_dict"]
+            for event_sim_datum in
+            job.generate_simulation_job_events(
+                job_id_data_map=job_id_data_map,
+                sim_datum_transformer=EventSimDatumTransformer(),
+            )
+        ]
+        assert len(events) == 4
+        assert events[0][0]["X"] != events[1][0]["X"]
+        assert len(events[0][0]["X"]) == 72
+        assert len(events[1][0]["X"]) == 72
+        assert events[0][0]["X"][:36] == events[0][0]["X"][36:]
+        assert events[1][0]["X"][:36] == events[1][0]["X"][36:]
 
 
 def test_generate_job_batch_events(
