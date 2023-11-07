@@ -79,6 +79,10 @@ test_file_path_einv = os.path.join(
     Path(__file__).parent.parent / "test_files",
     "test_event_file_EINV.json"
 )
+test_file_path_einv_options = os.path.join(
+    Path(__file__).parent.parent / "test_files",
+    "test_event_file_EINV_options.json"
+)
 
 uuid4hex = re.compile(
             '[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z', re.I
@@ -146,6 +150,77 @@ def test_puml_files_test() -> None:
                 ))
             assert any([file_in_files, is_uuid])
 
+        clean_directories([harness_config.report_file_store])
+
+
+@responses.activate
+def test_puml_files_test_job_file_with_options() -> None:
+    """Tests method `puml_test_files` with an input job file containing options
+    for Extra job invariants with mismatched invariants and length set to 2
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b'test log',
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        puml_files_test(
+            puml_file_paths=[test_uml_1_einv_path, test_uml_2_einv_path],
+            test_output_directory=harness_config.report_file_store,
+            harness_config=harness_config,
+            test_config=test_config,
+            test_file_paths=[test_file_path_einv_options]
+        )
+        files = glob.glob("*.*", root_dir=harness_config.report_file_store)
+        events_list = []
+        for file in files:
+            is_uuid = bool(uuid4hex.match(
+                    file.replace("-", "").replace(".json", "")
+                ))
+            if is_uuid:
+                with open(
+                    os.path.join(
+                        harness_config.report_file_store,
+                        file
+                    ),
+                    "r"
+                ) as json_file:
+                    events_list.extend(json.load(json_file))
+        assert "testEINV" in events_list[0] and "testEINV" in events_list[2]
+        assert events_list[0]["testEINV"] != events_list[2]["testEINV"]
+        assert events_list[0]["testEINV"][:36] == (
+            events_list[0]["testEINV"][36:]
+        )
+        assert events_list[2]["testEINV"][:36] == (
+            events_list[2]["testEINV"][36:]
+        )
         clean_directories([harness_config.report_file_store])
 
 
