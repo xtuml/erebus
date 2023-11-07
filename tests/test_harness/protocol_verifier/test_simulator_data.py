@@ -25,6 +25,7 @@ from test_harness.protocol_verifier.simulator_data import (
     Event,
     NamedUUID,
     NamedUUIDStore,
+    UUIDString,
     generate_job_batch_events,
     generate_single_events,
     simple_sequencer,
@@ -180,6 +181,37 @@ class TestNamedUUID:
             assert named_uuid_store.named_uuids[named_uuid.name] == named_uuid
 
     @staticmethod
+    def check_matched_uuid_data(
+        named_uuids: list[NamedUUID],
+        named_uuid_name_data_map: dict[str, UUIDString],
+        is_matched: bool
+    ) -> None:
+        """Helper method to check the data of the named uuids
+
+        :param named_uuids: The list of named uuids
+        :type named_uuids: `list`[:class:`NamedUUID`]
+        :param named_uuid_name_data_map: The map of named uuid names to data
+        :type named_uuid_name_data_map: `dict`[`str`, :class:`UUIDString`]
+        :param is_matched: Boolean indicating hhether the data should be
+        matched
+        :type is_matched: `bool`
+        """
+        for named_uuid in named_uuids:
+            assert named_uuid.name in named_uuid_name_data_map
+            got_random_data_1 = named_uuid_name_data_map[
+                named_uuid.name
+            ].get_data()
+            got_random_data_2 = named_uuid_name_data_map[
+                named_uuid.name
+            ].get_data()
+            is_uuid = bool(uuid4hex.match(got_random_data_1.replace("-", "")))
+            assert is_uuid
+            if is_matched:
+                assert got_random_data_1 == got_random_data_2
+            else:
+                assert got_random_data_1 != got_random_data_2
+
+    @staticmethod
     @given(st.lists(st.text()))
     def test_create_name_data_map(names: list[str]) -> None:
         """Tests the method
@@ -192,17 +224,9 @@ class TestNamedUUID:
         named_uuids = [named_uuid_store.update(name) for name in names]
         named_uuid_name_data_map = named_uuid_store.create_name_data_map()
         assert len(set(names)) == len(named_uuid_name_data_map)
-        for named_uuid in named_uuids:
-            assert named_uuid.name in named_uuid_name_data_map
-            got_random_data_1 = named_uuid_name_data_map[
-                named_uuid.name
-            ].get_data()
-            got_random_data_2 = named_uuid_name_data_map[
-                named_uuid.name
-            ].get_data()
-            is_uuid = bool(uuid4hex.match(got_random_data_1.replace("-", "")))
-            assert is_uuid
-            assert got_random_data_1 == got_random_data_2
+        TestNamedUUID.check_matched_uuid_data(
+            named_uuids, named_uuid_name_data_map, True
+        )
 
     @staticmethod
     @given(st.lists(st.text()))
@@ -218,17 +242,9 @@ class TestNamedUUID:
         named_uuids = [named_uuid_store.update(name) for name in names]
         named_uuid_name_data_map = named_uuid_store.create_name_data_map()
         assert len(set(names)) == len(named_uuid_name_data_map)
-        for named_uuid in named_uuids:
-            assert named_uuid.name in named_uuid_name_data_map
-            got_random_data_1 = named_uuid_name_data_map[
-                named_uuid.name
-            ].get_data()
-            got_random_data_2 = named_uuid_name_data_map[
-                named_uuid.name
-            ].get_data()
-            is_uuid = bool(uuid4hex.match(got_random_data_1.replace("-", "")))
-            assert is_uuid
-            assert got_random_data_1 != got_random_data_2
+        TestNamedUUID.check_matched_uuid_data(
+            named_uuids, named_uuid_name_data_map, False
+        )
 
 
 class TestEvent:
