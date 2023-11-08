@@ -24,6 +24,7 @@ class PVFunctionalResults(PVResults):
         self.jobs_info = []
         self.file_names = []
         self.responses = []
+        self.event_id_job_id_map: dict[str, str] = {}
 
     def update_from_sim(
         self,
@@ -50,6 +51,9 @@ class PVFunctionalResults(PVResults):
             job_ids=[job_id], jobs_info=[job_info], file_names=[file_name]
         )
         self.update_responses([response])
+        if "event_list" in kwargs:
+            event_list = kwargs["event_list"]
+            self.update_event_id_job_id_map(event_list)
 
     def update_test_files_info(
         self,
@@ -91,6 +95,16 @@ class PVFunctionalResults(PVResults):
         :type response: `str`
         """
         self.responses.extend(responses)
+
+    def update_event_id_job_id_map(self, event_list: list[dict]) -> None:
+        """Method to update the event id job id map
+
+        :param event_list: The list of event dicts
+        :type event_list: `list`[`dict`]
+        """
+        for event in event_list:
+            if "eventId" in event and "jobId" in event:
+                self.event_id_job_id_map[event["eventId"]] = event["jobId"]
 
     def create_validity_dataframe(self) -> pd.DataFrame:
         """Create a validity dataframe for the instance
