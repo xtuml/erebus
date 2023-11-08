@@ -15,3 +15,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    reviewers:
+      - "FreddieMatherSmartDCSIT"
+      - "JackHintonSmartDCSIT"
