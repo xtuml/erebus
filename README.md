@@ -267,8 +267,12 @@ A test can be run with the four following stages (`/startTest` endpoint must be 
         "job_name": <string denoting name of job>,
         "SequenceType": <string denoting the type of sequence for functional tests>,
         "validity": <boolean indicating if the job file is should pass or fail in the PV>
+        "options" : <json of options>
     }
     ```
+    The `options` json field currently supports the following options:
+        * `invariant_matched` - Boolean indicating whether invariants that have the same name should match at runtime for a test event sequence
+        * `invaraint_length` - Integer value greater than or equal to 1 that specifies the length multiples of a 36 character length uuid that is produced for invariants
     An example file is shown below:
     ```
     {
@@ -295,7 +299,11 @@ A test can be run with the four following stages (`/startTest` endpoint must be 
         ],
         "job_name": "test_uml_1",
         "sequence_type": "ValidSols",
-        "validity": true
+        "validity": true,
+        "options": {
+            "invariant_matched": false,
+            "invariant_length": 2
+        }
     }    
     ```
     The endpoint `/upload/test-files` allows the upload of multiple test files and is of mime type `multipart/form`. An example curl request is shown below:
