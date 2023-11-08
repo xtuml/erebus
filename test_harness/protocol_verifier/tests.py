@@ -491,8 +491,6 @@ class FunctionalTest(Test):
         )
 
         self.test_running_progress=test_running_progress
-        print(test_running_progress,"#############################################################################################################")
-        # breakpoint()
 
     def set_results_holder(self) -> PVResults:
         return super().set_results_holder()

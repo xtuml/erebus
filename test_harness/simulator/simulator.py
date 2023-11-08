@@ -222,7 +222,6 @@ class Simulator:
         self.results_handler.handle_result(return_data)
 
     async def simulate(self) -> None:
-        breakpoint()
         """Method to simulate the instances simulation data"""
         with tqdm(total=len(self.delays)) as pbar:
             async with asyncio.TaskGroup() as task_group:
