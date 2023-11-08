@@ -640,7 +640,8 @@ def get_test_suites_from_results_dataframe(
                 )
                 or (row["TestResult"] == "Pass" and not row["Validity"])
             ):
-                child.pv_failure_reason = row["FailureReason"]
+                if "FailureReason" in row:
+                    child.pv_failure_reason = row["FailureReason"]
             children.append(child)
     return children
 
