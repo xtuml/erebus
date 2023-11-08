@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import json
 from copy import copy
 
+from test_harness.utils import delayed_async_func
 import requests
 import aiohttp
 from tqdm import tqdm
@@ -78,7 +79,7 @@ async def delayed_send_payload(
             pbar,
             file=file,
             file_name=file_name,
-            url=url
+            url=url,
         ), timeout=None)
     except Exception as error:
         response = handle_error_response(error)
@@ -157,28 +158,28 @@ def handle_error_response(error: Exception) -> str:
     return str(error)
 
 
-async def delayed_async_func(
-    delay: float,
-    func: Callable[..., Awaitable[Any]],
-    pbar: tqdm,
-    *args,
-    **kwargs
-) -> Any:
-    """Method to delay an async func by an amount of time in seconds
+# async def delayed_async_func(
+#     delay: float,
+#     func: Callable[..., Awaitable[Any]],
+#     pbar: tqdm,
+#     *args,
+#     **kwargs
+# ) -> Any:
+#     """Method to delay an async func by an amount of time in seconds
 
-    :param delay: The delay before th async function starts
-    :type delay: `float`
-    :param func: The async function to delay
-    :type func: :class:`Callable`[`...`, :class:`Awaitable`[`Any`]]
-    :param pbar: Progress bar
-    :type pbar: :class:`tqdm`
-    :return: Returns any value that the input function would
-    :rtype: `Any`
-    """
-    await asyncio.sleep(delay)
-    pbar.update(1)
-    awaited_data = await func(*args, **kwargs)
-    return awaited_data
+#     :param delay: The delay before th async function starts
+#     :type delay: `float`
+#     :param func: The async function to delay
+#     :type func: :class:`Callable`[`...`, :class:`Awaitable`[`Any`]]
+#     :param pbar: Progress bar
+#     :type pbar: :class:`tqdm`
+#     :return: Returns any value that the input function would
+#     :rtype: `Any`
+#     """
+#     await asyncio.sleep(delay)
+#     pbar.update(1)
+#     awaited_data = await func(*args, **kwargs)
+#     return awaited_data
 
 
 async def send_output_dir_async(

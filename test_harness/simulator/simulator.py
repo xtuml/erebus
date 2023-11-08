@@ -180,7 +180,7 @@ class Simulator:
                 "Values of less than 0.2 can lead to unpredictable "
                 "behaviour, consider increasing the value"
             )
-        test_running_progress = test_running_progress
+        self.test_running_progress = test_running_progress
 
     async def _execute_simulation_data(self) -> Any:
         """Asynchronous method to execute the next :class:`SimDatum` in the
@@ -218,7 +218,7 @@ class Simulator:
         :type pbar: :class:`tqdm`
         """
         return_data = await delayed_async_func(
-            delay=delay, func=self._execute_simulation_data, pbar=pbar
+            delay=delay, func=self._execute_simulation_data, pbar=pbar,test_running_progress=self.test_running_progress
         )
         self.results_handler.handle_result(return_data)
 

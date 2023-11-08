@@ -2,7 +2,7 @@
 # pylint: disable=R0903
 """Utility functions
 """
-from typing import Generator, Any, Literal, Callable, Awaitable
+from typing import Generator, Any, Literal, Callable, Awaitable, Optional
 from io import BytesIO
 import os
 import glob
@@ -218,7 +218,7 @@ async def delayed_async_func(
     delay: float,
     func: Callable[..., Awaitable[Any]],
     *,
-    test_running_progress: Value,
+    test_running_progress: Optional[Value] = None,
     pbar: tqdm | None = None,
     args: list[Any] | None = None,
     kwargs: dict | None = None
@@ -244,6 +244,7 @@ async def delayed_async_func(
 #   This has been placed before the await
 #   as running it after the await could cause the
 #   updates to happen out of order
-    test_running_progress.value = pbar.n / pbar.total
+    if test_running_progress is not None:
+        test_running_progress.value = pbar.n / pbar.total
     awaited_data = await func(*args, **kwargs)
     return awaited_data
