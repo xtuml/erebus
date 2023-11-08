@@ -16,6 +16,9 @@ pv_success_groks = (
         "svdc_job_success :"
         " JobId = %{UUID:JobId} : JobName = %{WORD:JobName}"
     ),
+    Grok(
+        "reception_event_valid : EventId = %{UUID:EventId}"
+    )
 )
 
 pv_failure_groks = (
@@ -43,11 +46,15 @@ pv_failure_groks = (
             "FAILURE_REASON": "[a-zA-Z ]+"
         }
     ),
+    Grok(
+        "reception_event_invalid : EventId = %{UUID:EventId}"
+    )
 )
 
 
 def logs_validity_df_to_results(
-    log_string: str, validity_df: pd.DataFrame
+    log_string: str, validity_df: pd.DataFrame,
+    event_id_job_id_map: dict[str, str] | None = None
 ) -> pd.DataFrame:
     """Method to obtain a test results dataframe from a string representing
     the Protocol Verifier "Verifier.log"
@@ -57,6 +64,8 @@ def logs_validity_df_to_results(
     :param validity_df: Dataframe with JobID and Validity of the Job. Extra
     information on the test case can be given
     :type validity_df: :class:`pd`.`DataFrame`
+    :param event_id_job_id_map: A dictionary mapping event ids to job ids
+    :type event_id_job_id_map: `dict`[`str`, `str`] | `None`
     :return: Returns a dataframe of results with fields (no limited to):
     * JobId - the id of the job
     * Validity - The validity of the job
@@ -65,20 +74,29 @@ def logs_validity_df_to_results(
     :rtype: :class:`pd`.`DataFrame`
     """
     # get pv results
-    pv_results_df = parse_log_string_to_pv_results_dataframe(log_string)
+    pv_results_df = parse_log_string_to_pv_results_dataframe(
+        log_string, event_id_job_id_map
+    )
     # get test results
     results_df = get_job_id_failure_successes(pv_results_df, validity_df)
     return results_df
 
 
-def parse_log_string_to_pv_results_dataframe(log_string: str) -> pd.DataFrame:
+def parse_log_string_to_pv_results_dataframe(
+    log_string: str,
+    event_id_job_id_map: dict[str, str] | None = None,
+) -> pd.DataFrame:
     """Method to parse verifier log string into a dataframe
 
     :param log_string: log file string
     :type log_string: `str`
+    :param event_id_job_id_map: A dictionary mapping event ids to job ids
+    :type event_id_job_id_map: `dict`[`str`, `str`] | `None`
     :return: DataFrame of Protocol verifier results
     :rtype: :class:`pd`.`DataFrame`
     """
+    if event_id_job_id_map is None:
+        event_id_job_id_map = {}
     # split log string into lines
     log_lines = log_string.splitlines()
     job_success = []
@@ -86,10 +104,16 @@ def parse_log_string_to_pv_results_dataframe(log_string: str) -> pd.DataFrame:
     for line in log_lines:
         success_grok = grok_line_priority(line, pv_success_groks)
         if success_grok:
+            if "EventId" in success_grok:
+                job_id = event_id_job_id_map[success_grok["EventId"]]
+                success_grok["JobId"] = job_id
             job_success.append(success_grok)
             continue
         failure_grok = grok_line_priority(line, pv_failure_groks)
         if failure_grok:
+            if "EventId" in failure_grok:
+                job_id = event_id_job_id_map[success_grok["EventId"]]
+                success_grok["JobId"] = job_id
             job_failed.append(failure_grok)
     # create dataframes for success and failures
     job_success_df = pd.DataFrame.from_records(
