@@ -105,6 +105,7 @@ class Test(ABC):
                 ],
             ],
         ],
+        *,
         test_running_progress: Value,
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
@@ -330,6 +331,7 @@ class Test(ABC):
                         session=session,
                     ),
                     results_handler=results_handler,
+                    test_running_progress=self.test_running_progress
                 )
                 # set the sim start time
                 self.time_start = datetime.now()
@@ -461,7 +463,6 @@ class FunctionalTest(Test):
 
     def __init__(
         self,
-        test_running_progress: Value,
         test_file_generators: dict[
             str,
             dict[
@@ -476,21 +477,24 @@ class FunctionalTest(Test):
                 ],
             ],
         ],
+        *,
+        test_running_progress: Value,
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
         test_profile: None = None,
     ) -> None:
         super().__init__(
-            test_file_generators,
-            harness_config,
-            test_config,
+            test_file_generators=test_file_generators,
+            harness_config=harness_config,
+            test_config=test_config,
             test_output_directory=test_output_directory,
             save_files=True,
             test_profile=test_profile,
+            test_running_progress=test_running_progress,
         )
 
-        self.test_running_progress=test_running_progress
+        # self.test_running_progress=test_running_progress
 
     def set_results_holder(self) -> PVResults:
         return super().set_results_holder()
@@ -606,6 +610,7 @@ class PerformanceTest(Test):
                 ],
             ],
         ],
+        *,
         test_running_progress: Value,
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
@@ -614,14 +619,14 @@ class PerformanceTest(Test):
     ) -> None:
         """Constructor method"""
         super().__init__(
-            test_file_generators,
-            harness_config,
-            test_config,
+            test_file_generators=test_file_generators,
+            harness_config=harness_config,
+            test_config=test_config,
             test_output_directory=test_output_directory,
             save_files=False,
             test_profile=test_profile,
+            test_running_progress=test_running_progress,
         )
-        self.test_running_progress = test_running_progress
 
     # TODO: implement function
     # def set_results_holder(self) -> PVResultsDaskDataFrame:

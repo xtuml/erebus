@@ -231,6 +231,7 @@ class TestSimulator:
                     simulation_data=simulation_data_iter,
                     action_func=action_func,
                     schedule_ahead_time=schedule_ahead_time,
+                    test_running_progress=Value(c_float,-1),
                 )
             return
 
@@ -239,6 +240,7 @@ class TestSimulator:
             simulation_data=simulation_data_iter,
             action_func=action_func,
             schedule_ahead_time=schedule_ahead_time,
+            test_running_progress=Value(c_float,-1)
         )
         t_1 = time()
         await simulator.simulate()

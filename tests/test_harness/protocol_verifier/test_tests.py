@@ -1264,6 +1264,7 @@ def test_run_test_performance_kafka(monkeypatch) -> None:
         test_file_generators=test_events,
         test_config=test_config,
         harness_config=harness_config,
+        test_running_progress=Value(c_float, -1)
     )
     asyncio.run(test.run_test())
     assert len(test.results) == 60

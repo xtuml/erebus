@@ -284,7 +284,8 @@ def test_puml_files_test_job_file_with_options() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_file_paths=[test_file_path_einv_options]
+            test_file_paths=[test_file_path_einv_options],
+            test_running_progress=Value(c_float,-1),
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         events_list = []

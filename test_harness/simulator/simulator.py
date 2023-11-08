@@ -160,6 +160,7 @@ class Simulator:
     def __init__(
         self,
         delays: list[float],
+        *,
         test_running_progress: Value,
         simulation_data: Iterator[SimDatum],
         action_func: Callable[[Any, Any], Awaitable[Any]] | None = None,
