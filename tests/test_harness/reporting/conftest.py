@@ -31,6 +31,27 @@ def validity_df() -> pd.DataFrame:
 
 
 @pytest.fixture
+def validity_df_json_validity() -> pd.DataFrame:
+    """Fixture provide a dataframe with validity and job id amogsnt other
+
+    :return: Returns a dataframe of validity and job id
+    :rtype: :class:`pd`.`DataFrame`
+    """
+    data = [
+        ["job_1", "job_name", True, "ValidJSON", "file_1"],
+        ["job_2", "job_name", True, "ValidJSON", "file_2"],
+        ["job_3", "job_name", False, "InvalidJSON", "file_3"],
+        ["job_4", "job_name", False, "InvalidJSON", "file_4"],
+    ]
+    validity = pd.DataFrame(
+        data,
+        columns=["JobId", "SequenceName", "Validity", "Category", "FileName"],
+    )
+    validity.set_index("JobId", inplace=True)
+    return validity
+
+
+@pytest.fixture
 def pv_results_df() -> pd.DataFrame:
     """Fixture to provide a mocked proctocol verifier results dataframe
 

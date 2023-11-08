@@ -15,6 +15,7 @@ from test_harness.reporting.log_analyser import (
     yield_grok_metrics_from_file_buffer,
     yield_grok_metrics_from_files,
     parse_log_string_to_pv_results_dataframe,
+    logs_validity_df_to_results
 )
 from test_harness.utils import check_dict_equivalency
 
@@ -26,8 +27,10 @@ test_resources = Path(__file__).parent.parent / "test_files"
 unhappy_logs_file = test_resources / "unhappy_jobs_test.logs"
 
 # verifier parse logs
-
 verifier_parse_logs = test_resources / "Verifier_parse_test.log"
+
+# reception log file validity
+reception_json_validity = test_resources / "Reception_json_validity_test.log"
 
 
 def test_parse_log_string_to_pv_results_dataframe() -> None:
@@ -42,6 +45,30 @@ def test_parse_log_string_to_pv_results_dataframe() -> None:
         ("854ca735-d000-49d9-941e-947d2728848e", False),
         ("b5498ed4-a532-48c9-885f-d01671f95d60", False),
         ("f5e96c8b-9bc1-4882-a482-72c36d4e767c", False),
+    ]
+    for job_id, pv_result in expected_job_ids:
+        assert job_id in pv_results.index
+        assert all(pv_results.loc[job_id, "PVResult"]) == pv_result
+
+
+def test_parse_log_string_to_pv_results_dataframe_reception_log_file() -> None:
+    """Tests `parse_log_string_to_pv_results_dataframe`"""
+    event_id_job_id_map = {
+        "20b46747-81cb-487e-a12b-60fe3970f9aa": "job_1",
+        "cc13d7fa-eb8a-4cfc-b41e-a1146783360f": "job_2",
+        "a7448bda-84ca-4924-b3d2-9816b408b4a1": "job_3",
+        "54c51bcf-6a61-43d8-bb7b-7f462a5cac01": "job_4"
+    }
+    pv_results = parse_log_string_to_pv_results_dataframe(
+        reception_json_validity.read_text(),
+        event_id_job_id_map=event_id_job_id_map
+    )
+    assert len(pv_results) == 4
+    expected_job_ids = [
+        ("job_1", True),
+        ("job_2", False),
+        ("job_3", True),
+        ("job_4", False),
     ]
     for job_id, pv_result in expected_job_ids:
         assert job_id in pv_results.index
@@ -108,6 +135,37 @@ def test_parse_log_string_to_pv_results_dataframe_un_happy() -> None:
     for job_id, pv_result in expected_job_ids:
         assert job_id in pv_results.index
         assert all(pv_results.loc[job_id, "PVResult"]) == pv_result
+
+
+def test_logs_validity_df_to_results_json_validity(
+    validity_df_json_validity: DataFrame,
+) -> None:
+    """Tests `logs_validity_df_to_results` with json validity
+
+    :param validity_df_json_validity: Fixture providing a DataFrame of validity
+    :type validity_df_json_validity: :class:`DataFrame`
+    """
+    event_id_job_id_map = {
+        "20b46747-81cb-487e-a12b-60fe3970f9aa": "job_1",
+        "cc13d7fa-eb8a-4cfc-b41e-a1146783360f": "job_2",
+        "a7448bda-84ca-4924-b3d2-9816b408b4a1": "job_3",
+        "54c51bcf-6a61-43d8-bb7b-7f462a5cac01": "job_4"
+    }
+    results = logs_validity_df_to_results(
+        log_string=reception_json_validity.read_text(),
+        validity_df=validity_df_json_validity,
+        event_id_job_id_map=event_id_job_id_map
+    )
+    assert len(results) == 4
+    expected_results = {
+        "job_1": "Pass",
+        "job_2": "Fail",
+        "job_3": "Fail",
+        "job_4": "Pass",
+    }
+    for job_id, result in expected_results.items():
+        assert job_id in results.index
+        assert results.loc[job_id, "TestResult"] == result
 
 
 @pytest.mark.parametrize(
