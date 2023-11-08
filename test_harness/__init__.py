@@ -46,6 +46,7 @@ class HarnessApp(Flask):
     :param root_path: See :class:`Flask` documentation, defaults to None
     :type root_path: Optional[str], optional
     """
+
     def __init__(
         self,
         import_name: str,
@@ -53,14 +54,14 @@ class HarnessApp(Flask):
         static_url_path: Optional[str] = None,
         static_folder: Optional[Union[str, os.PathLike]] = "static",
         static_host: Optional[str] = None,
-        host_matching: bool = False, subdomain_matching: bool = False,
+        host_matching: bool = False,
+        subdomain_matching: bool = False,
         template_folder: Optional[Union[str, os.PathLike]] = "templates",
         instance_path: Optional[str] = None,
         instance_relative_config: bool = False,
-        root_path: Optional[str] = None
+        root_path: Optional[str] = None,
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         self.harness_config = HarnessConfig(config_path=harness_config_path)
         self.test_running_progress = Value(c_float, -1)
         super().__init__(
@@ -73,14 +74,14 @@ class HarnessApp(Flask):
             template_folder,
             instance_path,
             instance_relative_config,
-            root_path
+            root_path,
         )
         self.test_to_run = {}
 
     def handle_multipart_file_upload(
-            self,
-            save_file_dir_path: str,
-            file_handler: Callable[[list[FileStorage]], Response]
+        self,
+        save_file_dir_path: str,
+        file_handler: Callable[[list[FileStorage]], Response],
     ) -> Response:
         """Function to handle the upload of files
 
@@ -92,8 +93,7 @@ class HarnessApp(Flask):
         # requests must be of type multipart/form-data
         if request.mimetype != "multipart/form-data":
             return make_response(
-                "mime-type must be multipart/form-data\n",
-                400
+                "mime-type must be multipart/form-data\n", 400
             )
         # get files
         uploaded_files: list[FileStorage] = [
@@ -105,24 +105,20 @@ class HarnessApp(Flask):
 
         # check for files without file name
         if any(
-            uploaded_file_name == ''
+            uploaded_file_name == ""
             for uploaded_file_name in uploaded_files_names
         ):
             return make_response(
-                "One of the uploaded files has no filename\n",
-                400
+                "One of the uploaded files has no filename\n", 400
             )
 
         # check if some of the files have the same name
         if len(set(uploaded_files_names)) < len(uploaded_files_names):
             return make_response(
                 "At least two of the uploaded files share the same filename\n",
-                400
+                400,
             )
-        response = file_handler(
-            uploaded_files,
-            save_file_dir_path
-        )
+        response = file_handler(uploaded_files, save_file_dir_path)
         return response
 
     def upload_uml_files(self) -> Response:
@@ -134,7 +130,7 @@ class HarnessApp(Flask):
         """
         return self.handle_multipart_file_upload(
             save_file_dir_path=self.harness_config.uml_file_store,
-            file_handler=handle_multiple_file_uploads
+            file_handler=handle_multiple_file_uploads,
         )
 
     def upload_test_files(self) -> Response:
@@ -146,7 +142,7 @@ class HarnessApp(Flask):
         """
         return self.handle_multipart_file_upload(
             save_file_dir_path=self.harness_config.test_file_store,
-            file_handler=handle_multiple_file_uploads
+            file_handler=handle_multiple_file_uploads,
         )
 
     def upload_profile(self) -> Response:
@@ -158,12 +154,11 @@ class HarnessApp(Flask):
         """
         return self.handle_multipart_file_upload(
             save_file_dir_path=self.harness_config.profile_store,
-            file_handler=handle_single_file_upload
+            file_handler=handle_single_file_upload,
         )
 
     def start_test(self) -> Response:
-        """Function to handle starting a test
-        """
+        """Function to handle starting a test"""
         try:
             json_dict = request.get_json()
             success, json_response = self.handle_start_test_json_request(
@@ -174,19 +169,25 @@ class HarnessApp(Flask):
             return error.get_response()
 
     def test_is_running(self) -> Response:
-        """Function to handle checking if a test is running
-        """
+        """Function to handle checking if a test is running"""
         if self.test_running_progress.value >= 0:
-            return jsonify({
-                "running": True, "details": {
-                "simulator_percent_done": self.test_running_progress.value
-            }}), 200
+            return (
+                jsonify(
+                    {
+                        "running": True,
+                        "details": {
+                            "simulator_percent_done": (
+                                self.test_running_progress.value
+                            )
+                        },
+                    }
+                ),
+                200,
+            )
         return jsonify({"running": False}), 200
-        
 
     def handle_start_test_json_request(
-        self,
-        request_json: dict
+        self, request_json: dict
     ) -> tuple[bool, dict[str, dict[str, Any]]]:
         """_summary_
 
@@ -203,18 +204,22 @@ class HarnessApp(Flask):
             self.valid_json_dict_keys
         )
         if unknown_keys:
-            return (False, {
-                "Error": f"The following fields: {','.join(unknown_keys)}"
-                "are not valid fields to use."
-            })
+            return (
+                False,
+                {
+                    "Error": (
+                        f"The following fields: {','.join(unknown_keys)}"
+                        "are not valid fields to use."
+                    )
+                },
+            )
         response_json = {}
         for key in self.valid_json_dict_keys:
             if key == "TestName":
                 test_name = request_json[key] if key in request_json else None
                 test_name, test_output_directory = (
                     create_test_output_directory(
-                        harness_config=self.harness_config,
-                        test_name=test_name
+                        harness_config=self.harness_config, test_name=test_name
                     )
                 )
                 test_to_run["TestOutputDirectory"] = test_output_directory
@@ -261,7 +266,7 @@ class HarnessApp(Flask):
 
 def create_app(
     harness_config_path: Optional[str] = None,
-    test_config: Optional[Mapping] = None
+    test_config: Optional[Mapping] = None,
 ) -> HarnessApp:
     """Creates HarnessApp(Flask)
 
@@ -282,7 +287,7 @@ def create_app(
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
+        app.config.from_pyfile("config.py", silent=True)
     else:
         # load the test config if passed in
         app.config.from_mapping(test_config)
@@ -294,12 +299,7 @@ def create_app(
         pass
 
     # route to upload uml
-    wrap_function_app(
-        app.upload_uml_files,
-        "/uploadUML",
-        ["POST"],
-        app
-    )
+    wrap_function_app(app.upload_uml_files, "/uploadUML", ["POST"], app)
 
     # route to upload profile
     @app.route("/upload/profile", methods=["POST"])
@@ -324,8 +324,7 @@ def create_app(
 
 
 def handle_single_file_upload(
-    uploaded_files: list[FileStorage],
-    save_file_dir_path: str
+    uploaded_files: list[FileStorage], save_file_dir_path: str
 ) -> Response:
     """Handler for a single file upload using multipart
 
@@ -338,18 +337,13 @@ def handle_single_file_upload(
     """
     if len(uploaded_files) > 1:
         return make_response(
-            "More than two files uploaded. A single file is required\n",
-            400
+            "More than two files uploaded. A single file is required\n", 400
         )
-    return handle_multiple_file_uploads(
-        uploaded_files,
-        save_file_dir_path
-    )
+    return handle_multiple_file_uploads(uploaded_files, save_file_dir_path)
 
 
 def handle_multiple_file_uploads(
-    uploaded_files: list[FileStorage],
-    save_file_dir_path: str
+    uploaded_files: list[FileStorage], save_file_dir_path: str
 ) -> Response:
     """Handler for a multiple file uploads using multipart
 
@@ -361,9 +355,7 @@ def handle_multiple_file_uploads(
     :rtype: :class:`Response`
     """
     for uploaded_file in uploaded_files:
-        handle_uploaded_file(
-            uploaded_file, save_file_dir_path
-        )
+        handle_uploaded_file(uploaded_file, save_file_dir_path)
     return make_response("Files uploaded successfully\n", 200)
 
 
@@ -381,7 +373,7 @@ def handle_uploaded_file(file: FileStorage, save_file_dir_path: str) -> None:
 
 
 def wrap_function_app(
-        func_to_wrap: Callable, route: str, methods: list[str], app: Flask
+    func_to_wrap: Callable, route: str, methods: list[str], app: Flask
 ) -> Callable[[], Response]:
     """Wraps a function in a Flask app route
 
@@ -396,15 +388,16 @@ def wrap_function_app(
     :return: The app.route decorated function
     :rtype: `Callable`[[], :class:`Response`]
     """
+
     @app.route(route, methods=methods)
     def wrapped_function() -> Response:
         return func_to_wrap()
+
     return wrapped_function
 
 
 def create_test_output_directory(
-    harness_config: HarnessConfig,
-    test_name: str | None = None
+    harness_config: HarnessConfig, test_name: str | None = None
 ) -> tuple[str, str]:
     """Method to create a test output directory given harness config and a
     test name. If no test name is given a uuid is given to the test and
@@ -422,15 +415,10 @@ def create_test_output_directory(
     if not test_name:
         test_name = str(uuid4())
     test_output_directory_path = os.path.join(
-        harness_config.report_file_store,
-        test_name
+        harness_config.report_file_store, test_name
     )
-    if not os.path.exists(
-        test_output_directory_path
-    ):
-        os.makedirs(
-            test_output_directory_path
-        )
+    if not os.path.exists(test_output_directory_path):
+        os.makedirs(test_output_directory_path)
     return (test_name, test_output_directory_path)
 
 
