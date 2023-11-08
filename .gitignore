@@ -6,3 +6,6 @@ env
 
 # ignore .pyc files
 *.pyc
+.venv/*
+tests/test_harness/report_output/*
+tests/test_harness/test_file_store/*
