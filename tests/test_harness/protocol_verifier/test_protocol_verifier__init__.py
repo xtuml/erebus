@@ -12,7 +12,7 @@ from tempfile import NamedTemporaryFile
 import logging
 from typing import Callable, Literal
 from io import BytesIO
-from ctypes import c_bool
+from ctypes import c_float
 import concurrent.futures
 import time
 
@@ -152,7 +152,7 @@ def test_puml_files_test() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            is_test_running=Value(c_bool, False)
+            test_running_progress=Value(c_float, -1)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -228,7 +228,7 @@ def test_puml_files_test_send_as_pv_bytes() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            is_test_running=Value(c_bool, False)
+            test_running_progress=Value(c_float, -1)
         )
         for form_payload in form_payloads:
             io_data = form_payload._parts[0][0]._value
@@ -361,7 +361,7 @@ def test_puml_files_test_functional_extra_job_invariants() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_file_paths=[test_file_path_einv],
-            is_test_running=Value(c_bool, False)
+            test_running_progress=Value(c_float, -1)
         )
         results = pd.read_csv(
             os.path.join(harness_config.report_file_store, "Results.csv")
@@ -447,7 +447,7 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_file_paths=[test_file_path_einv],
-            is_test_running=Value(c_bool, False)
+            test_running_progress=Value(c_float, -1)
         )
         results = pd.read_csv(
             os.path.join(
@@ -729,7 +729,7 @@ def test_puml_files_test_with_location_log_urls(
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            is_test_running=Value(c_bool, False)
+            test_running_progress=Value(c_float, -1)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -857,7 +857,7 @@ def test_puml_files_performance_with_input_profile(
                 harness_config=harness_config,
                 test_config=test_config,
                 profile=profile,
-                is_test_running=Value(c_bool, False)
+                test_running_progress=Value(c_float, -1)
             )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -971,7 +971,7 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_file_paths=[test_uml_1_events],
-            is_test_running=Value(c_bool, False)
+            test_running_progress=Value(c_float, -1)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -1080,12 +1080,13 @@ def test_puml_files_test_functional_test_timeout(
             url=harness_config.log_urls["ver"]["getFile"],
             body=b'test log',
         )
+        test_running_progress = Value(c_float, -1)
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            is_test_running=Value(c_bool, False)
+            test_running_progress=test_running_progress
         )
         assert (
             "Protocol Verifier failed to finish within the test timeout of "
@@ -1101,8 +1102,8 @@ def test_puml_files_test_functional_test_timeout(
 
 
 @responses.activate
-def test_puml_files_test_is_test_running_true() -> None:
-    """Tests that is_test_running is set to True when a test is invoked
+def test_puml_files_test_is_running_or_in_progess() -> None:
+    """Tests that test_running_progress is set to > -1 when a test is invoked
     """
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
@@ -1142,30 +1143,30 @@ def test_puml_files_test_is_test_running_true() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b'test log',
         )
-        is_test_running = Value(c_bool, False)
+        test_running_progress=Value(c_float, -1)
 
-        def test_is_test_running_value(is_test_running_local):
+        def test_running_progress_value(test_running_progress_local):
             for i in range(100):
-                if is_test_running_local.value:
-                    return True
+                if test_running_progress_local.value > -1:
+                    return test_running_progress_local.value
                 time.sleep(0.1)
-            return False
+            return -1
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             # Start the load operations and mark each future with its URL
-            future_from_test = executor.submit(test_is_test_running_value,
-                                               is_test_running)
+            future_from_test = executor.submit(test_running_progress_value,
+                                               test_running_progress)
 
             puml_files_test(
                 puml_file_paths=[test_file_path],
                 test_output_directory=harness_config.report_file_store,
                 harness_config=harness_config,
                 test_config=test_config,
-                is_test_running=is_test_running
+                test_running_progress=test_running_progress
             )
 
-            assert future_from_test.result()
-        assert not is_test_running.value
+            assert future_from_test.result() > -1
+        assert test_running_progress.value < 0
 
 
 @responses.activate
@@ -1236,7 +1237,7 @@ def test_puml_files_performance_test_timeout(
                 harness_config=harness_config,
                 test_config=test_config,
                 profile=profile,
-                is_test_running=Value(c_bool, False)
+                test_running_progress=Value(c_float, -1)
             )
         assert (
             "Protocol Verifier failed to finish within the test timeout of "

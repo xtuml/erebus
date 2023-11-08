@@ -16,6 +16,8 @@ import logging
 import math
 from datetime import datetime
 import glob
+from multiprocessing import Value
+from ctypes import c_float
 
 import aiohttp
 import matplotlib.pyplot as plt
@@ -103,6 +105,7 @@ class Test(ABC):
                 ],
             ],
         ],
+        test_running_progress: Value,
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
@@ -139,6 +142,7 @@ class Test(ABC):
         self.prepare_test()
         self.time_start: datetime | None = None
         self.time_end: datetime | None = None
+        self.test_running_progress = test_running_progress
 
     @abstractmethod
     def set_results_holder(self) -> (
@@ -302,6 +306,7 @@ class Test(ABC):
                     kafka_producer=kafka_producer,
                 ),
                 results_handler=results_handler,
+                test_running_progress=self.test_running_progress,
             )
             # set the sim start time
             self.time_start = datetime.now()
@@ -456,6 +461,7 @@ class FunctionalTest(Test):
 
     def __init__(
         self,
+        test_running_progress: Value,
         test_file_generators: dict[
             str,
             dict[
@@ -483,6 +489,10 @@ class FunctionalTest(Test):
             save_files=True,
             test_profile=test_profile,
         )
+
+        self.test_running_progress=test_running_progress
+        print(test_running_progress,"#############################################################################################################")
+        # breakpoint()
 
     def set_results_holder(self) -> PVResults:
         return super().set_results_holder()
@@ -598,6 +608,7 @@ class PerformanceTest(Test):
                 ],
             ],
         ],
+        test_running_progress: Value,
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
@@ -612,6 +623,7 @@ class PerformanceTest(Test):
             save_files=False,
             test_profile=test_profile,
         )
+        self.test_running_progress = test_running_progress
 
     # TODO: implement function
     # def set_results_holder(self) -> PVResultsDaskDataFrame:

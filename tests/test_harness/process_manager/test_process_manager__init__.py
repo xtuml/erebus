@@ -7,10 +7,11 @@ import os
 import glob
 import re
 import shutil
+from ctypes import c_float
 
 import responses
 from aioresponses import aioresponses
-from multiprocessing import Value as multiValue
+from multiprocessing import Value as Value
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.process_manager import (
@@ -77,7 +78,7 @@ def test_harness_test_manager_uml_exists() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_output_directory=harness_config.report_file_store,
-            is_test_running=multiValue('b', False)
+            test_running_progress=Value(c_float, -1)
         )
     assert success
     files = glob.glob("*.*", root_dir=harness_config.report_file_store)
@@ -109,7 +110,7 @@ def test_harness_test_manager_no_uml() -> None:
         harness_config=harness_config,
         test_config=test_config,
         test_output_directory=harness_config.report_file_store,
-        is_test_running=multiValue('b', False)
+        test_running_progress=Value(c_float, -1)
     )
     assert not success
     assert message == "There are no puml files within the uml file store path"

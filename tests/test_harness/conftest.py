@@ -6,6 +6,7 @@ Fixtures for Test Harness
 """
 
 import sys
+from ctypes import c_float
 from os.path import abspath
 from pathlib import Path
 from typing import Generator, Literal, Callable
@@ -17,7 +18,7 @@ import pytest
 from flask.testing import FlaskClient, FlaskCliRunner
 from pygrok import Grok
 from requests import PreparedRequest
-from multiprocessing import Value as multiValue
+from multiprocessing import Value
 
 from test_harness.protocol_verifier.tests import (
     PVPerformanceResults,
@@ -44,7 +45,6 @@ def test_app() -> Generator[HarnessApp, None, None]:
         harness_config_path=str(
             Path(__file__).parent / "config/test_config.config"
         ),
-        is_test_running=multiValue("b", False)
     )
     app.config.update({"TESTING": True})
 

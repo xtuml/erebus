@@ -239,4 +239,5 @@ async def delayed_async_func(
     if not kwargs:
         kwargs = {}
     awaited_data = await func(*args, **kwargs)
+    print(pbar.n,"\n")
     return awaited_data

@@ -6,7 +6,7 @@ import logging
 from typing import Literal
 import traceback
 import sys
-from multiprocessing import Value as multiValue
+from multiprocessing import Value
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier import full_pv_test
@@ -17,7 +17,7 @@ def harness_test_manager(
     harness_config: HarnessConfig,
     test_config: TestConfig,
     test_output_directory: str,
-    is_test_running: multiValue
+    test_running_progress: Value
 ) -> tuple[Literal[True], Literal['']] | tuple[Literal[False], str]:
     """Test Harness manager that trys to execute a test but if a failure is
     encounterd will log the error and return the error to the function user
@@ -40,7 +40,7 @@ def harness_test_manager(
             harness_config=harness_config,
             test_config=test_config,
             test_output_directory=test_output_directory,
-            is_test_running=is_test_running
+            test_running_progress=test_running_progress
         )
         return (True, "")
 

@@ -9,6 +9,8 @@ import asyncio
 import math
 from time import time
 from typing import Any
+from ctypes import c_float
+from multiprocessing import Value
 
 import pytest
 from hypothesis import given, settings
@@ -77,6 +79,7 @@ class TestSimulator:
             delays=delays,
             simulation_data=simulation_data_iter,
             action_func=action_func,
+            test_running_progress=Value(c_float,-1)
         )
         return_data = await simulator._execute_simulation_data()
 
@@ -106,6 +109,7 @@ class TestSimulator:
             delays=delays,
             simulation_data=simulation_data_gen,
             action_func=action_func,
+            test_running_progress=Value(c_float,-1)
         )
         return_data = await simulator._execute_simulation_data()
 
@@ -130,6 +134,7 @@ class TestSimulator:
         simulator = Simulator(
             delays=delays,
             simulation_data=simulation_data_iter,
+            test_running_progress=Value(c_float,-1)
         )
         return_data = await simulator._execute_simulation_data()
 
@@ -153,6 +158,7 @@ class TestSimulator:
         simulator = Simulator(
             delays=delays,
             simulation_data=simulation_data_iter,
+            test_running_progress=Value(c_float,-1)
         )
         with pytest.raises(RuntimeError) as e_info:
             await simulator._execute_simulation_data()
@@ -175,6 +181,7 @@ class TestSimulator:
             delays=delays,
             simulation_data=simulation_data_iter,
             action_func=action_func,
+            test_running_progress=Value(c_float,-1)
         )
         with tqdm(total=len(delays)) as pbar:
             t_1 = time()

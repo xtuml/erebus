@@ -6,9 +6,10 @@ from abc import ABC, abstractmethod
 from typing import Callable, Awaitable, Any, NamedTuple, Iterator, Generator
 import asyncio
 from datetime import datetime
+from ctypes import c_float
 
 from tqdm import tqdm
-
+from multiprocessing import Value
 from test_harness.utils import delayed_async_func
 
 
@@ -159,6 +160,7 @@ class Simulator:
     def __init__(
         self,
         delays: list[float],
+        test_running_progress: Value,
         simulation_data: Iterator[SimDatum],
         action_func: Callable[[Any, Any], Awaitable[Any]] | None = None,
         results_handler: ResultsHandler | None = None,
@@ -177,6 +179,7 @@ class Simulator:
                 "Values of less than 0.2 can lead to unpredictable "
                 "behaviour, consider increasing the value"
             )
+        test_running_progress = test_running_progress
 
     async def _execute_simulation_data(self) -> Any:
         """Asynchronous method to execute the next :class:`SimDatum` in the
@@ -219,6 +222,7 @@ class Simulator:
         self.results_handler.handle_result(return_data)
 
     async def simulate(self) -> None:
+        breakpoint()
         """Method to simulate the instances simulation data"""
         with tqdm(total=len(self.delays)) as pbar:
             async with asyncio.TaskGroup() as task_group:

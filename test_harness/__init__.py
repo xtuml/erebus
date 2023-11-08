@@ -5,6 +5,7 @@ Creates the test harness app
 import os
 from typing import Mapping, Optional, Callable, Union, Any
 from uuid import uuid4
+from ctypes import c_float
 
 from flask import Flask, request, make_response, Response, jsonify
 from werkzeug.datastructures import FileStorage
@@ -48,7 +49,6 @@ class HarnessApp(Flask):
     def __init__(
         self,
         import_name: str,
-        is_test_running: Value,
         harness_config_path: Optional[str] = None,
         static_url_path: Optional[str] = None,
         static_folder: Optional[Union[str, os.PathLike]] = "static",
@@ -62,7 +62,7 @@ class HarnessApp(Flask):
         """Constructor method
         """
         self.harness_config = HarnessConfig(config_path=harness_config_path)
-        self.is_test_running = is_test_running
+        self.test_running_progress = Value(c_float, -1)
         super().__init__(
             import_name,
             static_url_path,
@@ -176,7 +176,10 @@ class HarnessApp(Flask):
     def test_is_running(self) -> Response:
         """Function to handle checking if a test is running
         """
-        return jsonify({"running": self.is_test_running.value}), 200
+        if self.test_running_progress.value > -1:
+            return jsonify({"running": True}), 200
+        return jsonify({"running": False}), 200
+        
 
     def handle_start_test_json_request(
         self,
@@ -254,7 +257,6 @@ class HarnessApp(Flask):
 
 
 def create_app(
-    is_test_running: Value,
     harness_config_path: Optional[str] = None,
     test_config: Optional[Mapping] = None
 ) -> HarnessApp:
@@ -272,7 +274,6 @@ def create_app(
         __name__,
         harness_config_path=harness_config_path,
         instance_relative_config=True,
-        is_test_running=is_test_running
     )
     app.config.from_mapping()
 

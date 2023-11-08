@@ -8,7 +8,7 @@ import os
 import asyncio
 import logging
 import time
-from multiprocessing import Value as multiValue
+from multiprocessing import Value
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.generate_test_files import (
@@ -27,7 +27,7 @@ def full_pv_test(
     harness_config: HarnessConfig,
     test_config: TestConfig,
     test_output_directory: str,
-    is_test_running: multiValue
+    test_running_progress: Value
 ) -> None:
     """Full protocol verifier test for the config provided
 
@@ -57,7 +57,7 @@ def full_pv_test(
         test_config=test_config,
         profile=profile,
         test_file_paths=test_file_paths,
-        is_test_running=is_test_running
+        test_running_progress=test_running_progress
     )
 
 
@@ -66,7 +66,7 @@ def puml_files_test(
     test_output_directory: str,
     harness_config: HarnessConfig,
     test_config: TestConfig,
-    is_test_running: multiValue,
+    test_running_progress: Value,
     profile: Profile | None = None,
     test_file_paths: list[str] | None = None
 ) -> None:
@@ -86,8 +86,10 @@ def puml_files_test(
     :type test_file_paths: `list`[`str`] | `None`, optional
     """
 
-#   setting thread-safe variable is_test_running to True
-    is_test_running.value = True  # noqa: F841
+#   setting thread-safe variable test_running_progress to True
+    
+    if test_running_progress.value < 0:
+        test_running_progress.value = 0  # noqa: F841
 
     # choose test from test config and run test
     test_class = (
@@ -129,7 +131,8 @@ def puml_files_test(
         harness_config=harness_config,
         test_config=test_config,
         test_output_directory=test_output_directory,
-        test_profile=profile
+        test_profile=profile,
+        test_running_progress=test_running_progress,
     )
     logging.getLogger().info(
         "Beggining test"
@@ -149,7 +152,7 @@ def puml_files_test(
         "Cleaning Test Harness and PV directories"
     )
     test.clean_directories()
-    is_test_running.value = False  # noqa: F841
+    test_running_progress.value = -1  # noqa: F841
 
 
 def get_puml_file_paths(
