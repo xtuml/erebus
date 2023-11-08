@@ -494,8 +494,6 @@ class FunctionalTest(Test):
             test_running_progress=test_running_progress,
         )
 
-        # self.test_running_progress=test_running_progress
-
     def set_results_holder(self) -> PVResults:
         return super().set_results_holder()
 

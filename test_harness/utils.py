@@ -8,6 +8,7 @@ import os
 import glob
 import logging
 import asyncio
+from multiprocessing import Value
 
 import flatdict
 from tqdm import tqdm
@@ -216,6 +217,8 @@ def collect_error_logs_from_func(
 async def delayed_async_func(
     delay: float,
     func: Callable[..., Awaitable[Any]],
+    *,
+    test_running_progress: Value,
     pbar: tqdm | None = None,
     args: list[Any] | None = None,
     kwargs: dict | None = None
@@ -238,6 +241,9 @@ async def delayed_async_func(
         args = []
     if not kwargs:
         kwargs = {}
+#   This has been placed before the await
+#   as running it after the await could cause the
+#   updates to happen out of order
+    test_running_progress.value = pbar.n / pbar.total
     awaited_data = await func(*args, **kwargs)
-    print(pbar.n,"\n")
     return awaited_data
