@@ -177,7 +177,7 @@ class HarnessApp(Flask):
                         "running": True,
                         "details": {
                             "simulator_percent_done": (
-                                0
+                                f"{self.test_running_progress.value:.2f}"
                             )
                         },
                     }

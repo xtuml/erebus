@@ -71,12 +71,14 @@ jobs:
 
           # this should return false as no tests are running
           sleep 10
+          echo "Testing that no tests are running"
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           # actual tests are set to run
           timeout 1m ./end-to-end-curl-commands.sh
 
           # this should return true as tests are running
+          echo "Testing that tests are running"
           curl 127.0.0.1:8800/isTestRunning | grep 'true'
 
           # It takes this long to get any meaningful output from the test harness
@@ -87,6 +89,7 @@ jobs:
           echo "Sleeping to give the test harness time to work"
           date
           sleep 90
+          echo "Testing that a percentage is returned"
           curl 127.0.0.1:8800/isTestRunning
           sleep 90
           date
