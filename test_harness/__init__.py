@@ -171,19 +171,19 @@ class HarnessApp(Flask):
     def test_is_running(self) -> Response:
         """Function to handle checking if a test is running"""
         if self.test_running_progress.value >= 0:
-            return (
-                jsonify(
+            returnVal = jsonify(
                     {
                         "running": True,
                         "details": {
                             "simulator_percent_done": (
-                                # f"{self.test_running_progress.value:.2f}"
-                                "0"
+                                f"{self.test_running_progress.value:.2f}"
                             )
                         },
                     }
                 ),
-            )
+            returnVal.content_length = None
+            return returnVal
+
         return jsonify({"running": False}), 200
 
     def handle_start_test_json_request(
