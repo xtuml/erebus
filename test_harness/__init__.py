@@ -176,13 +176,12 @@ class HarnessApp(Flask):
                         "running": True,
                         "details": {
                             "simulator_percent_done": (
-                                # f"{self.test_running_progress.value:.2f}"
-                                "0"
+                                f"{self.test_running_progress.value:.2f}"
                             )
                         },
                     }
                 ),
-            returnVal.content_length = None
+            returnVal.content_length = returnVal.data.__sizeof__()
             return returnVal
 
         return jsonify({"running": False}), 200
