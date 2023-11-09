@@ -183,7 +183,6 @@ class HarnessApp(Flask):
                         },
                     }
                 ),
-                200,
             )
         return jsonify({"running": False}), 200
 
