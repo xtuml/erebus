@@ -89,10 +89,10 @@ jobs:
           # ... and another 50 seconds for grace time in starting up/waiting for logs/waiting for calculations
           echo "Sleeping to give the test harness time to work"
           date
-          sleep 90
+          sleep 10
           echo "Testing that a percentage is returned"
           curl 127.0.0.1:8800/isTestRunning
-          sleep 90
+          sleep 170
           date
           sleep 10
 
