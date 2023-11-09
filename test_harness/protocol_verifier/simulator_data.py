@@ -522,13 +522,13 @@ class Event:
     def __init__(
         self,
         job: Job | None = None,
-        job_name: str = "",
-        job_id: str = "",
-        event_type: str = "",
-        event_id: str = "",
-        time_stamp: str = "",
-        application_name: str = "",
-        previous_event_ids: str | list[str] = "",
+        job_name: str | None = None,
+        job_id: str | None = None,
+        event_type: str | None = None,
+        event_id: str | None = None,
+        time_stamp: str | None = None,
+        application_name: str | None = None,
+        previous_event_ids: str | list[str] | None = None,
         meta_data: dict[str, Any] | None = None,
     ) -> None:
         """Constructor method"""
@@ -541,7 +541,9 @@ class Event:
         self.event_id = event_id
         self.time_stamp = time_stamp
         self.application_name = application_name
-        self.previous_event_ids = previous_event_ids
+        self.previous_event_ids = (
+            previous_event_ids if previous_event_ids is not None else []
+        )
         self.categorised_meta_data = meta_data if meta_data else {}
         self.prev_events = []
 
@@ -556,6 +558,8 @@ class Event:
         for field, attribute in self.attribute_mappings.items():
             if field == "previousEventIds" and field not in input_dict:
                 attribute_value = []
+            elif field not in input_dict:
+                continue
             else:
                 attribute_value = input_dict.pop(field)
             if field == "jobId":
@@ -738,12 +742,21 @@ class Event:
         """
         job_id = job_id_data_map[self.job_id].get_data()
         event_dict = {
-            "jobName": self.job_name,
+            field: attr
+            for field, attr in zip(
+                ["jobName", "eventType", "applicationName"],
+                [self.job_name, self.event_type, self.application_name],
+            )
+            if attr is not None
+        }
+        if self.time_stamp is not None:
+            event_dict["timestamp"] = (
+                datetime.utcnow().isoformat(timespec="seconds") + "Z"
+            )
+        event_dict = {
+            **event_dict,
             "jobId": job_id,
-            "eventType": self.event_type,
             "eventId": event_event_id_map[id(self)],
-            "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
-            "applicationName": self.application_name,
         }
         if self.has_previous_event_id():
             event_dict["previousEventIds"] = [

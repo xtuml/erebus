@@ -141,7 +141,9 @@ class Test(ABC):
         self.time_end: datetime | None = None
 
     @abstractmethod
-    def set_results_holder(self) -> PVResults | PVPerformanceResults:
+    def set_results_holder(self) -> (
+        PVResults | PVFunctionalResults | PVPerformanceResults
+    ):
         """Abstract metho to return the results holder
 
         :return: Returns a :class:`PVResults` object
@@ -516,12 +518,17 @@ class FunctionalTest(Test):
     def calc_results(self) -> None:
         """Method to calc the results after the test and save reports"""
         # load verifier logs and concatenate string
-        log_string = self.pv_file_inspector.load_log_files_and_concat_strings()
+        log_string = (
+            self.pv_file_inspector.load_log_files_and_concat_strings("ver")
+            + self.pv_file_inspector.load_log_files_and_concat_strings("aer")
+        )
         # get the validity dataframe
         validity_df = self.results.create_validity_dataframe()
         # analyse the logs and get report files
         report_files_mapping = create_report_files(
-            log_string=log_string, validity_df=validity_df, test_name="Results"
+            log_string=log_string, validity_df=validity_df,
+            test_name="Results",
+            event_id_job_id_map=self.results.event_id_job_id_map
         )
         report_files_mapping["Results_Aggregated.html"] = self.make_figs(
             report_files_mapping["Results.csv"]

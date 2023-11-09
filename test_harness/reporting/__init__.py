@@ -44,6 +44,7 @@ def create_report_files(
     log_string: str,
     validity_df: DataFrame,
     test_name: str,
+    event_id_job_id_map: dict[str, str] | None = None
 ) -> dict[str, str | DataFrame]:
     """Method to create report files from logs and validity dataframe
 
@@ -57,7 +58,8 @@ def create_report_files(
     """
     results_df = logs_validity_df_to_results(
         log_string=log_string,
-        validity_df=validity_df
+        validity_df=validity_df,
+        event_id_job_id_map=event_id_job_id_map
     )
     report_files_mapping = get_report_files_mapping_from_dataframe_report(
         results_df=results_df,

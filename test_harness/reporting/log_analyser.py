@@ -16,6 +16,9 @@ pv_success_groks = (
         "svdc_job_success :"
         " JobId = %{UUID:JobId} : JobName = %{WORD:JobName}"
     ),
+    Grok(
+        "reception_event_valid : EventId = %{UUID:EventId}"
+    )
 )
 
 pv_failure_groks = (
@@ -43,11 +46,15 @@ pv_failure_groks = (
             "FAILURE_REASON": "[a-zA-Z ]+"
         }
     ),
+    Grok(
+        "reception_event_invalid : EventId = %{UUID:EventId}"
+    )
 )
 
 
 def logs_validity_df_to_results(
-    log_string: str, validity_df: pd.DataFrame
+    log_string: str, validity_df: pd.DataFrame,
+    event_id_job_id_map: dict[str, str] | None = None
 ) -> pd.DataFrame:
     """Method to obtain a test results dataframe from a string representing
     the Protocol Verifier "Verifier.log"
@@ -57,6 +64,8 @@ def logs_validity_df_to_results(
     :param validity_df: Dataframe with JobID and Validity of the Job. Extra
     information on the test case can be given
     :type validity_df: :class:`pd`.`DataFrame`
+    :param event_id_job_id_map: A dictionary mapping event ids to job ids
+    :type event_id_job_id_map: `dict`[`str`, `str`] | `None`
     :return: Returns a dataframe of results with fields (no limited to):
     * JobId - the id of the job
     * Validity - The validity of the job
@@ -65,30 +74,43 @@ def logs_validity_df_to_results(
     :rtype: :class:`pd`.`DataFrame`
     """
     # get pv results
-    pv_results_df = parse_log_string_to_pv_results_dataframe(log_string)
+    pv_results_df = parse_log_string_to_pv_results_dataframe(
+        log_string, event_id_job_id_map
+    )
     # get test results
     results_df = get_job_id_failure_successes(pv_results_df, validity_df)
     return results_df
 
 
-def parse_log_string_to_pv_results_dataframe(log_string: str) -> pd.DataFrame:
+def parse_log_string_to_pv_results_dataframe(
+    log_string: str,
+    event_id_job_id_map: dict[str, str] | None = None,
+) -> pd.DataFrame:
     """Method to parse verifier log string into a dataframe
 
     :param log_string: log file string
     :type log_string: `str`
+    :param event_id_job_id_map: A dictionary mapping event ids to job ids
+    :type event_id_job_id_map: `dict`[`str`, `str`] | `None`
     :return: DataFrame of Protocol verifier results
     :rtype: :class:`pd`.`DataFrame`
     """
+    if event_id_job_id_map is None:
+        event_id_job_id_map = {}
     # split log string into lines
     log_lines = log_string.splitlines()
     job_success = []
     job_failed = []
     for line in log_lines:
-        success_grok = grok_line_priority(line, pv_success_groks)
+        success_grok = get_grok_result_from_line(
+            line, pv_success_groks, event_id_job_id_map
+        )
         if success_grok:
             job_success.append(success_grok)
             continue
-        failure_grok = grok_line_priority(line, pv_failure_groks)
+        failure_grok = get_grok_result_from_line(
+            line, pv_failure_groks, event_id_job_id_map
+        )
         if failure_grok:
             job_failed.append(failure_grok)
     # create dataframes for success and failures
@@ -114,6 +136,30 @@ def parse_log_string_to_pv_results_dataframe(log_string: str) -> pd.DataFrame:
         {col: list for col in cols if col != "JobId"}
     )
     return results_df
+
+
+def get_grok_result_from_line(
+    line: str, groks: list[Grok],
+    event_id_job_id_map: dict[str, str] | None = None
+) -> dict[str, str | Any] | None:
+    """Method to get a grok match (if there is one) from a line given a list
+
+    :param line: The line to attempt to match
+    :type line: `str`
+    :param groks: List of grok patterns to match in priority order
+    :type groks: `list`[:class:`Grok`]
+    :param event_id_job_id_map: The map from event id to job id, defaults to
+    `None`
+    :type event_id_job_id_map: `dict`[`str`, `str`] | `None`, optional
+    :return: Returns a dictionary that relates to the grok match patterns given
+    :rtype: `dict`[`str`, `str` | `Any`] | None
+    """
+    grok = grok_line_priority(line, groks)
+    if grok:
+        if "EventId" in grok:
+            job_id = event_id_job_id_map[grok["EventId"]]
+            grok["JobId"] = job_id
+    return grok
 
 
 def column_data_string_to_header_cell_dict(
