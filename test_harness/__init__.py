@@ -160,7 +160,7 @@ class HarnessApp(Flask):
     def start_test(self) -> Response:
         """Function to handle starting a test"""
         try:
-            json_dict = request.get_json()
+            json_dict = request.get_json(timeout=10) # increase timeout to 10 seconds
             success, json_response = self.handle_start_test_json_request(
                 json_dict
             )
@@ -169,17 +169,27 @@ class HarnessApp(Flask):
             return error.get_response()
 
     def test_is_running(self) -> Response:
-        """Function to handle checking if a test is running"""
+        """
+        Function to handle checking if a test is running.
+
+        Returns:
+            A Flask response indicating whether a test is running and if so, 
+            the percentage of completion.
+        """
         if self.test_running_progress.value >= 0:
-            returnVal:Flask.response_class = jsonify(
+            returnVal: Flask.response_class = (
+                jsonify(
                     {
                         "running": True,
                         "details": {
-                            "simulator_percent_done": f"{self.test_running_progress.value:.2f}"
+                            "simulator_percent_done": (
+                                f"{self.test_running_progress.value:.2f}"
+                            )
                         },
                     }
-                ), 200
-            returnVal.headers["Content-Length"] = returnVal.headers["Content-Length"] + 334
+                ),
+                200,
+            )
             return returnVal
 
         return jsonify({"running": False}), 200
