@@ -179,7 +179,7 @@ class HarnessApp(Flask):
                         },
                     }
                 ), 200
-            returnVal.headers["Content-Length"] += 334
+            returnVal.headers["Content-Length"] = returnVal.headers["Content-Length"] + 334
             return returnVal
 
         return jsonify({"running": False}), 200
