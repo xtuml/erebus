@@ -179,6 +179,7 @@ class HarnessApp(Flask):
                         },
                     }
                 ), 200
+            returnVal.content_length += 334
             return returnVal
 
         return jsonify({"running": False}), 200
