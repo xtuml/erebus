@@ -178,7 +178,7 @@ class HarnessApp(Flask):
                         "details": {
                             "simulator_percent_done": (
                                 # f"{self.test_running_progress.value:.2f}"
-                                str(round(self.test_running_progress.value,2))
+                                "0"
                             )
                         },
                     }
