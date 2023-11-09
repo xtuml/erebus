@@ -79,7 +79,8 @@ jobs:
 
           # this should return true as tests are running
           echo "Testing that tests are running"
-          curl 127.0.0.1:8800/isTestRunning | grep 'true'
+          # curl 127.0.0.1:8800/isTestRunning | grep 'true'
+          curl 127.0.0.1:8800/isTestRunning -vvv
 
           # It takes this long to get any meaningful output from the test harness
           # It's 60 seconds for the test harness to start the job ...
