@@ -285,7 +285,7 @@ def test_puml_files_test_job_file_with_options() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_file_paths=[test_file_path_einv_options],
-            test_running_progress=Value(c_float,-1),
+            test_running_progress=Value(c_float, -1),
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         events_list = []
@@ -1144,7 +1144,7 @@ def test_puml_files_test_is_running_or_in_progess() -> None:
             url=harness_config.log_urls["ver"]["getFile"],
             body=b'test log',
         )
-        test_running_progress=Value(c_float, -1)
+        test_running_progress = Value(c_float, -1)
 
         def test_running_progress_value(test_running_progress_local):
             for i in range(100):
