@@ -160,7 +160,7 @@ class HarnessApp(Flask):
     def start_test(self) -> Response:
         """Function to handle starting a test"""
         try:
-            json_dict = request.get_json(timeout=10) # increase timeout to 10 seconds
+            json_dict = request.get_json() # increase timeout to 10 seconds
             success, json_response = self.handle_start_test_json_request(
                 json_dict
             )
