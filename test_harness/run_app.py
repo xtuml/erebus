@@ -49,6 +49,9 @@ def run_harness_app(
                 continue
             test_to_run: dict = harness_app.test_to_run
             harness_app.test_to_run = {}
+
+#           test has started running
+            harness_app.test_running_progress.value = 0
             success, _ = harness_test_manager(
                 harness_config=harness_app.harness_config,
                 test_config=test_to_run["TestConfig"],
@@ -60,6 +63,7 @@ def run_harness_app(
                 logging.getLogger().info(
                     "Test Harness test run completed successfully"
                 )
+            harness_app.test_running_progress.value = -1
     except KeyboardInterrupt:
         sys.exit()
 
