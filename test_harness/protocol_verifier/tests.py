@@ -17,7 +17,6 @@ import math
 from datetime import datetime
 import glob
 from multiprocessing import Value
-from ctypes import c_float
 
 import aiohttp
 import matplotlib.pyplot as plt

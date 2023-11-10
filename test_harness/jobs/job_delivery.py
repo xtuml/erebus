@@ -1,6 +1,6 @@
 """Methods to deliver jobs to an endpoint
 """
-from typing import Callable, Awaitable, Any, Generator
+from typing import Any, Generator
 import os
 import io
 import asyncio

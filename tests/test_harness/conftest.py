@@ -6,7 +6,6 @@ Fixtures for Test Harness
 """
 
 import sys
-from ctypes import c_float
 from os.path import abspath
 from pathlib import Path
 from typing import Generator, Literal, Callable
@@ -18,7 +17,6 @@ import pytest
 from flask.testing import FlaskClient, FlaskCliRunner
 from pygrok import Grok
 from requests import PreparedRequest
-from multiprocessing import Value
 
 from test_harness.protocol_verifier.tests import (
     PVPerformanceResults,

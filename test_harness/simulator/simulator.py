@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from typing import Callable, Awaitable, Any, NamedTuple, Iterator, Generator
 import asyncio
 from datetime import datetime
-from ctypes import c_float
 
 from tqdm import tqdm
 from multiprocessing import Value
@@ -218,7 +217,10 @@ class Simulator:
         :type pbar: :class:`tqdm`
         """
         return_data = await delayed_async_func(
-            delay=delay, func=self._execute_simulation_data, pbar=pbar,test_running_progress=self.test_running_progress
+            delay=delay,
+            func=self._execute_simulation_data,
+            pbar=pbar,
+            test_running_progress=self.test_running_progress,
         )
         self.results_handler.handle_result(return_data)
 

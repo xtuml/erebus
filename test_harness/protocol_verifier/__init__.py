@@ -87,7 +87,7 @@ def puml_files_test(
     """
 
 #   setting thread-safe variable test_running_progress to True
-    
+
     if test_running_progress.value < 0:
         test_running_progress.value = 0
 
