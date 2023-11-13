@@ -642,7 +642,8 @@ def test_puml_files_test_json_validity_tests_ver_log_file() -> None:
             test_file_paths=[
                 valid_test_file_json_validity_path,
                 invalid_test_file_json_validity_path
-            ]
+            ],
+            test_running_progress=Value(c_float, -1)
         )
         results = pd.read_csv(
             os.path.join(harness_config.report_file_store, "Results.csv")
