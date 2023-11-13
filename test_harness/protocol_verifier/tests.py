@@ -518,9 +518,8 @@ class FunctionalTest(Test):
     def calc_results(self) -> None:
         """Method to calc the results after the test and save reports"""
         # load verifier logs and concatenate string
-        log_string = (
-            self.pv_file_inspector.load_log_files_and_concat_strings("ver")
-            + self.pv_file_inspector.load_log_files_and_concat_strings("aer")
+        log_string = self.pv_file_inspector.load_log_files_and_concat_strings(
+            self.test_config.functional_options["log_domain"]
         )
         # get the validity dataframe
         validity_df = self.results.create_validity_dataframe()

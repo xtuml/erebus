@@ -170,6 +170,10 @@ The fields within the json and yaml file are as follows:
     * `num_files_per_sec`: `int` `>= 0` - A uniform rate of the number of events to produce per second for sending to the PV when no profile has been uploaded (when they are sent will depend on whether the events are all sent as a batched job or if they are sharded into single event files using the `shard` option). If used in conjuction with `shard` set to `True` this will send single Events files at the prescribed rate
     * `shard`: `True` | `False` : `bool` - Boolean value indicating whether to shard job sequences into single event files (`True`) or send them in their relevant job batches (`False`)
     * `total_jobs`: `int` `>= 0` - The total number of separate jobs to use in the performance test if no profile has been uploaded.
+* `functional_options`: `dict` - Options for a functional test is `type` is set to `"Functional"`. This option contains the following sub-fields:
+    * `log_domain`: `"aer"` | `"ver"` `str` : The log domain to use for the functional test, defaults to `"ver"`:
+        * `"ver"` - Indicates that Verifier.log is the file to use for functional tests
+        * `"aer"` - Indicated that Reception.log is the file to use for funtional tests
 
 #### <b>Example Json test config</b>
 ```
@@ -188,6 +192,9 @@ The fields within the json and yaml file are as follows:
         "num_files_per_sec": 10,
         "total_jobs": 100,
         "shard": false
+    },
+    "functional_options": {
+        "log_domain": "ver"
     }
 }
 ```

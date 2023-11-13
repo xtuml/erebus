@@ -276,6 +276,9 @@ class TestConfig:
                 "num_files_per_sec": `int` > 0, defaults to 100;
                 "shard": `bool`, defaults to `False`;
                 "total_jobs": `int` => 0, defaults to 10000;
+            },
+            "functional_options": `dict`, {
+                "log_domain": "ver" | "aer", defaults to "ver";
             }
         }
         :type test_config: `dict`[`str`, `str` | `dict`]
@@ -303,6 +306,9 @@ class TestConfig:
             "shard": False,
             "total_jobs": 10000,
         }
+        self.functional_options = {
+            "log_domain": "ver"
+        }
 
     def config_to_dict(self) -> dict:
         """TODO docstring."""
@@ -314,6 +320,10 @@ class TestConfig:
         if self.type != "Functional":
             config_dict_to_return["performance_options"] = (
                 self.performance_options
+            )
+        else:
+            config_dict_to_return["functional_options"] = (
+                self.functional_options
             )
         return config_dict_to_return
 
