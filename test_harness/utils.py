@@ -2,13 +2,12 @@
 # pylint: disable=R0903
 """Utility functions
 """
-from typing import Generator, Any, Literal, Callable, Awaitable, Optional
+from typing import Generator, Any, Literal, Callable, Awaitable
 from io import BytesIO
 import os
 import glob
 import logging
 import asyncio
-from multiprocessing import Value
 
 import flatdict
 from tqdm import tqdm
@@ -218,7 +217,6 @@ async def delayed_async_func(
     delay: float,
     func: Callable[..., Awaitable[Any]],
     *,
-    test_running_progress: Optional[Value] = None,
     pbar: tqdm | None = None,
     args: list[Any] | None = None,
     kwargs: dict | None = None
@@ -229,9 +227,6 @@ async def delayed_async_func(
     :type delay: `float`
     :param func: The async function to delay
     :type func: :class:`Callable`[`...`, :class:`Awaitable`[`Any`]]
-    :param test_running_progress: A shared value to track the progress of
-    the test
-    :type test_running_progress: `Value`
     :param pbar: Progress bar
     :type pbar: :class:`tqdm`
     :return: Returns any value that the input function would
@@ -247,7 +242,5 @@ async def delayed_async_func(
 #   This has been placed before the await
 #   as running it after the await could cause the
 #   updates to happen out of order
-    if test_running_progress is not None:
-        test_running_progress.value = pbar.n / pbar.total
     awaited_data = await func(*args, **kwargs)
     return awaited_data

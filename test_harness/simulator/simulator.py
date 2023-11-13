@@ -8,7 +8,6 @@ import asyncio
 from datetime import datetime
 
 from tqdm import tqdm
-from multiprocessing import Value
 from test_harness.utils import delayed_async_func
 
 
@@ -142,9 +141,6 @@ class Simulator:
     :type delays: `list`[`float`]
     :param simulation_data: An iterator of :class:`SimDatum` that contains all
     the data neededfor the simulation
-    :param test_running_progress: A shared value to track the progress of
-    the test
-    :type test_running_progress: `Value`
     :type simulation_data: :class:`Iterator`[:class:`SimDatum`]
     :param action_func: Asynchronous function that will act on the
     :class:`SimDatum`, defaults to `None`
@@ -157,17 +153,19 @@ class Simulator:
     scheduled for, e.g. a value of 10 will schedule events approximately 10
     seconds before they are due to happen
     :type schedule_ahead_time: `int`, optional
+    :param pbar: A progress bar instance, defaults to `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     """
 
     def __init__(
         self,
         delays: list[float],
         *,
-        test_running_progress: Value,
         simulation_data: Iterator[SimDatum],
         action_func: Callable[[Any, Any], Awaitable[Any]] | None = None,
         results_handler: ResultsHandler | None = None,
         schedule_ahead_time=10,
+        pbar: tqdm | None = None,
     ) -> None:
         """Constructor method"""
         self.delays = delays
@@ -182,7 +180,7 @@ class Simulator:
                 "Values of less than 0.2 can lead to unpredictable "
                 "behaviour, consider increasing the value"
             )
-        self.test_running_progress = test_running_progress
+        self.pbar = pbar
 
     async def _execute_simulation_data(self) -> Any:
         """Asynchronous method to execute the next :class:`SimDatum` in the
@@ -223,29 +221,35 @@ class Simulator:
             delay=delay,
             func=self._execute_simulation_data,
             pbar=pbar,
-            test_running_progress=self.test_running_progress,
         )
         self.results_handler.handle_result(return_data)
 
-    async def simulate(self) -> None:
-        """Method to simulate the instances simulation data"""
-        with tqdm(total=len(self.delays)) as pbar:
-            async with asyncio.TaskGroup() as task_group:
-                start_time = datetime.utcnow()
-                for delay in self.delays:
+    async def run_simulation(self, pbar: tqdm) -> None:
+        """Method to run the simulation with the given progress bar"""
+        async with asyncio.TaskGroup() as task_group:
+            start_time = datetime.utcnow()
+            for delay in self.delays:
+                time_from_start = (
+                    datetime.utcnow() - start_time
+                ).total_seconds()
+                new_delay = delay - time_from_start
+                while new_delay > self.schedule_ahead_time:
+                    await asyncio.sleep(0.1)
                     time_from_start = (
                         datetime.utcnow() - start_time
                     ).total_seconds()
                     new_delay = delay - time_from_start
-                    while new_delay > self.schedule_ahead_time:
-                        await asyncio.sleep(0.1)
-                        time_from_start = (
-                            datetime.utcnow() - start_time
-                        ).total_seconds()
-                        new_delay = delay - time_from_start
 
-                    task_group.create_task(
-                        self._pass_data_to_delay_function(
-                            delay=new_delay, pbar=pbar
-                        )
+                task_group.create_task(
+                    self._pass_data_to_delay_function(
+                        delay=new_delay, pbar=pbar
                     )
+                )
+
+    async def simulate(self) -> None:
+        """Method to simulate the instances simulation data"""
+        if not self.pbar:
+            with tqdm(total=len(self.delays)) as pbar:
+                await self.run_simulation(pbar)
+        else:
+            await self.run_simulation(self.pbar)
