@@ -142,7 +142,8 @@ class Simulator:
     :type delays: `list`[`float`]
     :param simulation_data: An iterator of :class:`SimDatum` that contains all
     the data neededfor the simulation
-    :param test_running_progress: A shared value to track the progress of the test
+    :param test_running_progress: A shared value to track the progress of
+    the test
     :type test_running_progress: `Value`
     :type simulation_data: :class:`Iterator`[:class:`SimDatum`]
     :param action_func: Asynchronous function that will act on the

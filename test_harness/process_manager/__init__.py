@@ -28,7 +28,8 @@ def harness_test_manager(
     :type test_config: :class:`TestConfig`
     :param test_output_directory: The directory where output files are stored
     :type test_output_directory: `str`
-    :param test_running_progress: A shared value to track the progress of the test
+    :param test_running_progress: A shared value to track the progress of
+    the test
     :type test_running_progress: `Value`
     :return: Returns a tuple with
     * a boolean indicating whether the test executed incorrectly

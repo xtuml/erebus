@@ -161,7 +161,6 @@ class HarnessApp(Flask):
             file_handler=handle_single_file_upload,
         )
 
-
     def start_test(self) -> Response:
         """Function to handle starting a test"""
         try:
