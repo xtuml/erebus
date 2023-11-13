@@ -452,8 +452,107 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
 
 
 @responses.activate
-def test_puml_files_test_json_validity_tests() -> None:
-    """Tests method `puml_test_files` with json validity tests
+def test_puml_files_test_json_validity_tests_aer_log_file() -> None:
+    """Tests method `puml_test_files` with json validity tests only using aer
+    log file
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict({
+        "event_gen_options": {
+            "invalid": False
+        },
+        "functional_options": {
+            "log_domain": "aer"
+        }
+    })
+    reception_file = []
+
+    def call_back(url, **kwargs) -> CallbackResult:
+        data: aiohttp.multipart.MultipartWriter = kwargs["data"]
+        io_data: BytesIO = data._parts[0][0]._value
+        json_payload_list = json.load(io_data)
+        assert len(json_payload_list) == 1
+        event_payload = json_payload_list[0]
+        if "eventType" in event_payload:
+            reception_file.append(
+                f"reception_event_valid : EventId = {event_payload['eventId']}"
+            )
+        else:
+            reception_file.append(
+                "reception_event_invalid : EventId = "
+                f"{event_payload['eventId']}"
+            )
+
+        return CallbackResult(
+            status=200,
+        )
+
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
+        return (
+            200,
+            {},
+            "\n".join(reception_file).encode("utf-8")
+        )
+
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True,
+            callback=call_back
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.add_callback(
+            responses.POST,
+            url=harness_config.log_urls["aer"]["getFile"],
+            callback=reception_log_call_back
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        puml_files_test(
+            puml_file_paths=[test_file_path],
+            test_output_directory=harness_config.report_file_store,
+            harness_config=harness_config,
+            test_config=test_config,
+            test_file_paths=[
+                valid_test_file_json_validity_path,
+                invalid_test_file_json_validity_path
+            ]
+        )
+        results = pd.read_csv(
+            os.path.join(harness_config.report_file_store, "Results.csv")
+        )
+        assert len(results) == 2
+        for _, row in results.iterrows():
+            assert row["TestResult"] == "Pass"
+        clean_directories([harness_config.report_file_store])
+
+
+@responses.activate
+def test_puml_files_test_json_validity_tests_ver_log_file() -> None:
+    """Tests method `puml_test_files` with json validity tests but only using
+    verifier log file
     """
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
@@ -541,7 +640,9 @@ def test_puml_files_test_json_validity_tests() -> None:
         )
         assert len(results) == 2
         for _, row in results.iterrows():
-            assert row["TestResult"] == "Pass"
+            assert row["TestResult"] == (
+                "Inconclusive|No SVDC Success|No Notification Failure"
+            )
         clean_directories([harness_config.report_file_store])
 
 
