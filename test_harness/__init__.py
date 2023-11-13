@@ -10,6 +10,7 @@ from ctypes import c_float
 from flask import Flask, request, make_response, Response, jsonify
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
+from tqdm import tqdm
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from multiprocessing import Value
@@ -432,6 +433,68 @@ def create_test_output_directory(
     if not os.path.exists(test_output_directory_path):
         os.makedirs(test_output_directory_path)
     return (test_name, test_output_directory_path)
+
+
+class TestHarnessPbar(tqdm):
+    """Subclass of tqdm to handle updating the progress bar
+
+    :param args: Positional arguments to be passed to the parent class
+    :type args: `tuple`
+    :param kwargs: Keyword arguments to be passed to the parent class
+    :type kwargs: `dict`
+    """
+    def __init__(self, iterable=None, desc=None, total=None, leave=True, file=None,
+                 ncols=None, mininterval=0.1, maxinterval=10.0, miniters=None,
+                 ascii=None, disable=False, unit='it', unit_scale=False,
+                 dynamic_ncols=False, smoothing=0.3, bar_format=None, initial=0,
+                 position=None, postfix=None, unit_divisor=1000, write_bytes=False,
+                 lock_args=None, nrows=None, colour=None, delay=0, gui=False,
+                 **kwargs):
+        """Constructor method"""
+        self.th_progress = Value(int, 0)
+        super().__init__(iterable, desc, total, leave, file, ncols, mininterval, maxinterval,
+                         miniters, ascii, disable, unit, unit_scale, dynamic_ncols, smoothing,
+                         bar_format, initial, position, postfix, unit_divisor, write_bytes,
+                         lock_args, nrows, colour, delay, gui, **kwargs)
+
+    def update(self, n: int = 1) -> None:
+        """Method to update the progress bar
+
+        :param n: The number of steps to update the progress bar by,
+        defaults to 1
+        :type n: `int`, optional
+        """
+        super().update(n)
+        self.th_progress.value += n
+
+    def get_th_progress(self) -> int:
+        """Method to get the progress of the progress bar
+
+        :return: Returns the progress of the progress bar
+        :rtype: `int`
+        """
+        return self.th_progress.value
+
+
+class TestHarnessProgessManager:
+    """Class to manage the progress of the test harness
+    """
+    def __init__(self) -> None:
+        """Constructor method"""
+        self.test_is_running = Value(bool, False)
+        self.pbars: dict[str, TestHarnessPbar] = {}
+
+    def create_pbar(self, total: int, desc: str | None, name: str = "DefaultName") -> None:
+        pbar = TestHarnessPbar(total=total, desc=desc)
+        self.pbars[name] = pbar
+        return pbar
+
+    def get_progress_percentage(self, name: str = "DefaultName") -> int:
+        pbar = self.pbars[name] 
+        return pbar.get_th_progress() / pbar.total * 100
+
+    def destroy_pbar(self, name: str = "DefaultName") -> None:
+        del self.pbars[name]
 
 
 if __name__ == "__main__":
