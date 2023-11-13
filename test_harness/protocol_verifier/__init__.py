@@ -37,6 +37,8 @@ def full_pv_test(
     :type test_config: :class:`TestConfig`
     :param test_output_directory: The directory where output files are stored
     :type test_output_directory: `str`
+    :param test_running_progress: A shared value to track the progress of the test
+    :type test_running_progress: `Value`
     """
     profile = get_test_profile(
         harness_config.profile_store
@@ -80,6 +82,8 @@ def puml_files_test(
     :type harness_config: :class:`HarnessConfig`
     :param test_config: The config for the specific test
     :type test_config: :class:`TestConfig`
+    :param test_running_progress: A shared value to track the progress of the test
+    :type test_running_progress: `Value`
     :param profile: Profile created from an uploaded file, defults to `None`
     :type profile: :class:`Profile` | `None`, optional
     :param test_file_paths: list of test file paths, defults to `None`

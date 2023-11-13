@@ -45,6 +45,10 @@ class HarnessApp(Flask):
     :type instance_relative_config: bool, optional
     :param root_path: See :class:`Flask` documentation, defaults to None
     :type root_path: Optional[str], optional
+    :ivar harness_config: Instance of HarnessConfig
+    :vartype harness_config: :class:`HarnessConfig`
+    :ivar test_running_progress: Value of the running progress of the test
+    :vartype test_running_progress: :class:`Value`
     """
 
     def __init__(
@@ -156,6 +160,7 @@ class HarnessApp(Flask):
             save_file_dir_path=self.harness_config.profile_store,
             file_handler=handle_single_file_upload,
         )
+
 
     def start_test(self) -> Response:
         """Function to handle starting a test"""

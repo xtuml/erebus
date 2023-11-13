@@ -77,6 +77,8 @@ def main(
 ) -> None:
     """Method to run test harness from command line
 
+    :param test_running_progress: A shared value to track the progress of the test
+    :type test_running_progress: `Value`
     :param puml_file_paths: List of puml file paths, defaults to `None`
     :type puml_file_paths: `list`[`str`] | `None`, optional
     :param harness_config_path: Path of the harness config, defaults to `None`

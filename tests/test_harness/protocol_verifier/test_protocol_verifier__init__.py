@@ -1104,7 +1104,8 @@ def test_puml_files_test_functional_test_timeout(
 
 @responses.activate
 def test_puml_files_test_is_running_or_in_progess() -> None:
-    """Tests that test_running_progress is set to > -1 when a test is invoked
+    """Tests that test_running_progress is set to > -1 before a test is invoked
+    and that it is > -1 while the test is running
     """
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()

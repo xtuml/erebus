@@ -229,6 +229,8 @@ async def delayed_async_func(
     :type delay: `float`
     :param func: The async function to delay
     :type func: :class:`Callable`[`...`, :class:`Awaitable`[`Any`]]
+    :param test_running_progress: A shared value to track the progress of the test
+    :type test_running_progress: `Value`
     :param pbar: Progress bar
     :type pbar: :class:`tqdm`
     :return: Returns any value that the input function would

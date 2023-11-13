@@ -76,6 +76,8 @@ class Test(ABC):
     :type test_file_generators: `dict`[ `str`, `dict`[ `str`, `tuple`[
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
+    :param test_running_progress: A shared value to track the progress of the test
+    :type test_running_progress: `Value`
     :param harness_config: Main config for the test harness, defaults to `None`
     :type harness_config: :class:`HarnessConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
@@ -451,6 +453,8 @@ class FunctionalTest(Test):
     :type test_file_generators: `dict`[ `str`, `dict`[ `str`, `tuple`[
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
+    :param test_running_progress: A shared value to track the progress of the test
+    :type test_running_progress: `Value`
     :param harness_config: Main config for the test harness, defaults to `None`
     :type harness_config: :class:`HarnessConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
@@ -582,6 +586,8 @@ class PerformanceTest(Test):
     :type test_file_generators: `dict`[ `str`, `dict`[ `str`, `tuple`[
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
+    :param test_running_progress: A shared value to track the progress of the test
+    :type test_running_progress: `Value`
     :param harness_config: Main config for the test harness, defaults to `None`
     :type harness_config: :class:`HarnessConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
