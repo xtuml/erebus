@@ -14,3 +14,6 @@ performance_options:
   num_files_per_sec: 10
   shard: False
   total_jobs: 100
+
+functional_options:
+  log_domain: "ver"
