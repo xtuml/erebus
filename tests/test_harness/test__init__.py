@@ -5,12 +5,14 @@ import os
 from io import BufferedReader
 from pathlib import Path
 from typing import Optional
+import json
 
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
-from test_harness import create_test_output_directory
+from test_harness import create_test_output_directory, HarnessApp
 from test_harness.config.config import HarnessConfig
+from test_harness.utils import check_dict_equivalency
 
 # get test config
 test_config_path = os.path.join(
@@ -323,3 +325,146 @@ def test_successful_test_files_upload(client: FlaskClient) -> None:
     os.remove(os.path.join(
         test_file_output_resources, "test_uml_2_events.json"
     ))
+
+
+def test_is_test_running_not_running(client: FlaskClient) -> None:
+    """Test that the test is running endpoint returns false when the test is
+    not running
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    response = client.get("/isTestRunning")
+    check_dict_equivalency(
+        json.loads(response.data),
+        {
+            "running": False
+        }
+    )
+    assert response.status_code == 200
+
+
+def test_is_test_running_running_no_pbar(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the test is running endpoint returns false when the test is
+    running but there is no pbar
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    test_app.harness_progress_manager.test_is_running.value = True
+    response = client.get("/isTestRunning")
+    check_dict_equivalency(
+        json.loads(response.data),
+        {
+            "running": True,
+            "details": {
+                "percent_done": "0.00",
+            }
+        }
+    )
+    assert response.status_code == 200
+
+
+def test_is_test_running_running_total_not_set(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the test is running endpoint returns false when the test is
+    running but the total has not been set yet on the pbar
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    with test_app.harness_progress_manager.run_test() as _:
+        response = client.get("/isTestRunning")
+        check_dict_equivalency(
+            json.loads(response.data),
+            {
+                "running": True,
+                "details": {
+                    "percent_done": "0.00",
+                }
+            }
+        )
+        assert response.status_code == 200
+
+
+def test_is_test_running_running_total_set_no_progress(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the test is running endpoint returns false when the test is
+    running and the total has been set but there is no progress so far on the
+    pbar
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    with test_app.harness_progress_manager.run_test() as pbar:
+        pbar.total = 10
+        response = client.get("/isTestRunning")
+        check_dict_equivalency(
+            json.loads(response.data),
+            {
+                "running": True,
+                "details": {
+                    "percent_done": "0.00",
+                }
+            }
+        )
+        assert response.status_code == 200
+
+
+def test_is_test_running_running_total_set_some_progress(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the test is running endpoint returns false when the test is
+    running and the total has been set and the test is proceeding
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    total = 10
+    with test_app.harness_progress_manager.run_test() as pbar:
+        pbar.total = total
+        for i in range(total):
+            pbar.update()
+            response = client.get("/isTestRunning")
+            check_dict_equivalency(
+                json.loads(response.data),
+                {
+                    "running": True,
+                    "details": {
+                        "percent_done": f"{(i + 1)/float(total):.2f}",
+                    }
+                }
+            )
+            assert response.status_code == 200
+
+
+def test_is_test_running_running_test_finished(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the test is running endpoint returns false when the test is
+    running and the total has been set but there is no progress so far on the
+    pbar
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    with test_app.harness_progress_manager.run_test() as pbar:
+        pass
+    response = client.get("/isTestRunning")
+    check_dict_equivalency(
+        json.loads(response.data),
+        {
+            "running": False
+        }
+    )
+    assert response.status_code == 200
+    assert pbar not in list(test_app.harness_progress_manager.pbars.values())
