@@ -566,20 +566,20 @@ class TestHarnessProgessManager:
     def get_progress_percentage(self, name: str = "DefaultName") -> float:
         """
         Returns the progress percentage of a progress bar with the given name.
-        If the progress bar does not exist, 
+        If the progress bar does not exist,
           returns 0.0.
-        If the progress bar's total is None, 
+        If the progress bar's total is None,
           returns 0.0.
-        If the progress bar's total is 0 and the test is running, 
+        If the progress bar's total is 0 and the test is running,
           returns 100.0.
-        If the progress bar's total is 0 and the test is not running, 
+        If the progress bar's total is 0 and the test is not running,
           returns 0.0.
         Otherwise, returns the progress percentage as a float.
 
-        :param name: The name of the progress bar to get the 
+        :param name: The name of the progress bar to get the
           progress percentage of.
         :type name: str
-        :return: The progress percentage of the progress bar with the 
+        :return: The progress percentage of the progress bar with the
           given name.
         :rtype: float
         """
@@ -596,11 +596,11 @@ class TestHarnessProgessManager:
 
     def end_test(self, name: str = "DefaultName") -> None:
         """
-        Removes the progress bar associated with the given test name and sets 
+        Removes the progress bar associated with the given test name and sets
           the test_is_running flag to False.
 
         Args:
-            name (str): The name of the test whose progress bar needs to be 
+            name (str): The name of the test whose progress bar needs to be
               removed. Defaults to "DefaultName".
         """
         del self.pbars[name]

@@ -99,34 +99,33 @@ def test_run_harness_app() -> None:
     Raises:
         AssertionError: If the test fails.
     """
-def test_run_harness_app() -> None:
     harness_config = HarnessConfig(test_config_path)
     shutil.copy(test_file_path, harness_config.uml_file_store)
     reception_file = []
 
     def call_back(url, **kwargs) -> CallbackResult:
-            """
-            Callback function that extracts the event payload from the
-            multipart data and appends it to the reception file.
+        """
+        Callback function that extracts the event payload from the
+        multipart data and appends it to the reception file.
 
-            Args:
-                url (str): The URL to call back to.
-                **kwargs: Arbitrary keyword arguments.
+        Args:
+            url (str): The URL to call back to.
+            **kwargs: Arbitrary keyword arguments.
 
-            Returns:
-                CallbackResult: The result of the callback.
-            """
-            data: aiohttp.multipart.MultipartWriter = kwargs["data"]
-            io_data: BytesIO = data._parts[0][0]._value
-            json_payload_list = json.load(io_data)
-            event_payload = json_payload_list[0]
-            reception_file.append(
-                f"reception_event_valid : EventId = {event_payload['eventId']}"
-            )
+        Returns:
+            CallbackResult: The result of the callback.
+        """
+        data: aiohttp.multipart.MultipartWriter = kwargs["data"]
+        io_data: BytesIO = data._parts[0][0]._value
+        json_payload_list = json.load(io_data)
+        event_payload = json_payload_list[0]
+        reception_file.append(
+            f"reception_event_valid : EventId = {event_payload['eventId']}"
+        )
 
-            return CallbackResult(
-                status=200,
-            )
+        return CallbackResult(
+            status=200,
+        )
 
     def reception_log_call_back(
         *args, **kwargs
