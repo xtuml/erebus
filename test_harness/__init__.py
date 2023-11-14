@@ -537,6 +537,20 @@ class TestHarnessProgessManager:
     def run_test(
         self, desc: str | None = None, name: str = "DefaultName"
     ) -> Generator[TestHarnessPbar, Any, None]:
+        """
+        Runs a test with the given description and name.
+
+        Args:
+            desc (str | None): A description of the test. Defaults to None.
+            name (str): The name of the test. Defaults to "DefaultName".
+
+        Yields:
+            Generator[TestHarnessPbar, Any, None]: A progress bar for the test.
+
+        Raises:
+            Any: Any exception raised during the test.
+
+        """
         self.test_is_running.value = True
         pbar = TestHarnessPbar(desc=desc)
         self.pbars[name] = pbar
@@ -550,6 +564,25 @@ class TestHarnessProgessManager:
             self.end_test(name)
 
     def get_progress_percentage(self, name: str = "DefaultName") -> float:
+        """
+        Returns the progress percentage of a progress bar with the given name.
+        If the progress bar does not exist, 
+          returns 0.0.
+        If the progress bar's total is None, 
+          returns 0.0.
+        If the progress bar's total is 0 and the test is running, 
+          returns 100.0.
+        If the progress bar's total is 0 and the test is not running, 
+          returns 0.0.
+        Otherwise, returns the progress percentage as a float.
+
+        :param name: The name of the progress bar to get the 
+          progress percentage of.
+        :type name: str
+        :return: The progress percentage of the progress bar with the 
+          given name.
+        :rtype: float
+        """
         if name not in self.pbars:
             return 0.0
         pbar = self.pbars[name]
@@ -562,6 +595,14 @@ class TestHarnessProgessManager:
         return pbar.get_th_progress() / pbar.total * 100
 
     def end_test(self, name: str = "DefaultName") -> None:
+        """
+        Removes the progress bar associated with the given test name and sets 
+          the test_is_running flag to False.
+
+        Args:
+            name (str): The name of the test whose progress bar needs to be 
+              removed. Defaults to "DefaultName".
+        """
         del self.pbars[name]
         self.test_is_running.value = False
 

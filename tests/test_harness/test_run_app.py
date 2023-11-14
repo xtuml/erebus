@@ -85,22 +85,48 @@ def run_performance_test_requests(
 
 @responses.activate
 def test_run_harness_app() -> None:
+    """Test the `run_harness_app` function.
+
+    This function sets up a test environment for the `run_harness_app`
+    function, which is responsible for running a performance testing harness.
+    The test environment includes a mock server that simulates the performance
+    testing requests, and a callback function that logs the events received by
+    the server. The function then starts two threads: one that runs the
+    `run_harness_app` function, and another that sends performance testing
+    requests to the mock server. The function waits for the second thread to
+    finish, and then prints a message to indicate that the test is complete.
+
+    Raises:
+        AssertionError: If the test fails.
+    """
+def test_run_harness_app() -> None:
     harness_config = HarnessConfig(test_config_path)
     shutil.copy(test_file_path, harness_config.uml_file_store)
     reception_file = []
 
     def call_back(url, **kwargs) -> CallbackResult:
-        data: aiohttp.multipart.MultipartWriter = kwargs["data"]
-        io_data: BytesIO = data._parts[0][0]._value
-        json_payload_list = json.load(io_data)
-        event_payload = json_payload_list[0]
-        reception_file.append(
-            f"reception_event_valid : EventId = {event_payload['eventId']}"
-        )
+            """
+            Callback function that extracts the event payload from the
+            multipart data and appends it to the reception file.
 
-        return CallbackResult(
-            status=200,
-        )
+            Args:
+                url (str): The URL to call back to.
+                **kwargs: Arbitrary keyword arguments.
+
+            Returns:
+                CallbackResult: The result of the callback.
+            """
+            data: aiohttp.multipart.MultipartWriter = kwargs["data"]
+            io_data: BytesIO = data._parts[0][0]._value
+            json_payload_list = json.load(io_data)
+            event_payload = json_payload_list[0]
+            reception_file.append(
+                f"reception_event_valid : EventId = {event_payload['eventId']}"
+            )
+
+            return CallbackResult(
+                status=200,
+            )
 
     def reception_log_call_back(
         *args, **kwargs
