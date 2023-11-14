@@ -35,8 +35,16 @@ def run_performance_test_requests(
     results_capture: dict,
     job_def_wait_time: int,
     length_of_post_send_wait_time: int
-):
+) -> None:
     """Function to run performance test using requests
+
+    :param results_capture: The dictionary to capture results
+    :type results_capture: `dict`
+    :param job_def_wait_time: The time to wait for job defs to be sent
+    :type job_def_wait_time: `int`
+    :param length_of_post_send_wait_time: The time to wait after sending
+    performance test requests
+    :type length_of_post_send_wait_time: `int`
     """
     response = requests.get(
         url="http://localhost:8800/isTestRunning"
@@ -58,6 +66,9 @@ def run_performance_test_requests(
                     "num_files_per_sec": 10,
                     "shard": True,
                     "total_jobs": 50
+                },
+                "event_gen_options": {
+                    "invalid": False,
                 }
             }
         }
@@ -67,19 +78,19 @@ def run_performance_test_requests(
     )
     results_capture["second_is_running_check"] = response.json()
     results_capture["intermediate_is_running_check"] = []
-    time.sleep(job_def_wait_time + 1)
+    time.sleep(job_def_wait_time)
     for _ in range(round((50 * 2) / 10)):
+        time.sleep(1)
         response = requests.get(
             url="http://localhost:8800/isTestRunning"
         )
         results_capture["intermediate_is_running_check"].append(
             response.json()
         )
-        time.sleep(1)
+    time.sleep(length_of_post_send_wait_time + 5)
     response = requests.get(
         url="http://localhost:8800/isTestRunning"
     )
-    time.sleep(length_of_post_send_wait_time + 5)
     results_capture["final_is_running_check"] = response.json()
 
 
@@ -189,4 +200,18 @@ def test_run_harness_app() -> None:
         time.sleep(5)
         thread_2.start()
         thread_2.join()
-        print("here")
+        assert not response_results["first_is_running_check"]["running"]
+        assert response_results["second_is_running_check"]["running"]
+        assert float(
+            response_results[
+                "second_is_running_check"
+            ]["details"]["percent_done"]
+        ) == 0
+        for i in range(10):
+            response = response_results["intermediate_is_running_check"][i]
+            assert response["running"]
+            assert int(round(
+                float(response["details"]["percent_done"]),
+                -1
+            )) == 10 * (i + 1)
+        assert not response_results["final_is_running_check"]["running"]
