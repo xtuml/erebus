@@ -8,7 +8,8 @@ import os
 import asyncio
 import logging
 import time
-from multiprocessing import Value
+
+from tqdm import tqdm
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.generate_test_files import (
@@ -27,7 +28,7 @@ def full_pv_test(
     harness_config: HarnessConfig,
     test_config: TestConfig,
     test_output_directory: str,
-    test_running_progress: Value
+    pbar: tqdm | None = None
 ) -> None:
     """Full protocol verifier test for the config provided
 
@@ -37,9 +38,8 @@ def full_pv_test(
     :type test_config: :class:`TestConfig`
     :param test_output_directory: The directory where output files are stored
     :type test_output_directory: `str`
-    :param test_running_progress: A shared value to track the progress of
-    the test
-    :type test_running_progress: `Value`
+    :param pbar: A progress bar to update, defaults to `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     """
     profile = get_test_profile(
         harness_config.profile_store
@@ -60,7 +60,7 @@ def full_pv_test(
         test_config=test_config,
         profile=profile,
         test_file_paths=test_file_paths,
-        test_running_progress=test_running_progress
+        pbar=pbar
     )
 
 
@@ -69,9 +69,9 @@ def puml_files_test(
     test_output_directory: str,
     harness_config: HarnessConfig,
     test_config: TestConfig,
-    test_running_progress: Value,
     profile: Profile | None = None,
-    test_file_paths: list[str] | None = None
+    test_file_paths: list[str] | None = None,
+    pbar: tqdm | None = None
 ) -> None:
     """Method to perform and end to end test
 
@@ -83,20 +83,13 @@ def puml_files_test(
     :type harness_config: :class:`HarnessConfig`
     :param test_config: The config for the specific test
     :type test_config: :class:`TestConfig`
-    :param test_running_progress: A shared value to track the progress of
-    the test
-    :type test_running_progress: `Value`
     :param profile: Profile created from an uploaded file, defults to `None`
     :type profile: :class:`Profile` | `None`, optional
     :param test_file_paths: list of test file paths, defults to `None`
     :type test_file_paths: `list`[`str`] | `None`, optional
+    :param pbar: A progress bar to update, defaults to `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     """
-
-#   setting thread-safe variable test_running_progress to True
-
-    if test_running_progress.value < 0:
-        test_running_progress.value = 0
-
     # choose test from test config and run test
     test_class = (
         FunctionalTest if test_config.type == "Functional"
@@ -138,7 +131,7 @@ def puml_files_test(
         test_config=test_config,
         test_output_directory=test_output_directory,
         test_profile=profile,
-        test_running_progress=test_running_progress,
+        pbar=pbar
     )
     logging.getLogger().info(
         "Beggining test"
@@ -158,7 +151,6 @@ def puml_files_test(
         "Cleaning Test Harness and PV directories"
     )
     test.clean_directories()
-    test_running_progress.value = -1
 
 
 def get_puml_file_paths(
