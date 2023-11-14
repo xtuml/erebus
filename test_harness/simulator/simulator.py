@@ -252,4 +252,5 @@ class Simulator:
             with tqdm(total=len(self.delays)) as pbar:
                 await self.run_simulation(pbar)
         else:
+            self.pbar.total = len(self.delays)
             await self.run_simulation(self.pbar)
