@@ -16,7 +16,6 @@ import logging
 import math
 from datetime import datetime
 import glob
-from multiprocessing import Value
 
 import aiohttp
 import matplotlib.pyplot as plt
@@ -28,6 +27,7 @@ from requests import ReadTimeout
 import requests
 import numpy as np
 from aiokafka import AIOKafkaProducer
+from tqdm import tqdm
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import clean_directories
@@ -76,9 +76,6 @@ class Test(ABC):
     :type test_file_generators: `dict`[ `str`, `dict`[ `str`, `tuple`[
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
-    :param test_running_progress: A shared value to track the progress of
-    the test
-    :type test_running_progress: `Value`
     :param harness_config: Main config for the test harness, defaults to `None`
     :type harness_config: :class:`HarnessConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
@@ -89,6 +86,9 @@ class Test(ABC):
     :param save_files: Boolean indicating whether to save test results - will
     only save if a test output directory has been given, defaults to `True`
     :type save_files: `bool`, optional
+    :param pbar: A progress bar to track the progress of the test, defaults to
+    `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     """
 
     def __init__(
@@ -108,12 +108,12 @@ class Test(ABC):
             ],
         ],
         *,
-        test_running_progress: Value,
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
         test_profile: Profile | None = None,
         save_files: bool = True,
+        pbar: tqdm | None = None,
     ) -> None:
         """Constructor method"""
         self.test_files = test_file_generators
@@ -145,7 +145,7 @@ class Test(ABC):
         self.prepare_test()
         self.time_start: datetime | None = None
         self.time_end: datetime | None = None
-        self.test_running_progress = test_running_progress
+        self.pbar = pbar
 
     @abstractmethod
     def set_results_holder(self) -> (
@@ -309,7 +309,7 @@ class Test(ABC):
                     kafka_producer=kafka_producer,
                 ),
                 results_handler=results_handler,
-                test_running_progress=self.test_running_progress,
+                pbar=self.pbar
             )
             # set the sim start time
             self.time_start = datetime.now()
@@ -333,7 +333,7 @@ class Test(ABC):
                         session=session,
                     ),
                     results_handler=results_handler,
-                    test_running_progress=self.test_running_progress
+                    pbar=self.pbar
                 )
                 # set the sim start time
                 self.time_start = datetime.now()
@@ -454,9 +454,6 @@ class FunctionalTest(Test):
     :type test_file_generators: `dict`[ `str`, `dict`[ `str`, `tuple`[
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
-    :param test_running_progress: A shared value to track the progress of
-    the test
-    :type test_running_progress: `Value`
     :param harness_config: Main config for the test harness, defaults to `None`
     :type harness_config: :class:`HarnessConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
@@ -464,6 +461,11 @@ class FunctionalTest(Test):
     :param test_output_directory: The path of the test output directory where
     files relating to the test results are stored, defaults to `None`
     :type test_output_directory: `str` | `None`, optional
+    :param test_profile: The profile for the test, defaults to `None`
+    :type test_profile: :class:`Profile` | `None`, optional
+    :param pbar: A progress bar to track the progress of the test, defaults to
+    `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     """
 
     def __init__(
@@ -483,11 +485,11 @@ class FunctionalTest(Test):
             ],
         ],
         *,
-        test_running_progress: Value,
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
         test_profile: None = None,
+        pbar: tqdm | None = None,
     ) -> None:
         super().__init__(
             test_file_generators=test_file_generators,
@@ -496,7 +498,7 @@ class FunctionalTest(Test):
             test_output_directory=test_output_directory,
             save_files=True,
             test_profile=test_profile,
-            test_running_progress=test_running_progress,
+            pbar=pbar,
         )
 
     def set_results_holder(self) -> PVResults:
@@ -588,16 +590,18 @@ class PerformanceTest(Test):
     :type test_file_generators: `dict`[ `str`, `dict`[ `str`, `tuple`[
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
-    :param test_running_progress: A shared value to track the progress of
-    the test
-    :type test_running_progress: `Value`
     :param harness_config: Main config for the test harness, defaults to `None`
     :type harness_config: :class:`HarnessConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
     :type test_config: :class:`TestConfig` | `None`, optional
     :param test_output_directory: The path of the test output directory where
     files relating to the test results are stored, defaults to `None`
-    :type test_output_directory: `str` | `None`, optional
+    :type test_output_directory: `str` | `None`, optional,
+    :param test_profile: The profile for the test, defaults to `None`
+    :type test_profile: :class:`Profile` | `None`, optional
+    :param pbar: A progress bar to track the progress of the test, defaults to
+    `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     """
 
     def __init__(
@@ -617,11 +621,11 @@ class PerformanceTest(Test):
             ],
         ],
         *,
-        test_running_progress: Value,
         harness_config: HarnessConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
         test_profile: Profile | None = None,
+        pbar: tqdm | None = None,
     ) -> None:
         """Constructor method"""
         super().__init__(
@@ -631,12 +635,8 @@ class PerformanceTest(Test):
             test_output_directory=test_output_directory,
             save_files=False,
             test_profile=test_profile,
-            test_running_progress=test_running_progress,
+            pbar=pbar,
         )
-
-    # TODO: implement function
-    # def set_results_holder(self) -> PVResultsDaskDataFrame:
-    #     return PVResultsDaskDataFrame()
 
     def set_results_holder(self) -> PVResultsDataFrame:
         return PVResultsDataFrame()
