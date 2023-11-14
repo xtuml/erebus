@@ -6,7 +6,6 @@ import threading
 import logging
 import sys
 import os
-from multiprocessing import Value
 
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -50,26 +49,24 @@ def run_harness_app(
             harness_app.test_to_run = {}
 
 #           test has started running
-            harness_app.test_running_progress.value = 0
-            success, _ = harness_test_manager(
-                harness_config=harness_app.harness_config,
-                test_config=test_to_run["TestConfig"],
-                test_output_directory=test_to_run[
-                    "TestOutputDirectory"
-                ],
-                test_running_progress=harness_app.test_running_progress,
-            )
-            if success:
-                logging.getLogger().info(
-                    "Test Harness test run completed successfully"
+            with harness_app.harness_progress_manager.run_test() as pbar:
+                success, _ = harness_test_manager(
+                    harness_config=harness_app.harness_config,
+                    test_config=test_to_run["TestConfig"],
+                    test_output_directory=test_to_run[
+                        "TestOutputDirectory"
+                    ],
+                    pbar=pbar
                 )
-            harness_app.test_running_progress.value = -1
+                if success:
+                    logging.getLogger().info(
+                        "Test Harness test run completed successfully"
+                    )
     except KeyboardInterrupt:
         sys.exit()
 
 
 def main(
-    test_running_progress: Value,
     puml_file_paths: list[str] | None = None,
     harness_config_path: str | None = None,
     test_config_yaml_path: str | None = None,
@@ -77,9 +74,6 @@ def main(
 ) -> None:
     """Method to run test harness from command line
 
-    :param test_running_progress: A shared value to track the progress of
-    the test
-    :type test_running_progress: `Value`
     :param puml_file_paths: List of puml file paths, defaults to `None`
     :type puml_file_paths: `list`[`str`] | `None`, optional
     :param harness_config_path: Path of the harness config, defaults to `None`
@@ -114,7 +108,6 @@ def main(
             test_output_directory=test_output_directory,
             harness_config=harness_config,
             test_config=test_config,
-            test_running_progress=test_running_progress
         )
     except Exception as error:
         clean_directories(
