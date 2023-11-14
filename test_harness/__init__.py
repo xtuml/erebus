@@ -3,9 +3,11 @@
 Creates the test harness app
 """
 import os
-from typing import Mapping, Optional, Callable, Union, Any
+from typing import Mapping, Optional, Callable, Union, Any, Generator
 from uuid import uuid4
-from ctypes import c_float
+from ctypes import c_int, c_bool
+from contextlib import contextmanager
+import traceback
 
 from flask import Flask, request, make_response, Response, jsonify
 from werkzeug.datastructures import FileStorage
@@ -48,8 +50,8 @@ class HarnessApp(Flask):
     :type root_path: Optional[str], optional
     :ivar harness_config: Instance of HarnessConfig
     :vartype harness_config: :class:`HarnessConfig`
-    :ivar test_running_progress: Value of the running progress of the test
-    :vartype test_running_progress: :class:`Value`
+    :ivar harness_progress_manager: Instance of TestHarnessProgessManager
+    :vartype harness_progress_manager: :class:`TestHarnessProgessManager`
     """
 
     def __init__(
@@ -68,7 +70,7 @@ class HarnessApp(Flask):
     ) -> None:
         """Constructor method"""
         self.harness_config = HarnessConfig(config_path=harness_config_path)
-        self.test_running_progress = Value(c_float, -1)
+        self.harness_progress_manager = TestHarnessProgessManager()
         super().__init__(
             import_name,
             static_url_path,
@@ -181,14 +183,17 @@ class HarnessApp(Flask):
             A Flask response indicating whether a test is running and if so,
             the percentage of completion.
         """
-        if self.test_running_progress.value >= 0:
+        if self.harness_progress_manager.test_is_running.value:
+            percentage_done = (
+                self.harness_progress_manager.get_progress_percentage()
+            )
             returnVal: Flask.response_class = (
                 jsonify(
                     {
                         "running": True,
                         "details": {
-                            "simulator_percent_done": (
-                                f"{self.test_running_progress.value:.2f}"
+                            "percent_done": (
+                                f"{percentage_done:.2f}"
                             )
                         },
                     }
@@ -196,7 +201,6 @@ class HarnessApp(Flask):
                 200,
             )
             return returnVal
-
         return jsonify({"running": False}), 200
 
     def handle_start_test_json_request(
@@ -451,7 +455,7 @@ class TestHarnessPbar(tqdm):
                  lock_args=None, nrows=None, colour=None, delay=0, gui=False,
                  **kwargs):
         """Constructor method"""
-        self.th_progress = Value(int, 0)
+        self.th_progress = Value(c_int, 0)
         super().__init__(iterable, desc, total, leave, file, ncols, mininterval, maxinterval,
                          miniters, ascii, disable, unit, unit_scale, dynamic_ncols, smoothing,
                          bar_format, initial, position, postfix, unit_divisor, write_bytes,
@@ -481,20 +485,42 @@ class TestHarnessProgessManager:
     """
     def __init__(self) -> None:
         """Constructor method"""
-        self.test_is_running = Value(bool, False)
+        self.test_is_running = Value(c_bool, False)
         self.pbars: dict[str, TestHarnessPbar] = {}
 
-    def create_pbar(self, total: int, desc: str | None, name: str = "DefaultName") -> None:
-        pbar = TestHarnessPbar(total=total, desc=desc)
+    @contextmanager
+    def run_test(
+        self,
+        desc: str | None = None,
+        name: str = "DefaultName"
+    ) -> Generator[TestHarnessPbar, Any, None]:
+        self.test_is_running.value = True
+        pbar = TestHarnessPbar(desc=desc)
         self.pbars[name] = pbar
-        return pbar
+        try:
+            yield pbar
+        except Exception as e:
+            pbar.__exit__(type(e), e, traceback.format_exc())
+            self.end_test(name)
+        finally:
+            pbar.__exit__(None, None, None)
+            self.end_test(name)
 
-    def get_progress_percentage(self, name: str = "DefaultName") -> int:
-        pbar = self.pbars[name] 
+    def get_progress_percentage(self, name: str = "DefaultName") -> float:
+        if name not in self.pbars:
+            return 0.0
+        pbar = self.pbars[name]
+        if pbar.total is None:
+            return 0.0
+        if pbar.total == 0 and self.test_is_running:
+            return 100.0
+        elif pbar.total == 0:
+            return 0.0
         return pbar.get_th_progress() / pbar.total * 100
 
-    def destroy_pbar(self, name: str = "DefaultName") -> None:
+    def end_test(self, name: str = "DefaultName") -> None:
         del self.pbars[name]
+        self.test_is_running.value = False
 
 
 if __name__ == "__main__":
