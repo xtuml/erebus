@@ -191,11 +191,7 @@ class HarnessApp(Flask):
                 jsonify(
                     {
                         "running": True,
-                        "details": {
-                            "percent_done": (
-                                f"{percentage_done:.2f}"
-                            )
-                        },
+                        "details": {"percent_done": f"{percentage_done:.2f}"},
                     }
                 ),
                 200,
@@ -447,19 +443,68 @@ class TestHarnessPbar(tqdm):
     :param kwargs: Keyword arguments to be passed to the parent class
     :type kwargs: `dict`
     """
-    def __init__(self, iterable=None, desc=None, total=None, leave=True, file=None,
-                 ncols=None, mininterval=0.1, maxinterval=10.0, miniters=None,
-                 ascii=None, disable=False, unit='it', unit_scale=False,
-                 dynamic_ncols=False, smoothing=0.3, bar_format=None, initial=0,
-                 position=None, postfix=None, unit_divisor=1000, write_bytes=False,
-                 lock_args=None, nrows=None, colour=None, delay=0, gui=False,
-                 **kwargs):
+
+    def __init__(
+        self,
+        iterable=None,
+        desc=None,
+        total=None,
+        leave=True,
+        file=None,
+        ncols=None,
+        mininterval=0.1,
+        maxinterval=10.0,
+        miniters=None,
+        ascii=None,
+        disable=False,
+        unit="it",
+        unit_scale=False,
+        dynamic_ncols=False,
+        smoothing=0.3,
+        bar_format=None,
+        initial=0,
+        position=None,
+        postfix=None,
+        unit_divisor=1000,
+        write_bytes=False,
+        lock_args=None,
+        nrows=None,
+        colour=None,
+        delay=0,
+        gui=False,
+        **kwargs,
+    ):
         """Constructor method"""
         self.th_progress = Value(c_int, 0)
-        super().__init__(iterable, desc, total, leave, file, ncols, mininterval, maxinterval,
-                         miniters, ascii, disable, unit, unit_scale, dynamic_ncols, smoothing,
-                         bar_format, initial, position, postfix, unit_divisor, write_bytes,
-                         lock_args, nrows, colour, delay, gui, **kwargs)
+        super().__init__(
+            iterable,
+            desc,
+            total,
+            leave,
+            file,
+            ncols,
+            mininterval,
+            maxinterval,
+            miniters,
+            ascii,
+            disable,
+            unit,
+            unit_scale,
+            dynamic_ncols,
+            smoothing,
+            bar_format,
+            initial,
+            position,
+            postfix,
+            unit_divisor,
+            write_bytes,
+            lock_args,
+            nrows,
+            colour,
+            delay,
+            gui,
+            **kwargs,
+        )
 
     def update(self, n: int = 1) -> None:
         """Method to update the progress bar
@@ -481,8 +526,8 @@ class TestHarnessPbar(tqdm):
 
 
 class TestHarnessProgessManager:
-    """Class to manage the progress of the test harness
-    """
+    """Class to manage the progress of the test harness"""
+
     def __init__(self) -> None:
         """Constructor method"""
         self.test_is_running = Value(c_bool, False)
@@ -490,9 +535,7 @@ class TestHarnessProgessManager:
 
     @contextmanager
     def run_test(
-        self,
-        desc: str | None = None,
-        name: str = "DefaultName"
+        self, desc: str | None = None, name: str = "DefaultName"
     ) -> Generator[TestHarnessPbar, Any, None]:
         self.test_is_running.value = True
         pbar = TestHarnessPbar(desc=desc)

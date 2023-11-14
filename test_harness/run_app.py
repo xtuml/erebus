@@ -20,12 +20,12 @@ logging.basicConfig(level=logging.INFO)
 
 
 def run_harness_app(
-    harness_config_path: HarnessConfig | None = None
+    harness_config_path: str | None = None
 ) -> None:
     """Function to run test harness
 
     :param harness_config_path: Path to test harness config, defaults to `None`
-    :type harness_config_path: :class:`HarnessConfig` | `None`, optional
+    :type harness_config_path: `str` | `None`, optional
     """
     harness_app = create_app(
         harness_config_path=harness_config_path,

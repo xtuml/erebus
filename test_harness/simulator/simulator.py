@@ -248,7 +248,7 @@ class Simulator:
 
     async def simulate(self) -> None:
         """Method to simulate the instances simulation data"""
-        if not self.pbar:
+        if self.pbar is None:
             with tqdm(total=len(self.delays)) as pbar:
                 await self.run_simulation(pbar)
         else:
