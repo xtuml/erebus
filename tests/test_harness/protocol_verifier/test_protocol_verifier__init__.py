@@ -152,7 +152,6 @@ def test_puml_files_test() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_running_progress=Value(c_float, -1)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -228,7 +227,6 @@ def test_puml_files_test_send_as_pv_bytes() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_running_progress=Value(c_float, -1)
         )
         for form_payload in form_payloads:
             io_data = form_payload._parts[0][0]._value
@@ -285,7 +283,6 @@ def test_puml_files_test_job_file_with_options() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_file_paths=[test_file_path_einv_options],
-            test_running_progress=Value(c_float, -1),
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         events_list = []
@@ -362,7 +359,6 @@ def test_puml_files_test_functional_extra_job_invariants() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_file_paths=[test_file_path_einv],
-            test_running_progress=Value(c_float, -1)
         )
         results = pd.read_csv(
             os.path.join(harness_config.report_file_store, "Results.csv")
@@ -448,7 +444,6 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_file_paths=[test_file_path_einv],
-            test_running_progress=Value(c_float, -1)
         )
         results = pd.read_csv(
             os.path.join(
@@ -643,7 +638,6 @@ def test_puml_files_test_json_validity_tests_ver_log_file() -> None:
                 valid_test_file_json_validity_path,
                 invalid_test_file_json_validity_path
             ],
-            test_running_progress=Value(c_float, -1)
         )
         results = pd.read_csv(
             os.path.join(harness_config.report_file_store, "Results.csv")
@@ -731,7 +725,6 @@ def test_puml_files_test_with_location_log_urls(
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_running_progress=Value(c_float, -1)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -859,7 +852,6 @@ def test_puml_files_performance_with_input_profile(
                 harness_config=harness_config,
                 test_config=test_config,
                 profile=profile,
-                test_running_progress=Value(c_float, -1)
             )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -973,7 +965,6 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
             harness_config=harness_config,
             test_config=test_config,
             test_file_paths=[test_uml_1_events],
-            test_running_progress=Value(c_float, -1)
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -1082,13 +1073,11 @@ def test_puml_files_test_functional_test_timeout(
             url=harness_config.log_urls["ver"]["getFile"],
             body=b'test log',
         )
-        test_running_progress = Value(c_float, -1)
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_running_progress=test_running_progress
         )
         assert (
             "Protocol Verifier failed to finish within the test timeout of "
@@ -1103,6 +1092,7 @@ def test_puml_files_test_functional_test_timeout(
         )
 
 
+@pytest.skip("Defunct will likely remove before branch is merged")
 @responses.activate
 def test_puml_files_test_is_running_or_in_progess() -> None:
     """Tests that test_running_progress is set to > -1 before a test is invoked

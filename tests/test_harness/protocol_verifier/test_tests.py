@@ -17,8 +17,6 @@ from io import StringIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Iterable
-from ctypes import c_float
-from multiprocessing import Value
 
 import numpy as np
 import pandas as pd
@@ -1026,7 +1024,6 @@ def test_send_test_files_functional() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-            test_running_progress=Value(c_float, -1),
         )
         with PVResultsHandler(
             test.results, test.test_output_directory, test.save_files
@@ -1066,7 +1063,6 @@ def test_run_test_functional() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-            test_running_progress=Value(c_float, -1),
 
         )
         asyncio.run(test.run_test())
@@ -1108,7 +1104,6 @@ def test_calc_results_functional():
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
-            test_running_progress=Value(c_float, -1),
 
         )
         asyncio.run(test.run_test())
@@ -1144,7 +1139,6 @@ def test_send_test_files_performance() -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
-            test_running_progress=Value(c_float, -1),
 
         )
 
@@ -1191,7 +1185,6 @@ def test_run_test_performance() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-            test_running_progress=Value(c_float, -1),
 
         )
         asyncio.run(test.run_test())
@@ -1264,7 +1257,6 @@ def test_run_test_performance_kafka(monkeypatch) -> None:
         test_file_generators=test_events,
         test_config=test_config,
         harness_config=harness_config,
-        test_running_progress=Value(c_float, -1)
     )
     asyncio.run(test.run_test())
     assert len(test.results) == 60
@@ -1324,7 +1316,6 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
-            test_running_progress=Value(c_float, -1),
 
         )
         asyncio.run(test.run_test())
@@ -1377,8 +1368,6 @@ def test_run_test_performance_profile_job_batch() -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_profile=profile,
-            test_running_progress=Value(c_float, -1),
-
         )
         asyncio.run(test.run_test())
         assert len(test.results) == 60
@@ -1432,7 +1421,6 @@ def test_run_test_performance_profile_shard() -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_profile=profile,
-            test_running_progress=Value(c_float, -1),
         )
         asyncio.run(test.run_test())
         assert len(test.results) == 60
@@ -1464,8 +1452,6 @@ def test_get_report_files_from_results(
         test_config=test_config,
         harness_config=harness_config,
         test_profile=profile,
-        test_running_progress=Value(c_float, -1),
-
     )
     test.results.results = results_dataframe.to_dict(orient="index")
     test.results.calc_all_results()
@@ -1562,7 +1548,6 @@ def test_run_test_performance_stop_test(
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-            test_running_progress=Value(c_float, -1),
         )
         asyncio.run(test.run_test())
         assert (
