@@ -90,7 +90,7 @@ jobs:
           date
           sleep 20
           echo "Testing that a percentage is returned"
-          curl 127.0.0.1:8800/isTestRunning | grep simulator_percent_done
+          curl 127.0.0.1:8800/isTestRunning | grep percent_done
           sleep 160
           date
           sleep 10
