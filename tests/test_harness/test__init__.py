@@ -439,7 +439,7 @@ def test_is_test_running_running_total_set_some_progress(
                 {
                     "running": True,
                     "details": {
-                        "percent_done": f"{(i + 1)/float(total):.2f}",
+                        "percent_done": f"{(i + 1)/float(total/100):.2f}",
                     }
                 }
             )

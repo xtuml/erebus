@@ -1092,75 +1092,6 @@ def test_puml_files_test_functional_test_timeout(
         )
 
 
-@pytest.skip("Defunct will likely remove before branch is merged")
-@responses.activate
-def test_puml_files_test_is_running_or_in_progess() -> None:
-    """Tests that test_running_progress is set to > -1 before a test is invoked
-    and that it is > -1 while the test is running
-    """
-    harness_config = HarnessConfig(test_config_path)
-    test_config = TestConfig()
-    test_config.parse_from_dict({
-        "event_gen_options": {
-            "invalid": False
-        }
-    })
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
-        test_running_progress = Value(c_float, -1)
-
-        def test_running_progress_value(test_running_progress_local):
-            for i in range(100):
-                if test_running_progress_local.value > -1:
-                    return test_running_progress_local.value
-                time.sleep(0.1)
-            return -1
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            # Start the load operations and mark each future with its URL
-            future_from_test = executor.submit(test_running_progress_value,
-                                               test_running_progress)
-
-            puml_files_test(
-                puml_file_paths=[test_file_path],
-                test_output_directory=harness_config.report_file_store,
-                harness_config=harness_config,
-                test_config=test_config,
-                test_running_progress=test_running_progress
-            )
-
-            assert future_from_test.result() > -1
-        assert test_running_progress.value < 0
-
 
 @responses.activate
 def test_puml_files_performance_test_timeout(
@@ -1230,7 +1161,6 @@ def test_puml_files_performance_test_timeout(
                 harness_config=harness_config,
                 test_config=test_config,
                 profile=profile,
-                test_running_progress=Value(c_float, -1)
             )
         assert (
             "Protocol Verifier failed to finish within the test timeout of "
