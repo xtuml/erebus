@@ -10,6 +10,8 @@ import shutil
 import json
 from tempfile import NamedTemporaryFile
 import logging
+from time import sleep
+
 from typing import Callable, Literal
 from io import BytesIO
 
@@ -447,6 +449,9 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
                 "AggregatedResults.csv"
             )
         )
+
+        # sleep for 5 seconds so that all events are sent
+        sleep(5)
         assert results.iloc[-1]["Cumulative Events Sent"] == 80.0
         clean_directories([harness_config.report_file_store])
 
