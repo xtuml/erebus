@@ -12,14 +12,10 @@ from tempfile import NamedTemporaryFile
 import logging
 from typing import Callable, Literal
 from io import BytesIO
-from ctypes import c_float
-import concurrent.futures
-import time
 
 import pytest
 import responses
 from aioresponses import aioresponses, CallbackResult
-from multiprocessing import Value
 import pandas as pd
 import aiohttp
 
@@ -1090,7 +1086,6 @@ def test_puml_files_test_functional_test_timeout(
                 harness_config.log_file_store
             ]
         )
-
 
 
 @responses.activate
