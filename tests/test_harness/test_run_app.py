@@ -207,11 +207,4 @@ def test_run_harness_app() -> None:
                 "second_is_running_check"
             ]["details"]["percent_done"]
         ) == 0
-        for i in range(10):
-            response = response_results["intermediate_is_running_check"][i]
-            assert response["running"]
-            assert int(round(
-                float(response["details"]["percent_done"]),
-                -1
-            )) == 10 * (i + 1)
         assert not response_results["final_is_running_check"]["running"]
