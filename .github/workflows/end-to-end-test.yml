@@ -68,7 +68,19 @@ jobs:
           cp ./end_to_end_test_configs/log-config-verifier.xml ./aeo_svdc_config/
 
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
+
+          # this should return false as no tests are running
+          sleep 10
+          echo "Testing that no tests are running"
+          curl 127.0.0.1:8800/isTestRunning | grep 'false'
+
+          # actual tests are set to run
           timeout 1m ./end-to-end-curl-commands.sh
+
+          # this should return true as tests are running
+          echo "Testing that tests are running"
+          curl 127.0.0.1:8800/isTestRunning | grep 'true'
+
           # It takes this long to get any meaningful output from the test harness
           # It's 60 seconds for the test harness to start the job ...
           # ... and 10 seconds to run the job ...
@@ -76,8 +88,12 @@ jobs:
           # ... and another 50 seconds for grace time in starting up/waiting for logs/waiting for calculations
           echo "Sleeping to give the test harness time to work"
           date
-          sleep 180
+          sleep 20
+          echo "Testing that a percentage is returned"
+          curl 127.0.0.1:8800/isTestRunning | grep percent_done
+          sleep 160
           date
+          sleep 10
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
           docker compose -f ./docker-compose-end-to-end-test.yml down

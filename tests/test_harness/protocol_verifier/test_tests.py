@@ -1063,6 +1063,7 @@ def test_run_test_functional() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
+
         )
         asyncio.run(test.run_test())
         assert len(test.results.responses) == 1
@@ -1103,6 +1104,7 @@ def test_calc_results_functional():
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
+
         )
         asyncio.run(test.run_test())
         test.calc_results()
@@ -1137,6 +1139,7 @@ def test_send_test_files_performance() -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
+
         )
 
         with PVResultsHandler(
@@ -1182,6 +1185,7 @@ def test_run_test_performance() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
+
         )
         asyncio.run(test.run_test())
         assert len(test.results) == 60
@@ -1312,6 +1316,7 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
+
         )
         asyncio.run(test.run_test())
         test.calc_results()
@@ -1376,6 +1381,7 @@ def test_run_test_performance_profile_job_batch() -> None:
 def test_run_test_performance_profile_shard() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
     harness_config = HarnessConfig(test_config_path)
+    harness_config.pv_finish_interval = 6
     test_config = TestConfig()
     test_config.parse_from_dict(
         {

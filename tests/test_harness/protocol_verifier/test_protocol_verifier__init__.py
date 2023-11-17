@@ -10,6 +10,8 @@ import shutil
 import json
 from tempfile import NamedTemporaryFile
 import logging
+from time import sleep
+
 from typing import Callable, Literal
 from io import BytesIO
 
@@ -147,7 +149,7 @@ def test_puml_files_test() -> None:
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -222,7 +224,7 @@ def test_puml_files_test_send_as_pv_bytes() -> None:
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
         )
         for form_payload in form_payloads:
             io_data = form_payload._parts[0][0]._value
@@ -278,7 +280,7 @@ def test_puml_files_test_job_file_with_options() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_file_paths=[test_file_path_einv_options]
+            test_file_paths=[test_file_path_einv_options],
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         events_list = []
@@ -354,7 +356,7 @@ def test_puml_files_test_functional_extra_job_invariants() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_file_paths=[test_file_path_einv]
+            test_file_paths=[test_file_path_einv],
         )
         results = pd.read_csv(
             os.path.join(harness_config.report_file_store, "Results.csv")
@@ -439,7 +441,7 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_file_paths=[test_file_path_einv]
+            test_file_paths=[test_file_path_einv],
         )
         results = pd.read_csv(
             os.path.join(
@@ -447,6 +449,7 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
                 "AggregatedResults.csv"
             )
         )
+
         assert results.iloc[-1]["Cumulative Events Sent"] == 80.0
         clean_directories([harness_config.report_file_store])
 
@@ -633,7 +636,7 @@ def test_puml_files_test_json_validity_tests_ver_log_file() -> None:
             test_file_paths=[
                 valid_test_file_json_validity_path,
                 invalid_test_file_json_validity_path
-            ]
+            ],
         )
         results = pd.read_csv(
             os.path.join(harness_config.report_file_store, "Results.csv")
@@ -720,7 +723,7 @@ def test_puml_files_test_with_location_log_urls(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -847,7 +850,7 @@ def test_puml_files_performance_with_input_profile(
                 test_output_directory=harness_config.report_file_store,
                 harness_config=harness_config,
                 test_config=test_config,
-                profile=profile
+                profile=profile,
             )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -960,7 +963,7 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
             test_config=test_config,
-            test_file_paths=[test_uml_1_events]
+            test_file_paths=[test_uml_1_events],
         )
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         expected_files = [
@@ -1073,7 +1076,7 @@ def test_puml_files_test_functional_test_timeout(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
         )
         assert (
             "Protocol Verifier failed to finish within the test timeout of "
@@ -1155,7 +1158,7 @@ def test_puml_files_performance_test_timeout(
                 test_output_directory=harness_config.report_file_store,
                 harness_config=harness_config,
                 test_config=test_config,
-                profile=profile
+                profile=profile,
             )
         assert (
             "Protocol Verifier failed to finish within the test timeout of "

@@ -9,6 +9,8 @@ import asyncio
 import logging
 import time
 
+from tqdm import tqdm
+
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_files,
@@ -25,7 +27,8 @@ from test_harness.simulator.simulator_profile import Profile
 def full_pv_test(
     harness_config: HarnessConfig,
     test_config: TestConfig,
-    test_output_directory: str
+    test_output_directory: str,
+    pbar: tqdm | None = None
 ) -> None:
     """Full protocol verifier test for the config provided
 
@@ -35,6 +38,8 @@ def full_pv_test(
     :type test_config: :class:`TestConfig`
     :param test_output_directory: The directory where output files are stored
     :type test_output_directory: `str`
+    :param pbar: A progress bar to update, defaults to `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     """
     profile = get_test_profile(
         harness_config.profile_store
@@ -54,7 +59,8 @@ def full_pv_test(
         harness_config=harness_config,
         test_config=test_config,
         profile=profile,
-        test_file_paths=test_file_paths
+        test_file_paths=test_file_paths,
+        pbar=pbar
     )
 
 
@@ -64,7 +70,8 @@ def puml_files_test(
     harness_config: HarnessConfig,
     test_config: TestConfig,
     profile: Profile | None = None,
-    test_file_paths: list[str] | None = None
+    test_file_paths: list[str] | None = None,
+    pbar: tqdm | None = None
 ) -> None:
     """Method to perform and end to end test
 
@@ -80,6 +87,8 @@ def puml_files_test(
     :type profile: :class:`Profile` | `None`, optional
     :param test_file_paths: list of test file paths, defults to `None`
     :type test_file_paths: `list`[`str`] | `None`, optional
+    :param pbar: A progress bar to update, defaults to `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     """
     # choose test from test config and run test
     test_class = (
@@ -121,7 +130,8 @@ def puml_files_test(
         harness_config=harness_config,
         test_config=test_config,
         test_output_directory=test_output_directory,
-        test_profile=profile
+        test_profile=profile,
+        pbar=pbar
     )
     logging.getLogger().info(
         "Beggining test"

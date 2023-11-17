@@ -42,7 +42,7 @@ def test_app() -> Generator[HarnessApp, None, None]:
     app = create_app(
         harness_config_path=str(
             Path(__file__).parent / "config/test_config.config"
-        )
+        ),
     )
     app.config.update({"TESTING": True})
 

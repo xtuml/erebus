@@ -20,15 +20,15 @@ logging.basicConfig(level=logging.INFO)
 
 
 def run_harness_app(
-    harness_config_path: HarnessConfig | None = None
+    harness_config_path: str | None = None
 ) -> None:
     """Function to run test harness
 
     :param harness_config_path: Path to test harness config, defaults to `None`
-    :type harness_config_path: :class:`HarnessConfig` | `None`, optional
+    :type harness_config_path: `str` | `None`, optional
     """
     harness_app = create_app(
-        harness_config_path=harness_config_path
+        harness_config_path=harness_config_path,
     )
     thread = threading.Thread(
         target=harness_app.run,
@@ -47,17 +47,21 @@ def run_harness_app(
                 continue
             test_to_run: dict = harness_app.test_to_run
             harness_app.test_to_run = {}
-            success, _ = harness_test_manager(
-                harness_config=harness_app.harness_config,
-                test_config=test_to_run["TestConfig"],
-                test_output_directory=test_to_run[
-                    "TestOutputDirectory"
-                ]
-            )
-            if success:
-                logging.getLogger().info(
-                    "Test Harness test run completed successfully"
+
+#           test has started running
+            with harness_app.harness_progress_manager.run_test() as pbar:
+                success, _ = harness_test_manager(
+                    harness_config=harness_app.harness_config,
+                    test_config=test_to_run["TestConfig"],
+                    test_output_directory=test_to_run[
+                        "TestOutputDirectory"
+                    ],
+                    pbar=pbar
                 )
+                if success:
+                    logging.getLogger().info(
+                        "Test Harness test run completed successfully"
+                    )
     except KeyboardInterrupt:
         sys.exit()
 
@@ -103,7 +107,7 @@ def main(
             puml_file_paths=puml_file_paths,
             test_output_directory=test_output_directory,
             harness_config=harness_config,
-            test_config=test_config
+            test_config=test_config,
         )
     except Exception as error:
         clean_directories(

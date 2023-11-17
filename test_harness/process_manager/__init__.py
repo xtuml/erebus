@@ -7,6 +7,8 @@ from typing import Literal
 import traceback
 import sys
 
+from tqdm import tqdm
+
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier import full_pv_test
 from test_harness.utils import clean_directories
@@ -15,7 +17,8 @@ from test_harness.utils import clean_directories
 def harness_test_manager(
     harness_config: HarnessConfig,
     test_config: TestConfig,
-    test_output_directory: str
+    test_output_directory: str,
+    pbar: tqdm | None = None
 ) -> tuple[Literal[True], Literal['']] | tuple[Literal[False], str]:
     """Test Harness manager that trys to execute a test but if a failure is
     encounterd will log the error and return the error to the function user
@@ -26,6 +29,8 @@ def harness_test_manager(
     :type test_config: :class:`TestConfig`
     :param test_output_directory: The directory where output files are stored
     :type test_output_directory: `str`
+    :param pbar: A progress bar to update, defaults to `None`
+    :type pbar: :class:`tqdm` | `None`, optional
     :return: Returns a tuple with
     * a boolean indicating whether the test executed incorrectly
     * a string representing the error message if there was one
@@ -37,7 +42,8 @@ def harness_test_manager(
         full_pv_test(
             harness_config=harness_config,
             test_config=test_config,
-            test_output_directory=test_output_directory
+            test_output_directory=test_output_directory,
+            pbar=pbar
         )
         return (True, "")
 
