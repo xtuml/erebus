@@ -450,8 +450,6 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
             )
         )
 
-        # sleep for 5 seconds so that all events are sent
-        sleep(5)
         assert results.iloc[-1]["Cumulative Events Sent"] == 80.0
         clean_directories([harness_config.report_file_store])
 
