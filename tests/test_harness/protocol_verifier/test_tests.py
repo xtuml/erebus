@@ -1560,3 +1560,58 @@ def test_run_test_performance_stop_test(
         clean_directories(
             [harness_config.report_file_store, harness_config.log_file_store]
         )
+
+
+@responses.activate
+def test_run_test_performance_no_logs(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` not grabbing logs"""
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {
+                "num_files_per_sec": 30, "total_jobs": 20, "save_logs": False
+            },
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    caplog.set_level(logging.INFO)
+    with aioresponses() as mock:
+        mock.post(url=harness_config.pv_send_url, repeat=True)
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={"fileNames": ["Reception.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b"test log",
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={"fileNames": ["Verifier.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b"test log",
+        )
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+
+        assert not os.path.exists(
+            os.path.join(harness_config.log_file_store, "Reception.log")
+        )
+        assert not os.path.exists(
+            os.path.join(harness_config.log_file_store, "Verifier.log")
+        )
+        clean_directories(
+            [harness_config.report_file_store, harness_config.log_file_store]
+        )

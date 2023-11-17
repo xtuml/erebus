@@ -176,7 +176,8 @@ async def pv_finish_inspector_logs(
     urls: dict[str, dict[str, str]],
     interval_time: int,
     required_time_interval: int,
-    log_file_store_path: str
+    log_file_store_path: str,
+    save_log_files: bool = True
 ) -> None:
     """Asynchronous method to get pv logs and calculate
     the finish of the test
@@ -193,6 +194,9 @@ async def pv_finish_inspector_logs(
     :type required_time_interval: `int`
     :param log_file_store_path: The path of the log file store
     :type log_file_store_path: `str`
+    :param save_log_files: Boolean indicating whether to save the log files,
+    defaults to `True`
+    :type save_log_files: `bool`, optional
     :raises RuntimeError: Raises a :class:`RuntimeError` when the run has
     finished
     """
@@ -219,7 +223,8 @@ async def pv_finish_inspector_logs(
             ) = handle_domain_log_file_reception_and_save(
                 urls=urls[domain],
                 domain_file_names=domain_file_names,
-                log_file_store_path=log_file_store_path
+                log_file_store_path=log_file_store_path,
+                save_log_files=save_log_files
             )
             # update domain variables
             most_current_log_file_names[domain] = current_log_file_name
@@ -264,7 +269,8 @@ def handle_domain_log_file_reception_and_save(
     domain_file_names: list[str],
     log_file_store_path: str,
     location: str | None = None,
-    file_prefix: str | None = None
+    file_prefix: str | None = None,
+    save_log_files: bool = True
 ) -> tuple[str, str]:
     """Method to handle the recption of log files and saving for a specific PV
     domain
@@ -277,6 +283,13 @@ def handle_domain_log_file_reception_and_save(
     :param log_file_store_path: The path where log files received will be
     stored
     :type log_file_store_path: `str`
+    :param location: The location of the log files, defaults to `None`
+    :type location: `str`, optional
+    :param file_prefix: The prefix of the log files, defaults to `None`
+    :type file_prefix: `str`, optional
+    :param save_log_files: Boolean indicating whether to save the log files,
+    defaults to `True`
+    :type save_log_files: `bool`, optional
     :return: Returns a tuple of:
     * the current log file name
     * the current log file string
@@ -290,12 +303,15 @@ def handle_domain_log_file_reception_and_save(
         location=location,
         file_prefix=file_prefix
     )
-    return save_log_file_strings(log_files, log_file_store_path)
+    return save_log_file_strings(
+        log_files, log_file_store_path, save_log_files
+    )
 
 
 def save_log_file_strings(
     log_files: dict[str, str],
     log_file_store_path: str,
+    save_log_files: bool = True
 ) -> tuple[str, str, list[str]]:
     """Method to save the log file strings to file and returns
     the current log file string, the log files that were received excluding
@@ -305,6 +321,9 @@ def save_log_file_strings(
     :type log_files: `dict`[`str`, `str`]
     :param log_file_store_path: The path of the log file store
     :type log_file_store_path: `str`
+    :param save_log_files: Boolean indicating whether to save the log files,
+    defaults to `True`
+    :type save_log_files: `bool`, optional
     :return: Returns a tuple of:
     * the current log file name
     * the current log file string
@@ -315,12 +334,13 @@ def save_log_file_strings(
     log_files_received = []
     current_log_file_name = ''
     for file_name, file_string in log_files.items():
-        with open(
-            os.path.join(log_file_store_path, file_name),
-            'w',
-            encoding="utf-8"
-        ) as file:
-            file.write(file_string)
+        if save_log_files:
+            with open(
+                os.path.join(log_file_store_path, file_name),
+                'w',
+                encoding="utf-8"
+            ) as file:
+                file.write(file_string)
         if ".gz" in file_name:
             log_files_received.append(file_name)
         else:
@@ -342,7 +362,8 @@ class PVFileInspector:
     """
     def __init__(
         self,
-        harness_config: HarnessConfig
+        harness_config: HarnessConfig,
+        save_log_files: bool = True
     ) -> None:
         """Constructor method
         """
@@ -356,6 +377,7 @@ class PVFileInspector:
             for domain in self.harness_config.io_urls.keys()
         }
         self.test_boundaries: tuple[int, int, int, int, int] | None = None
+        self.save_log_files = save_log_files
 
     async def run_pv_file_inspector(
         self,
@@ -367,8 +389,11 @@ class PVFileInspector:
                 file_names=self.file_names,
                 urls=self.harness_config.log_urls,
                 interval_time=self.harness_config.log_calc_interval_time,
-                required_time_interval=self.harness_config.pv_finish_interval,
-                log_file_store_path=self.harness_config.log_file_store
+                required_time_interval=(
+                    self.harness_config.pv_finish_interval
+                ),
+                log_file_store_path=self.harness_config.log_file_store,
+                save_log_files=self.save_log_files
             )
         )
         await gathered_futures
