@@ -114,6 +114,7 @@ class Test(ABC):
         test_profile: Profile | None = None,
         save_files: bool = True,
         pbar: tqdm | None = None,
+        save_log_files: bool = True,
     ) -> None:
         """Constructor method"""
         self.test_files = test_file_generators
@@ -136,7 +137,10 @@ class Test(ABC):
         # set up requires attributes
         self.job_templates: list[Job] = []
         self.results = self.set_results_holder()
-        self.pv_file_inspector = PVFileInspector(harness_config)
+        self.pv_file_inspector = PVFileInspector(
+            harness_config,
+            save_log_files=save_log_files,
+        )
         self.total_number_of_events: int
         self.delay_times: list[float]
         self.jobs_to_send: list[Job]
@@ -636,6 +640,7 @@ class PerformanceTest(Test):
             save_files=False,
             test_profile=test_profile,
             pbar=pbar,
+            save_log_files=test_config.performance_options["save_logs"]
         )
 
     def set_results_holder(self) -> PVResultsDataFrame:

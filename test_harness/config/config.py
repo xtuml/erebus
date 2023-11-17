@@ -276,6 +276,7 @@ class TestConfig:
                 "num_files_per_sec": `int` > 0, defaults to 100;
                 "shard": `bool`, defaults to `False`;
                 "total_jobs": `int` => 0, defaults to 10000;
+                "save_logs": `bool`, defaults to `True`;
             },
             "functional_options": `dict`, {
                 "log_domain": "ver" | "aer", defaults to "ver";
@@ -305,6 +306,7 @@ class TestConfig:
             "num_files_per_sec": 100,
             "shard": False,
             "total_jobs": 10000,
+            "save_logs": True
         }
         self.functional_options = {
             "log_domain": "ver"

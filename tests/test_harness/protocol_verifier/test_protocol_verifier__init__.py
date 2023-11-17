@@ -10,7 +10,6 @@ import shutil
 import json
 from tempfile import NamedTemporaryFile
 import logging
-from time import sleep
 
 from typing import Callable, Literal
 from io import BytesIO
