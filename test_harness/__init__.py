@@ -8,11 +8,15 @@ from uuid import uuid4
 from ctypes import c_int, c_bool
 from contextlib import contextmanager
 import traceback
+import shutil
+from zipfile import ZipFile
+import glob
 
 from flask import Flask, request, make_response, Response, jsonify
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from tqdm import tqdm
+import yaml
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from multiprocessing import Value
@@ -227,27 +231,75 @@ class HarnessApp(Flask):
                 },
             )
         response_json = {}
-        for key in self.valid_json_dict_keys:
-            if key == "TestName":
-                test_name = request_json[key] if key in request_json else None
-                test_name, test_output_directory = (
-                    create_test_output_directory(
-                        harness_config=self.harness_config, test_name=test_name
-                    )
+        test_name = (
+            request_json["TestName"] if "TestName" in request_json else None
+        )
+        test_name, test_output_directory = (
+            create_test_output_directory(
+                base_output_path=self.harness_config.report_file_store,
+                test_name=test_name
+            )
+        )
+        test_to_run["TestOutputDirectory"] = test_output_directory
+        response_json["TestOutputFolder"] = (
+            f"Tests under name {test_name} in the directory"
+            f"{test_output_directory}"
+        )
+        test_config = TestConfig()
+        if os.path.exists(
+            os.path.join(
+                test_output_directory,
+                "test_config.yaml"
+            )
+        ):
+            test_config.parse_from_yaml(
+                os.path.join(
+                    test_output_directory,
+                    "test_config.yaml"
                 )
-                test_to_run["TestOutputDirectory"] = test_output_directory
-                response_json["TestOutputFolder"] = (
-                    f"Tests under name {test_name} in the directory"
-                    f"{test_output_directory}"
-                )
-            else:
-                test_config = TestConfig()
-                if key in request_json:
-                    test_config.parse_from_dict(request_json[key])
-                test_to_run["TestConfig"] = test_config
-                response_json["TestConfig"] = test_config.config_to_dict()
+            )
+        else:
+            if "TestConfig" in request_json:
+                test_config.parse_from_dict(request_json["TestConfig"])
+        test_to_run["TestConfig"] = test_config
+        response_json["TestConfig"] = test_config.config_to_dict()
+        with open(
+            os.path.join(
+                test_output_directory,
+                "used_config.yaml"
+            ),
+            "w"
+        ) as file:
+            yaml.dump(response_json["TestConfig"], file)
         self.test_to_run = test_to_run
         return (True, response_json)
+
+    def upload_named_zip_files(self) -> Response:
+        """Handler for uploading a named zip file for a test
+
+        :return: Returns a :class:`Response`
+        :rtype: :class:`Response`
+        """
+        # requests must be of type multipart/form-data
+        if request.mimetype != "multipart/form-data":
+            return make_response(
+                "mime-type must be multipart/form-data\n", 400
+            )
+        # handle zip files
+        try:
+            for uploaded_file_identifier, file in request.files.items():
+                handle_uploaded_zip_file(
+                    file_storage=file,
+                    name=uploaded_file_identifier,
+                    save_file_dir_path=self.harness_config.report_file_store,
+                )
+        except Exception as error:
+            return make_response(
+                f"Error uploading zip"
+                f"file {uploaded_file_identifier}: {error}\n",
+                400
+            )
+        return make_response("Zip archives uploaded successfully\n", 200)
 
     @property
     def test_to_run(self) -> dict | None:
@@ -274,7 +326,7 @@ class HarnessApp(Flask):
         :return: Returns a set of the keys
         :rtype: `set`[`str`]
         """
-        return {"TestConfig", "TestName"}
+        return {"TestName", "TestConfig"}
 
 
 def create_app(
@@ -333,6 +385,10 @@ def create_app(
     def test_is_running() -> None:
         return app.test_is_running()
 
+    @app.route("/upload/named-zip-files", methods=["POST"])
+    def upload_named_zip_files() -> None:
+        return app.upload_named_zip_files()
+
     return app
 
 
@@ -385,6 +441,54 @@ def handle_uploaded_file(file: FileStorage, save_file_dir_path: str) -> None:
     file.save(out_file_path)
 
 
+def handle_uploaded_zip_file(
+    file_storage: FileStorage, name: str, save_file_dir_path: str
+) -> None:
+    """Helper function to create output path and save uploaded file
+
+    :param file_storage: FileStroage class containing the uploaded file
+    and metadata
+    :type file_storage: class:`FileStorage`
+    :param name: Name of the test
+    :type name: `str`
+    :param save_file_dir_path: Path of folder to save the file in
+    :type save_file_dir_path: str
+    """
+    _, test_output_directory_path = create_test_output_directory(
+        base_output_path=save_file_dir_path, test_name=name
+    )
+    # clean test output directory before unzipping files into it
+    for file in os.listdir(test_output_directory_path):
+        file_path = os.path.join(test_output_directory_path, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+        elif os.path.isdir(file_path):
+            shutil.rmtree(file_path)
+        else:
+            pass
+    # unzip the file to the test output directory
+    with ZipFile(file_storage.stream) as zip_file:
+        # find the common path which must be the highest level directory
+        common_path = os.path.commonpath(
+            (member.filename for member in zip_file.infolist())
+        )
+        zip_file.extractall(test_output_directory_path)
+        extracted_path = os.path.join(
+            test_output_directory_path, common_path
+        )
+        # move contents from extracted path into the correct folder and remove
+        # extracted folder
+        for path in glob.glob(
+            "*",
+            root_dir=extracted_path,
+        ):
+            shutil.move(
+                os.path.join(extracted_path, path),
+                os.path.join(test_output_directory_path, path)
+            )
+        shutil.rmtree(extracted_path)
+
+
 def wrap_function_app(
     func_to_wrap: Callable, route: str, methods: list[str], app: Flask
 ) -> Callable[[], Response]:
@@ -410,14 +514,14 @@ def wrap_function_app(
 
 
 def create_test_output_directory(
-    harness_config: HarnessConfig, test_name: str | None = None
+    base_output_path: str, test_name: str | None = None
 ) -> tuple[str, str]:
-    """Method to create a test output directory given harness config and a
+    """Method to create a test output directory given base output path and a
     test name. If no test name is given a uuid is given to the test and
     returned along with the directory path
 
-    :param harness_config: The config for the test harness
-    :type harness_config: :class:`HarnessConfig`
+    :param base_output_path: The base path to output the test directory to
+    :type base_output_path: `str`
     :param test_name: The identifier for the test, defaults to `None`
     :type test_name: `str` | `None`, optional
     :return: Returns a tuple of:
@@ -428,7 +532,7 @@ def create_test_output_directory(
     if not test_name:
         test_name = str(uuid4())
     test_output_directory_path = os.path.join(
-        harness_config.report_file_store, test_name
+        base_output_path, test_name
     )
     if not os.path.exists(test_output_directory_path):
         os.makedirs(test_output_directory_path)

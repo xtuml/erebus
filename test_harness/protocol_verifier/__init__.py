@@ -41,16 +41,22 @@ def full_pv_test(
     :param pbar: A progress bar to update, defaults to `None`
     :type pbar: :class:`tqdm` | `None`, optional
     """
+    # select stores to use based on test output directory contents
+    store_paths = select_store_paths(
+        test_output_directory,
+        harness_config
+    )
+
     profile = get_test_profile(
-        harness_config.profile_store
+        store_paths["profile_store"]
     )
 
     test_file_paths = get_test_file_paths(
-        harness_config.test_file_store
+        store_paths["test_file_store"]
     )
 
     puml_file_paths = get_puml_file_paths(
-        harness_config.uml_file_store
+        store_paths["uml_file_store"]
     )
 
     puml_files_test(
@@ -243,3 +249,37 @@ def get_all_file_paths_in_folder(
         glob.glob("*.*", root_dir=folder_path)
     ]
     return file_paths
+
+
+def select_store_paths(
+    test_output_directory: str,
+    harness_config: HarnessConfig
+) -> dict[str, str]:
+    """Method to select the store paths to use based on the contents of the
+    test output directory
+
+    :param test_output_directory: The directory where output files are stored
+    :type test_output_directory: `str`
+    :param harness_config: The config for the test harness
+    :type harness_config: :class:`HarnessConfig`
+    :return: Returns a dictionary of the store paths to use
+    :rtype: `dict`[`str`, `str`]
+    """
+    store_paths = {}
+    for folder in [
+        "uml_file_store",
+        "test_file_store",
+        "profile_store"
+    ]:
+        store_path = os.path.join(
+            test_output_directory,
+            folder
+        )
+        if os.path.exists(store_path):
+            store_paths[folder] = store_path
+        else:
+            store_paths[folder] = getattr(
+                harness_config,
+                folder
+            )
+    return store_paths

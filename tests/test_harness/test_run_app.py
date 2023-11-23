@@ -8,15 +8,19 @@ import time
 import json
 from io import BytesIO
 from typing import Literal
+import glob
+import re
 
 from aioresponses import aioresponses, CallbackResult
 import responses
 import requests
 import aiohttp
+import pandas as pd
 
 from test_harness.run_app import run_harness_app
-from test_harness.config.config import HarnessConfig
+from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.requests.send_config import post_config_form_upload
+from test_harness.utils import clean_directories, check_dict_equivalency
 
 # get test config
 test_config_path = os.path.join(
@@ -29,6 +33,16 @@ test_file_path = os.path.join(
     Path(__file__).parent / "test_files",
     "test_uml_1.puml"
 )
+
+# get path of test zip file
+test_file_path = os.path.join(
+    Path(__file__).parent / "test_files",
+    "test_zip_file.zip"
+)
+
+uuid4hex = re.compile(
+            '[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z', re.I
+        )
 
 
 def run_performance_test_requests(
@@ -119,12 +133,12 @@ def test_run_harness_app() -> None:
         Callback function that extracts the event payload from the
         multipart data and appends it to the reception file.
 
-        Args:
-            url (str): The URL to call back to.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            CallbackResult: The result of the callback.
+        :param url: The URL to call back to.
+        :type url: `str`
+        :param **kwargs: Arbitrary keyword arguments.
+        :type **kwargs: `dict`
+        :return: Returns a callback result
+        :rtype: `CallbackResult`
         """
         data: aiohttp.multipart.MultipartWriter = kwargs["data"]
         io_data: BytesIO = data._parts[0][0]._value
@@ -208,3 +222,238 @@ def test_run_harness_app() -> None:
             ]["details"]["percent_done"]
         ) == 0
         assert not response_results["final_is_running_check"]["running"]
+    clean_directories([
+        harness_config.report_file_store,
+        harness_config.uml_file_store
+    ])
+
+
+def run_performance_test_requests_zip_file_upload(
+    results_capture: dict,
+) -> None:
+    """Function to run performance test using requests for uploaded
+    zip file functionality
+
+    :param results_capture: The dictionary to capture results
+    :type results_capture: `dict`
+    """
+    # this will post the file under the name "upload"
+    response = post_config_form_upload(
+        file_bytes_file_names=[
+            (open(test_file_path, 'rb'), "test_zip_file.zip")
+        ],
+        url="http://localhost:8800/upload/named-zip-files"
+    )[2]
+    results_capture["upload zip response status"] = response.status_code
+    time.sleep(2)
+    response = requests.post(
+        url="http://localhost:8800/startTest",
+        json={
+            "TestName": "upload",
+        }
+    )
+    results_capture["start test json"] = response.json()
+    time.sleep(1)
+    while True:
+        response = requests.get(
+            url="http://localhost:8800/isTestRunning"
+        )
+        if not response.json()["running"]:
+            break
+        time.sleep(1)
+
+
+@responses.activate
+def test_run_harness_app_uploaded_zip_file() -> None:
+    """Test the `run_harness_app` function.
+
+    This function sets up a test environment for the `run_harness_app`
+    function, which is responsible for running a performance testing harness.
+    The test environment includes a mock server that simulates the performance
+    testing requests, and a callback function that logs the events received by
+    the server. The function then starts two threads: one that runs the
+    `run_harness_app` function, and another that sends performance testing
+    requests to the mock server. The function waits for the second thread to
+    finish, and then prints a message to indicate that the test is complete.
+
+    This is a test fro specifically checking that an uploaded zip file can
+    start a performance test
+
+    Raises:
+        AssertionError: If the test fails.
+    """
+    harness_config = HarnessConfig(test_config_path)
+    reception_file = []
+
+    def call_back(url, **kwargs) -> CallbackResult:
+        """
+        Callback function that extracts the event payload from the
+        multipart data and appends it to the reception file.
+
+        :param url: The URL to call back to.
+        :type url: `str`
+        :param **kwargs: Arbitrary keyword arguments.
+        :type **kwargs: `dict`
+        :return: Returns a callback result
+        :rtype: `CallbackResult`
+        """
+        data: aiohttp.multipart.MultipartWriter = kwargs["data"]
+        io_data: BytesIO = data._parts[0][0]._value
+        json_payload_list = json.load(io_data)
+        event_payload = json_payload_list[0]
+        reception_file.append(
+            f"reception_event_valid : EventId = {event_payload['eventId']}"
+        )
+
+        return CallbackResult(
+            status=200,
+        )
+
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
+        return (
+            200,
+            {},
+            "\n".join(reception_file).encode("utf-8")
+        )
+    responses.add_passthru("http://localhost:8800")
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True,
+            callback=call_back
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.add_callback(
+            responses.POST,
+            url=harness_config.log_urls["aer"]["getFile"],
+            callback=reception_log_call_back
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        response_results = {}
+        thread_1 = Thread(
+            target=run_harness_app,
+            args=(
+                test_config_path,
+            ),
+            daemon=True
+        )
+        thread_2 = Thread(
+            target=run_performance_test_requests_zip_file_upload,
+            args=(
+                response_results,
+            )
+        )
+        thread_1.start()
+        time.sleep(5)
+        thread_2.start()
+        thread_2.join()
+    assert response_results["upload zip response status"] == 200
+    start_test_json = response_results["start test json"]
+    actual_test_config_dict = start_test_json["TestConfig"]
+    actual_output_folder_string = start_test_json["TestOutputFolder"]
+    test_output_path = os.path.join(
+        harness_config.report_file_store,
+        "upload"
+    )
+    assert actual_output_folder_string == (
+        f"Tests under name upload in the directory"
+        f"{test_output_path}"
+    )
+    for folder, file in zip(
+        ["uml_file_store", "test_file_store", "profile_store"],
+        ["test_uml_1.puml", "test_uml_1_events.json", "test_profile.csv"]
+    ):
+        path = os.path.join(test_output_path, folder, file)
+        assert os.path.exists(path)
+    assert os.path.exists(
+        os.path.join(test_output_path, "test_config.yaml")
+    )
+    expected_test_config = TestConfig()
+    expected_test_config.parse_from_yaml(
+        os.path.join(test_output_path, "test_config.yaml")
+    )
+    expected_test_config_dict = expected_test_config.config_to_dict()
+    check_dict_equivalency(
+        actual_test_config_dict,
+        expected_test_config_dict
+    )
+    files = glob.glob("*.*", root_dir=test_output_path)
+    expected_files = [
+        "CumulativeEventsSentVSProcessed.html",
+        "Verifier.log",
+        "Reception.log",
+        "Report.xml",
+        "Report.html",
+        "EventsSentVSProcessed.html",
+        "ResponseAndQueueTime.html",
+        "AggregatedResults.csv",
+        "ProcessingErrors.html",
+        "AggregatedErrors.csv",
+        "used_config.yaml",
+        "test_config.yaml",
+    ]
+    data = pd.read_csv(
+        os.path.join(
+            test_output_path,
+            "AggregatedResults.csv"
+        )
+    )
+    assert data["Cumulative Events Sent"].iloc[-1] == 76
+    # load in json file from test output directory
+    with open(
+        os.path.join(
+            test_output_path,
+            "test_file_store",
+            "test_uml_1_events.json"
+        ),
+        "r"
+    ) as file:
+        template_json_file = json.load(file)["job_file"]
+    for file in files:
+        file_in_files = file in expected_files
+        is_uuid = bool(uuid4hex.match(
+                file.replace("-", "").replace(".json", "")
+            ))
+        assert file_in_files ^ is_uuid
+        if is_uuid:
+            with open(
+                os.path.join(
+                    test_output_path,
+                    file
+                ),
+                "r"
+            ) as file:
+                json_file = json.load(file)
+            for temp_event, actual_event in zip(
+                template_json_file,
+                json_file
+            ):
+                assert temp_event["eventType"] == (
+                    actual_event["eventType"]
+                )
+    clean_directories([
+        harness_config.report_file_store,
+        harness_config.uml_file_store
+    ])

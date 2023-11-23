@@ -2,7 +2,7 @@
 """Testing __init__.py
 """
 import os
-from io import BufferedReader
+from io import BufferedReader, BytesIO
 from pathlib import Path
 from typing import Optional
 import json
@@ -11,8 +11,8 @@ from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
 from test_harness import create_test_output_directory, HarnessApp
-from test_harness.config.config import HarnessConfig
-from test_harness.utils import check_dict_equivalency
+from test_harness.config.config import HarnessConfig, TestConfig
+from test_harness.utils import check_dict_equivalency, clean_directories
 
 # get test config
 test_config_path = os.path.join(
@@ -46,7 +46,9 @@ def get_file_data(
     :rtype: `dict`
     """
     proper_file_path = os.path.join(input_resources, file_name)
-    file_data = open(proper_file_path, "rb")
+    # file_data = open(proper_file_path, "rb")
+    with open(proper_file_path, "rb") as file:
+        file_data = BytesIO(file.read())
     data: dict[str, tuple[BufferedReader, str]] = {
         file_id: (
             file_data,
@@ -98,8 +100,6 @@ def post_multi_form_data(
         buffered=True,
         content_type="multipart/form-data"
     )
-    # clean up open files
-    close_all_files(data)
     return response
 
 
@@ -276,7 +276,7 @@ def test_create_output_directory_does_not_exist() -> None:
         config_path=test_config_path
     )
     directory_name, directory_path = create_test_output_directory(
-        harness_config=harness_config,
+        base_output_path=harness_config.report_file_store,
         test_name="Test"
     )
     assert directory_name == "Test"
@@ -468,3 +468,108 @@ def test_is_test_running_running_test_finished(
     )
     assert response.status_code == 200
     assert pbar not in list(test_app.harness_progress_manager.pbars.values())
+
+
+def test_upload_named_zip_files(
+    client: FlaskClient,
+    test_app: HarnessApp
+):
+    """Test that the upload zip files endpoint works when the files are named
+    correctly
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    data = get_multi_file_data(
+        [
+            ("test_1", "test_zip_file.zip", "test_zip_file.zip"),
+            ("test_2", "test_zip_file.zip", "test_zip_file.zip")
+        ]
+    )
+    response = post_multi_form_data(
+        client,
+        data,
+        "/upload/named-zip-files"
+    )
+    assert response.data == b"Zip archives uploaded successfully\n"
+    assert response.status_code == 200
+
+    test_1_path = os.path.join(
+        test_app.harness_config.report_file_store,
+        "test_1"
+    )
+    test_2_path = os.path.join(
+        test_app.harness_config.report_file_store,
+        "test_2"
+    )
+    assert os.path.exists(test_1_path)
+    assert os.path.exists(test_2_path)
+
+    for test_output_path in [test_1_path, test_2_path]:
+        for folder, file in zip(
+            ["uml_file_store", "test_file_store", "profile_store"],
+            ["test_uml_1.puml", "test_uml_1_events.json", "test_profile.csv"]
+        ):
+            path = os.path.join(test_output_path, folder, file)
+            assert os.path.exists(path)
+        assert os.path.exists(
+            os.path.join(test_output_path, "test_config.yaml")
+        )
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
+
+
+def test_start_test_with_uploaded_zip_files(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the start test endpoint works when zip files are uploaded
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    data = get_multi_file_data(
+        [
+            ("test_1", "test_zip_file.zip", "test_zip_file.zip"),
+        ]
+    )
+    response = post_multi_form_data(
+        client,
+        data,
+        "/upload/named-zip-files"
+    )
+    assert response.data == b"Zip archives uploaded successfully\n"
+    assert response.status_code == 200
+
+    test_1_path = os.path.join(
+        test_app.harness_config.report_file_store,
+        "test_1"
+    )
+
+    response = client.post(
+        "/startTest",
+        json={
+            "TestName": "test_1"
+        }
+    )
+    assert response.status_code == 200
+    response_dict = response.json
+    expected_test_config = TestConfig()
+    expected_test_config.parse_from_yaml(
+        os.path.join(test_1_path, "test_config.yaml")
+    )
+    expected_config_dict = expected_test_config.config_to_dict()
+    check_dict_equivalency(
+        response_dict["TestConfig"],
+        expected_config_dict
+    )
+    assert response_dict["TestOutputFolder"] == (
+            f"Tests under name test_1 in the directory"
+            f"{test_1_path}"
+        )
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )

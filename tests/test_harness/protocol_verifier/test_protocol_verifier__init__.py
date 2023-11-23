@@ -8,8 +8,9 @@ import glob
 import re
 import shutil
 import json
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 import logging
+from zipfile import ZipFile
 
 from typing import Callable, Literal
 from io import BytesIO
@@ -24,7 +25,9 @@ from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier import (
     puml_files_test,
     get_test_profile,
-    get_test_file_paths
+    get_test_file_paths,
+    select_store_paths,
+    full_pv_test
 )
 from test_harness.protocol_verifier.generate_test_files import TestJobFile
 from test_harness.utils import clean_directories
@@ -35,6 +38,8 @@ test_config_path = os.path.join(
     Path(__file__).parent.parent,
     "config/test_config.config"
 )
+
+test_files_path = Path(__file__).parent.parent / "test_files"
 
 # get path of tests uml file
 test_file_path = os.path.join(
@@ -401,9 +406,41 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
         {
             "type": "Performance",
             "event_gen_options": {"invalid": False},
-            "performance_options": {"num_files_per_sec": 40, "total_jobs": 20},
+            "performance_options": {
+                "num_files_per_sec": 40, "total_jobs": 20, "shard": True
+            },
         }
     )
+    reception_file = []
+
+    def call_back(url, **kwargs) -> CallbackResult:
+        data: aiohttp.multipart.MultipartWriter = kwargs["data"]
+        io_data: BytesIO = data._parts[0][0]._value
+        json_payload_list = json.load(io_data)
+        assert len(json_payload_list) == 1
+        event_payload = json_payload_list[0]
+        if "eventType" in event_payload:
+            reception_file.append(
+                f"reception_event_valid : EventId = {event_payload['eventId']}"
+            )
+        else:
+            reception_file.append(
+                "reception_event_invalid : EventId = "
+                f"{event_payload['eventId']}"
+            )
+
+        return CallbackResult(
+            status=200,
+        )
+
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
+        return (
+            200,
+            {},
+            "\n".join(reception_file).encode("utf-8")
+        )
     with aioresponses() as mock:
         responses.get(
             url=harness_config.pv_clean_folders_url
@@ -413,7 +450,8 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
         )
         mock.post(
             url=harness_config.pv_send_url,
-            repeat=True
+            repeat=True,
+            callback=call_back
         )
         responses.get(
             url=harness_config.log_urls["aer"]["getFileNames"],
@@ -421,9 +459,10 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
                 "fileNames": ["Reception.log"]
             },
         )
-        responses.post(
+        responses.add_callback(
+            responses.POST,
             url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
+            callback=reception_log_call_back
         )
         responses.get(
             url=harness_config.log_urls["ver"]["getFileNames"],
@@ -1170,3 +1209,175 @@ def test_puml_files_performance_test_timeout(
                 harness_config.log_file_store
             ]
         )
+
+
+def test_select_store_paths_all_exist() -> None:
+    """Tests `select_store_paths` when all the store paths exist
+    """
+    harness_config = HarnessConfig(test_config_path)
+    with TemporaryDirectory() as tmp_dir:
+        with ZipFile(
+            os.path.join(
+                test_files_path,
+                "test_zip_file.zip"
+            ),
+            "r"
+        ) as zip_file:
+            zip_file.extractall(tmp_dir)
+        store_paths = select_store_paths(
+            os.path.join(
+                tmp_dir,
+                "test_zip_file"
+            ),
+            harness_config
+        )
+        for file_store in [
+            "uml_file_store", "profile_store", "test_file_store"
+        ]:
+            assert store_paths[file_store] == os.path.join(
+                tmp_dir,
+                "test_zip_file",
+                file_store
+            )
+
+
+def test_select_store_paths_none_exist() -> None:
+    """Tests `select_store_paths` when none of the store paths exist
+    """
+    harness_config = HarnessConfig(test_config_path)
+    with TemporaryDirectory() as tmp_dir:
+        store_paths = select_store_paths(
+            tmp_dir,
+            harness_config
+        )
+        for file_store in [
+            "uml_file_store", "profile_store", "test_file_store"
+        ]:
+            assert store_paths[file_store] == getattr(
+                harness_config,
+                file_store
+            )
+
+
+@responses.activate
+def test_full_pv_test_test_files_in_test_output_directory() -> None:
+    """Tests method `full_pv_test` for a performance test with input files
+    from a zip file
+    """
+    harness_config = HarnessConfig(test_config_path)
+    harness_config.pv_finish_interval = 8
+    test_config = TestConfig()
+    test_config.parse_from_dict({
+        "type": "Performance",
+        "event_gen_options": {
+            "invalid": False
+        }
+    })
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b'test log',
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        with TemporaryDirectory() as tmp_dir:
+            with ZipFile(
+                os.path.join(
+                    test_files_path,
+                    "test_zip_file.zip"
+                ),
+                "r"
+            ) as zip_file:
+                zip_file.extractall(tmp_dir)
+            test_output_directory = os.path.join(
+                tmp_dir,
+                "test_zip_file"
+            )
+            full_pv_test(
+                harness_config=harness_config,
+                test_config=test_config,
+                test_output_directory=test_output_directory,
+            )
+            files = glob.glob("*.*", root_dir=test_output_directory)
+            expected_files = [
+                "CumulativeEventsSentVSProcessed.html",
+                "Verifier.log",
+                "Reception.log",
+                "Report.xml",
+                "Report.html",
+                "EventsSentVSProcessed.html",
+                "ResponseAndQueueTime.html",
+                "AggregatedResults.csv",
+                "ProcessingErrors.html",
+                "AggregatedErrors.csv",
+                "test_config.yaml"
+            ]
+            data = pd.read_csv(
+                os.path.join(
+                    test_output_directory,
+                    "AggregatedResults.csv"
+                )
+            )
+            assert data["Cumulative Events Sent"].iloc[-1] == 76
+            # load in json file from test output directory
+            with open(
+                os.path.join(
+                    test_output_directory,
+                    "test_file_store",
+                    "test_uml_1_events.json"
+                ),
+                "r"
+            ) as file:
+                template_json_file = json.load(file)["job_file"]
+            for file in files:
+                file_in_files = file in expected_files
+                is_uuid = bool(uuid4hex.match(
+                        file.replace("-", "").replace(".json", "")
+                    ))
+                assert file_in_files ^ is_uuid
+                if is_uuid:
+                    with open(
+                        os.path.join(
+                            test_output_directory,
+                            file
+                        ),
+                        "r"
+                    ) as file:
+                        json_file = json.load(file)
+                    for temp_event, actual_event in zip(
+                        template_json_file,
+                        json_file
+                    ):
+                        assert temp_event["eventType"] == (
+                            actual_event["eventType"]
+                        )
+            clean_directories(
+                [
+                    harness_config.report_file_store,
+                    harness_config.log_file_store
+                ]
+            )

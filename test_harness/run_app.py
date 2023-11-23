@@ -95,7 +95,7 @@ def main(
         test_config.parse_from_yaml(test_config_yaml_path)
     if not test_output_directory:
         _, test_output_directory = create_test_output_directory(
-            harness_config=harness_config
+            base_output_path=harness_config.report_file_store
         )
         print(f"Saving output files in {test_output_directory}")
     if not puml_file_paths:

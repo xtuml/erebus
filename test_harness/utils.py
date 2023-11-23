@@ -8,6 +8,7 @@ import os
 import glob
 import logging
 import asyncio
+import shutil
 
 import flatdict
 from tqdm import tqdm
@@ -92,14 +93,16 @@ def clean_directory(
     :param directory_path: The path of the directory to clear
     :type directory_path: `str`
     """
-    files = glob.glob("*.*", root_dir=directory_path)
+    files = glob.glob("*", root_dir=directory_path)
     for file in files:
-        os.remove(
-            os.path.join(
-                directory_path,
-                file
-            )
+        path = os.path.join(
+            directory_path,
+            file
         )
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
 
 
 def check_dict_equivalency(
