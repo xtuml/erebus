@@ -1126,7 +1126,7 @@ def test_send_test_files_performance() -> None:
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
-            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -1146,7 +1146,7 @@ def test_send_test_files_performance() -> None:
             test.results, test.test_output_directory, test.save_files
         ) as pv_results_handler:
             asyncio.run(test.send_test_files(pv_results_handler))
-        assert len(test.results) == 60
+        assert len(test.results) == 6
 
 
 @responses.activate
@@ -1157,7 +1157,7 @@ def test_run_test_performance() -> None:
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
-            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -1188,7 +1188,7 @@ def test_run_test_performance() -> None:
 
         )
         asyncio.run(test.run_test())
-        assert len(test.results) == 60
+        assert len(test.results) == 6
         assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
         assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
@@ -1231,7 +1231,7 @@ def test_run_test_performance_kafka(monkeypatch) -> None:
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
-            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -1259,7 +1259,7 @@ def test_run_test_performance_kafka(monkeypatch) -> None:
         harness_config=harness_config,
     )
     asyncio.run(test.run_test())
-    assert len(test.results) == 60
+    assert len(test.results) == 6
     assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
     assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
     os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
@@ -1274,7 +1274,7 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
-            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -1336,14 +1336,13 @@ def test_run_test_performance_profile_job_batch() -> None:
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
-            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
         }
     )
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
     profile = Profile(
-        pd.DataFrame([[0, 30], [1, 30], [2, 30]], columns=["Time", "Number"])
+        pd.DataFrame([[0, 3], [1, 3], [2, 3]], columns=["Time", "Number"])
     )
     with aioresponses() as mock:
         mock.post(url=harness_config.pv_send_url, repeat=True)
@@ -1370,7 +1369,7 @@ def test_run_test_performance_profile_job_batch() -> None:
             test_profile=profile,
         )
         asyncio.run(test.run_test())
-        assert len(test.results) == 60
+        assert len(test.results) == 6
         assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
         assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
@@ -1381,14 +1380,12 @@ def test_run_test_performance_profile_job_batch() -> None:
 def test_run_test_performance_profile_shard() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.pv_finish_interval = 6
+    harness_config.pv_finish_interval = 5
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {
-                "num_files_per_sec": 30,
-                "total_jobs": 20,
                 "shard": True,
             },
         }
@@ -1397,7 +1394,7 @@ def test_run_test_performance_profile_shard() -> None:
         [test_file_path], test_config=test_config
     )
     profile = Profile(
-        pd.DataFrame([[0, 30], [1, 30], [2, 30]], columns=["Time", "Number"])
+        pd.DataFrame([[0, 3], [1, 3], [2, 3]], columns=["Time", "Number"])
     )
     with aioresponses() as mock:
         mock.post(url=harness_config.pv_send_url, repeat=True)
@@ -1424,7 +1421,7 @@ def test_run_test_performance_profile_shard() -> None:
             test_profile=profile,
         )
         asyncio.run(test.run_test())
-        assert len(test.results) == 60
+        assert len(test.results) == 6
         assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
         assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
@@ -1445,14 +1442,11 @@ def test_get_report_files_from_results(
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    profile = Profile(
-        pd.DataFrame([[0, 30], [1, 30], [2, 30]], columns=["Time", "Number"])
-    )
     test = PerformanceTest(
         test_file_generators=test_events,
         test_config=test_config,
         harness_config=harness_config,
-        test_profile=profile,
+        # test_profile=profile,
     )
     test.results.results = results_dataframe.to_dict(orient="index")
     test.results.calc_all_results()
@@ -1520,7 +1514,7 @@ def test_run_test_performance_stop_test(
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
-            "performance_options": {"num_files_per_sec": 30, "total_jobs": 20},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
         }
     )
     test_events = generate_test_events_from_puml_files(

@@ -157,8 +157,10 @@ def get_grok_result_from_line(
     grok = grok_line_priority(line, groks)
     if grok:
         if "EventId" in grok:
-            job_id = event_id_job_id_map[grok["EventId"]]
-            grok["JobId"] = job_id
+            event_id = grok["EventId"]
+            if event_id in event_id_job_id_map:
+                job_id = event_id_job_id_map[grok["EventId"]]
+                grok["JobId"] = job_id
     return grok
 
 
