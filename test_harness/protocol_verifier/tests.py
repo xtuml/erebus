@@ -16,6 +16,7 @@ import logging
 import math
 from datetime import datetime
 import glob
+from contextlib import ExitStack
 
 import aiohttp
 import matplotlib.pyplot as plt
@@ -65,7 +66,10 @@ from .pvperformanceresults import PVPerformanceResults
 # from .pvresultsdaskdataframe import PVResultsDaskDataFrame
 from .pvresultsdataframe import PVResultsDataFrame
 from .pvfunctionalresults import PVFunctionalResults
-from .types import TemplateOptions
+from .types import (
+    TemplateOptions,
+    MetricsRetriverKwargsPairAndHandlerKwargsPair
+)
 
 
 class Test(ABC):
@@ -115,6 +119,10 @@ class Test(ABC):
         save_files: bool = True,
         pbar: tqdm | None = None,
         save_log_files: bool = True,
+        async_metrics_retrievers_and_handlers: list[
+            MetricsRetriverKwargsPairAndHandlerKwargsPair
+        ] | None = None
+
     ) -> None:
         """Constructor method"""
         self.test_files = test_file_generators
@@ -150,6 +158,10 @@ class Test(ABC):
         self.time_start: datetime | None = None
         self.time_end: datetime | None = None
         self.pbar = pbar
+        self.async_metrics_retrievers_and_handlers = (
+            async_metrics_retrievers_and_handlers
+            if async_metrics_retrievers_and_handlers else []
+        )
 
     @abstractmethod
     def set_results_holder(self) -> (
@@ -367,11 +379,36 @@ class Test(ABC):
             test_output_directory=self.test_output_directory,
             save_files=self.save_files,
         ) as pv_results_handler:
+            with ExitStack() as metrics_stack:
+                metrics_retrievers_awaitables = []
+                for (
+                    async_metrics_retriever_kwargs_pair,
+                    async_metrics_handler,
+                ) in self.async_metrics_retrievers_and_handlers:
+                    metrics_handler = metrics_stack.enter_context(
+                        async_metrics_handler.handler_class(
+                            results_holder=self.results
+                        )
+                    )
+                    metrics_retrievers = metrics_stack.enter_context(
+                        async_metrics_retriever_kwargs_pair.
+                        metric_retriever_class(
+                            **async_metrics_retriever_kwargs_pair.kwargs
+                        )
+                    )
+                    metrics_retrievers_awaitables.append(
+                        metrics_retrievers.async_continuous_retrieve_metrics(
+                            metrics_handler,
+                            **async_metrics_handler.kwargs
+
+                        )
+                    )
             try:
                 await asyncio.gather(
                     self.send_test_files(results_handler=pv_results_handler),
                     self.pv_file_inspector.run_pv_file_inspector(),
                     self.stop_test(),
+                    *metrics_retrievers_awaitables,
                 )
             except RuntimeError as error:
                 logging.getLogger().info(msg=str(error))
