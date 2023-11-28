@@ -5,8 +5,11 @@ test
 import logging
 from typing import Self
 from abc import ABC, abstractmethod
+import asyncio
+import time
 
 from test_harness.simulator.simulator import ResultsHandler
+from test_harness.utils import calc_interval
 
 
 class MetricsRetriever(ABC):
@@ -29,6 +32,26 @@ class MetricsRetriever(ABC):
             )
             raise exc_value
 
+    async def async_continuous_retrieve_metrics(
+        self,
+        handler: ResultsHandler,
+        interval: float,
+    ) -> None:
+        """Method to continuously retrieve the metrics from the source and
+        send them to the handler. Uses an interval to wait between retrievals
+
+        :param handler: The handler to send the results to
+        :type handler: :class:`ResultsHandler`
+        :param interval: The interval to wait between retrieving metrics
+        :type interval: `float`
+        """
+        while True:
+            t1 = time.time()
+            await self.async_retrieve_metrics(handler)
+            t2 = time.time()
+            time_to_wait = calc_interval(t1, t2, interval)
+            await asyncio.sleep(time_to_wait)
+
     @abstractmethod
     async def async_retrieve_metrics(
         self,
@@ -37,6 +60,7 @@ class MetricsRetriever(ABC):
         """Method to retrieve the metrics from the source and send them to the
         handler
 
-        :param handler: _description_
-        :type handler: ResultsHandler
+        :param handler: The handler to send the results to
+        :type handler: :class:`ResultsHandler`
         """
+        pass
