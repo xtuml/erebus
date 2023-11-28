@@ -2,12 +2,17 @@
 """
 import re
 import datetime
-from typing import Generator, Any, Literal
+from typing import Generator, Any, Literal, Self
+import logging
+import asyncio
 
 import kafka3
 import aiokafka
 
+from test_harness.simulator.simulator import QueueHandler, ResultsHandler
 from test_harness.protocol_verifier.types import ResultsDict
+from test_harness.metrics.metrics import MetricsRetriever
+from .pvperformanceresults import PVPerformanceResults
 
 
 KEY_EVENTS = (
@@ -165,7 +170,7 @@ def decode_and_yield_events_from_raw_msgs(
     :yield: The decoded events
     :rtype: :class:`ResultsDict` | `None`
     """
-    for _, partition in raw_msgs.items():
+    for partition in raw_msgs.values():
         for msg in partition:
             data = bytearray(msg.value)
             # DANGER: decode_data mutates data
@@ -183,6 +188,72 @@ def decode_and_yield_events_from_raw_msgs(
                 yield ResultsDict(
                     field=label, timestamp=d, event_id=evt_id
                 )
+
+
+class PVKafkaMetricsRetriever(MetricsRetriever):
+    def __init__(
+        self,
+        msgbroker: str,
+        topic: str,
+        group_id: str = "test_harness",
+    ) -> None:
+        """Constructor method"""
+        self.msgbroker = msgbroker
+        self.topic = topic
+        self.group_id = group_id
+        self.consumer = aiokafka.AIOKafkaConsumer(
+            bootstrap_servers=msgbroker, auto_offset_reset="earliest",
+            group_id=self.group_id
+        )
+
+    def __enter__(self) -> Self:
+        self.consumer.subscribe(self.topic)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.consumer.unsubscribe()
+        asyncio.run(self.consumer.stop())
+        if exc_type is not None:
+            logging.getLogger().error(
+                "The folowing type of error occurred %s with value %s",
+                exc_type,
+                exc_value,
+            )
+            raise exc_value
+
+    async def async_retrieve_metrics(
+        self,
+        handler: ResultsHandler
+    ) -> None:
+        while True:
+            raw_msgs = await self.consumer.getmany(timeout_ms=1000)
+            handler.handle_result(raw_msgs)
+
+
+class PVKafkaMetricsHandler(QueueHandler):
+    def __init__(
+        self,
+        results_holder: PVPerformanceResults,
+    ) -> None:
+        """Constructor method"""
+        super().__init__()
+        self.results_holder = results_holder
+
+    def handle_item_from_queue(
+        self,
+        item: dict[
+            aiokafka.TopicPartition, list[aiokafka.ConsumerRecord]
+        ] | None,
+    ) -> None:
+        """Method to handle saving the data when an item is take from the queue
+
+        :param item: PV iteration data taken from the queue
+        """
+        if item is None:
+            return
+
+        for result in decode_and_yield_events_from_raw_msgs(item):
+            self.results_holder.add_result(result)
 
 
 # if __name__ == "__main__":
