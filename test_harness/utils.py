@@ -247,3 +247,30 @@ async def delayed_async_func(
 #   updates to happen out of order
     awaited_data = await func(*args, **kwargs)
     return awaited_data
+
+
+def calc_interval(
+    t_1: float,
+    t_2: float,
+    interval_time: int,
+) -> float:
+    """Method to calc the remining interval time after some of the interval
+    has been used up. If more than the interval has been used up the new
+    interval is calculated so the remaining interval makes up a whole number
+    of interval times
+
+    :param t_1: Time when process started
+    :type t_1: `float`
+    :param t_2: Time when process finished
+    :type t_2: `float`
+    :param interval_time: The required interval time
+    :type interval_time: `int`
+    :return: Returns a remainder + integer multiples of the interval time
+    :rtype: `float`
+    """
+    t_diff = t_2 - t_1
+    interval = (
+        (t_diff // interval_time + 1) * interval_time
+        - t_diff
+    )
+    return interval
