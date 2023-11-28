@@ -3,9 +3,14 @@
 """Generic async simulator
 """
 from abc import ABC, abstractmethod
-from typing import Callable, Awaitable, Any, NamedTuple, Iterator, Generator
+from typing import (
+    Callable, Awaitable, Any, NamedTuple, Iterator, Generator, Type
+)
 import asyncio
 from datetime import datetime
+import logging
+from queue import Empty, Queue
+from threading import Thread
 
 from tqdm import tqdm
 from test_harness.utils import delayed_async_func
@@ -130,6 +135,82 @@ class SimpleResultsHandler(ResultsHandler):
         :type result: `Any`
         """
         self.results.append(result)
+
+
+class QueueHandler(ResultsHandler):
+    """Abstract Subclass of :class:`ResultsHandler` to handle queueing
+    of queuing of items added to the queue through queue_handler method.
+    """
+    def __init__(self) -> None:
+        """Constructor method"""
+        self.queue = Queue()
+        self.daemon_thread = Thread(target=self.queue_handler, daemon=True)
+        self.daemon_not_done = True
+
+    def __enter__(self):
+        """Entry to the context manager"""
+        self.daemon_thread.start()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[Exception] | None,
+        exc_value: Exception | None,
+        *args,
+    ) -> None:
+        """Exit from context manager
+
+        :param exc_type: The type of the exception
+        :type exc_type: :class:`Type` | `None`
+        :param exc_value: The value of the excpetion
+        :type exc_value: `str` | `None`
+        :param traceback: The traceback fo the error
+        :type traceback: `str` | `None`
+        :raises RuntimeError: Raises a :class:`RuntimeError`
+        if an error occurred in the main thread
+        """
+        if exc_type is not None:
+            logging.getLogger().error(
+                "The folowing type of error occurred %s with value %s",
+                exc_type,
+                exc_value,
+            )
+            raise exc_value
+        while self.queue.qsize() != 0:
+            continue
+        self.daemon_not_done = False
+        self.daemon_thread.join()
+
+    def handle_result(
+        self,
+        result: Any,
+    ) -> None:
+        """Method to handle the result from a simulation iteration
+
+        :param result: The result from to add to the queue
+        :type result: `Any`
+        """
+        self.queue.put(result)
+
+    def queue_handler(self) -> None:
+        """Method to handle the queue as it is added to"""
+        while self.daemon_not_done:
+            try:
+                item = self.queue.get(timeout=0.1)
+                self.handle_item_from_queue(item)
+            except Empty:
+                continue
+
+    @abstractmethod
+    def handle_item_from_queue(
+        self,
+        item: Any,
+    ) -> None:
+        """Method to handle saving the data when an item is take from the queue
+
+        :param item: An item to handle
+        :type item: `Any`
+        """
 
 
 class Simulator:
