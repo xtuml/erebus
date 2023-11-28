@@ -13,9 +13,12 @@ from datetime import datetime
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection
 
-from test_harness.simulator.simulator import QueueHandler
+import aiokafka
 
+from test_harness.simulator.simulator import QueueHandler
 from .pvresults import PVResults
+from .pvperformanceresults import PVPerformanceResults
+from .kafka_metrics import decode_and_yield_events_from_raw_msgs
 from .types import PVResultsHandlerItem
 
 
@@ -43,8 +46,7 @@ class PVResultsHandler(QueueHandler):
         events_cache_file: str | None = None,
     ) -> None:
         """Constructor method"""
-        super().__init__()
-        self.results_holder = results_holder
+        super().__init__(results_holder)
         self.test_output_directory = test_output_directory
         self.save_files = save_files
 
@@ -158,3 +160,29 @@ class PVResultsHandler(QueueHandler):
             )
             with open(output_file_path, "w", encoding="utf-8") as file:
                 json.dump(item.event_list, file)
+
+
+class PVKafkaMetricsHandler(QueueHandler):
+    def __init__(
+        self,
+        results_holder: PVPerformanceResults,
+    ) -> None:
+        """Constructor method"""
+        super().__init__(results_holder)
+
+    def handle_item_from_queue(
+        self,
+        item: dict[
+            aiokafka.TopicPartition, list[aiokafka.ConsumerRecord]
+        ] | None,
+    ) -> None:
+        """Method to handle saving the data when an item is take from the queue
+
+        :param item: PV iteration data taken from the queue
+        """
+        if item is None:
+            return
+
+        for result in decode_and_yield_events_from_raw_msgs(item):
+            # TODO: Sort out the typing here - probably a new base class
+            self.results_holder.add_result(result)

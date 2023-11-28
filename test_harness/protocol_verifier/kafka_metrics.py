@@ -9,10 +9,9 @@ import asyncio
 import kafka3
 import aiokafka
 
-from test_harness.simulator.simulator import QueueHandler, ResultsHandler
+from test_harness.simulator.simulator import ResultsHandler
 from test_harness.protocol_verifier.types import ResultsDict
 from test_harness.metrics.metrics import MetricsRetriever
-from .pvperformanceresults import PVPerformanceResults
 
 
 KEY_EVENTS = (
@@ -225,35 +224,8 @@ class PVKafkaMetricsRetriever(MetricsRetriever):
         self,
         handler: ResultsHandler
     ) -> None:
-        while True:
-            raw_msgs = await self.consumer.getmany(timeout_ms=1000)
-            handler.handle_result(raw_msgs)
-
-
-class PVKafkaMetricsHandler(QueueHandler):
-    def __init__(
-        self,
-        results_holder: PVPerformanceResults,
-    ) -> None:
-        """Constructor method"""
-        super().__init__()
-        self.results_holder = results_holder
-
-    def handle_item_from_queue(
-        self,
-        item: dict[
-            aiokafka.TopicPartition, list[aiokafka.ConsumerRecord]
-        ] | None,
-    ) -> None:
-        """Method to handle saving the data when an item is take from the queue
-
-        :param item: PV iteration data taken from the queue
-        """
-        if item is None:
-            return
-
-        for result in decode_and_yield_events_from_raw_msgs(item):
-            self.results_holder.add_result(result)
+        raw_msgs = await self.consumer.getmany(timeout_ms=1000)
+        handler.handle_result(raw_msgs)
 
 
 # if __name__ == "__main__":
