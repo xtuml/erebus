@@ -4,7 +4,7 @@
 """
 from abc import ABC, abstractmethod
 from typing import (
-    Callable, Awaitable, Any, NamedTuple, Iterator, Generator, Type
+    Callable, Awaitable, Any, NamedTuple, Iterator, Generator, Type, Self
 )
 import asyncio
 from datetime import datetime
@@ -108,6 +108,42 @@ async def async_do_nothing() -> None:
 
 class ResultsHandler(ABC):
     """Base class for results handling"""
+    def __init__(self, results_holder: Any | None = None) -> None:
+        """Constructor method"""
+        if results_holder is None:
+            results_holder: list[Any] = []
+        self.results_holder = results_holder
+
+    @abstractmethod
+    def __enter__(self) -> Self:
+        """Entry to the context manager"""
+        return self
+
+    @abstractmethod
+    def __exit__(
+        self,
+        exc_type: Type[Exception] | None,
+        exc_value: Exception | None,
+        *args,
+    ) -> None:
+        """Exit from context manager
+
+        :param exc_type: The type of the exception
+        :type exc_type: :class:`Type` | `None`
+        :param exc_value: The value of the excpetion
+        :type exc_value: `str` | `None`
+        :param traceback: The traceback fo the error
+        :type traceback: `str` | `None`
+        :raises RuntimeError: Raises a :class:`RuntimeError`
+        if an error occurred in the main thread
+        """
+        if exc_type is not None:
+            logging.getLogger().error(
+                "The folowing type of error occurred %s with value %s",
+                exc_type,
+                exc_value,
+            )
+            raise exc_value
 
     @abstractmethod
     def handle_result(self, result: Any) -> None:
@@ -124,9 +160,32 @@ class SimpleResultsHandler(ResultsHandler):
     saving results to the class.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, results_holder: Any | None = None) -> None:
         """Constructor method"""
-        self.results: list[Any] = []
+        super().__init__(results_holder)
+
+    def __enter__(self) -> Self:
+        """Entry to the context manager"""
+        return super().__enter__()
+
+    def __exit__(
+        self,
+        exc_type: Type[Exception] | None,
+        exc_value: Exception | None,
+        *args,
+    ) -> None:
+        """Exit from context manager
+
+        :param exc_type: The type of the exception
+        :type exc_type: :class:`Type` | `None`
+        :param exc_value: The value of the excpetion
+        :type exc_value: `str` | `None`
+        :param traceback: The traceback fo the error
+        :type traceback: `str` | `None`
+        :raises RuntimeError: Raises a :class:`RuntimeError`
+        if an error occurred in the main thread
+        """
+        super().__exit__(exc_type, exc_value, *args)
 
     def handle_result(self, result: Any) -> None:
         """Method to append the given result to the results list
@@ -134,20 +193,21 @@ class SimpleResultsHandler(ResultsHandler):
         :param result: The result from the simulation iteration
         :type result: `Any`
         """
-        self.results.append(result)
+        self.results_holder.append(result)
 
 
 class QueueHandler(ResultsHandler):
     """Abstract Subclass of :class:`ResultsHandler` to handle queueing
     of queuing of items added to the queue through queue_handler method.
     """
-    def __init__(self) -> None:
+    def __init__(self, results_holder: Any | None = None) -> None:
         """Constructor method"""
+        super().__init__(results_holder)
         self.queue = Queue()
         self.daemon_thread = Thread(target=self.queue_handler, daemon=True)
         self.daemon_not_done = True
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         """Entry to the context manager"""
         self.daemon_thread.start()
         return self
