@@ -26,7 +26,6 @@ from aioresponses import aioresponses
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from pygrok import Grok
-import aiokafka
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.protocol_verifier.generate_test_files import (
@@ -1196,9 +1195,14 @@ def test_run_test_performance() -> None:
 
 
 @responses.activate
-def test_run_test_performance_kafka(monkeypatch) -> None:
+def test_run_test_performance_kafka(
+    kafka_producer_mock: None
+) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
     mocked out
+
+    :param kafka_producer_mock: Fixture providing a mocked kafka producer
+    :type kafka_producer_mock: `None`
     """
     harness_config = HarnessConfig(test_config_path)
     harness_config.message_bus_protocol = "KAFKA"
@@ -1206,28 +1210,6 @@ def test_run_test_performance_kafka(monkeypatch) -> None:
     harness_config.kafka_message_bus_topic = "test"
     harness_config.pv_send_as_pv_bytes = True
     test_config = TestConfig()
-
-    # mocks for kafka producer functionality called
-    async def mock_send_wait(*agrs, **kwargs):
-        return ""
-
-    async def mock_start(*agrs, **kwargs):
-        return None
-
-    async def mock_stop(*agrs, **kwargs):
-        return None
-
-    # monkey patches for kafka producer
-    monkeypatch.setattr(
-        aiokafka.AIOKafkaProducer, "send_and_wait", mock_send_wait
-    )
-    monkeypatch.setattr(
-        aiokafka.AIOKafkaProducer, "start", mock_start
-    )
-    monkeypatch.setattr(
-        aiokafka.AIOKafkaProducer, "stop", mock_stop
-    )
-
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
@@ -1609,3 +1591,68 @@ def test_run_test_performance_no_logs(
         clean_directories(
             [harness_config.report_file_store, harness_config.log_file_store]
         )
+
+
+@responses.activate
+def test_run_test_performance_kafka_get_metrics_from_kafka(
+    kafka_producer_mock: None,
+    kafka_consumer_mock: None
+) -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
+    mocked out
+
+    :param kafka_producer_mock: Fixture providing a mocked kafka producer
+    :type kafka_producer_mock: `None`
+    :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
+    :type kafka_consumer_mock: `None`
+    """
+    harness_config = HarnessConfig(test_config_path)
+    harness_config.message_bus_protocol = "KAFKA"
+    harness_config.kafka_message_bus_host = "localhost:9092"
+    harness_config.kafka_message_bus_topic = "test"
+    harness_config.pv_send_as_pv_bytes = True
+    harness_config.metrics_from_kafka = True
+    test_config = TestConfig()
+
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    responses.get(
+        url=harness_config.log_urls["aer"]["getFileNames"],
+        json={"fileNames": ["Reception.log"]},
+    )
+    responses.post(
+        url=harness_config.log_urls["aer"]["getFile"],
+        body=b"test log",
+    )
+    responses.get(
+        url=harness_config.log_urls["ver"]["getFileNames"],
+        json={"fileNames": ["Verifier.log"]},
+    )
+    responses.post(
+        url=harness_config.log_urls["ver"]["getFile"],
+        body=b"test log",
+    )
+    test = PerformanceTest(
+        test_file_generators=test_events,
+        test_config=test_config,
+        harness_config=harness_config,
+    )
+    asyncio.run(test.run_test())
+    assert len(test.results) == 6
+    for event_metrics in test.results.results.values():
+        for field in [
+            "time_sent", "AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"
+        ]:
+            assert field in event_metrics
+            assert isinstance(event_metrics[field], float)
+        assert event_metrics["response"] == ''
+    clean_directories(
+        [harness_config.report_file_store, harness_config.log_file_store]
+    )
