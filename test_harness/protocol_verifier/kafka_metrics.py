@@ -96,7 +96,7 @@ def decode_data(
 
 
 def consume_events_from_kafka_topic(
-    msgbroker: str, topic: str
+    msgbroker: str, topic: str, group_id: str = "test_harness"
 ) -> Generator[ResultsDict, Any, dict]:
     """
     Consume events from a Kafka topic and process them to extract relevant
@@ -110,7 +110,8 @@ def consume_events_from_kafka_topic(
     :rtype: `dict`
     """
     consumer = kafka3.KafkaConsumer(
-        bootstrap_servers=msgbroker, auto_offset_reset="earliest"
+        bootstrap_servers=msgbroker, auto_offset_reset="earliest",
+        group_id=group_id
     )
     consumer.subscribe(topic)
 
