@@ -269,6 +269,6 @@ class MetricsRetriverKwargsPairAndHandlerKwargsPair(NamedTuple):
     metric_retriever_kwargs_pair: MetricsRetrieverKwargsPair
     """The metrics retriever class and kwargs
     """
-    handler: ResultsHandlerKwargsPair
+    handler_kwargs_pair: ResultsHandlerKwargsPair
     """The handler for the results and kwargs
     """
