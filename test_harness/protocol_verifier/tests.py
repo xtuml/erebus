@@ -778,6 +778,8 @@ class PerformanceTest(Test):
         """Method to get the PV sim data from the grok endpoint and read into
         results
         """
+        if self.harness_config.metrics_from_kafka:
+            return
         self.results.add_reception_results_from_log_files(
             file_paths=[
                 os.path.join(self.harness_config.log_file_store, file_name)
