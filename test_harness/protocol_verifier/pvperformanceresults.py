@@ -456,7 +456,7 @@ class PVPerformanceResults(PVResults):
         self.results = {
             event_id: event_data
             for event_id, event_data in self.results.items()
-            if "time_start" in event_data
+            if "time_sent" in event_data
         }
 
     def create_response_time_fields(self) -> None:
