@@ -13,6 +13,8 @@ from test_harness.utils import calc_interval
 
 
 class MetricsRetriever(ABC):
+    """Base abstract class to retrieve metrics from a test
+    """
     def __init__(
         self,
     ) -> None:
@@ -20,10 +22,17 @@ class MetricsRetriever(ABC):
 
     @abstractmethod
     async def __aenter__(self) -> Self:
+        """Method to enter the context manager
+
+        :return: The instance of the class
+        :rtype: :class:`MetricsRetriever`
+        """
         return self
 
     @abstractmethod
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        """Method to exit the context manager
+        """
         if exc_type is not None:
             logging.getLogger().error(
                 "The folowing type of error occurred %s with value %s",

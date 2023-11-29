@@ -189,6 +189,16 @@ def decode_and_yield_events_from_raw_msgs(
 
 
 class PVKafkaMetricsRetriever(MetricsRetriever):
+    """Class to retrieve metrics from a Kafka topic
+
+    :param msgbroker: The Kafka broker to connect to.
+    :type msgbroker: `str`
+    :param topic: The Kafka topic to consume events from.
+    :type topic: `str`
+    :param group_id: The Kafka consumer group id to use, defaults to
+    "test_harness"
+    :type group_id: `str`, optional
+    """
     def __init__(
         self,
         msgbroker: str,
@@ -206,10 +216,17 @@ class PVKafkaMetricsRetriever(MetricsRetriever):
         )
 
     async def __aenter__(self) -> Self:
+        """Method to enter the context manager
+
+        :return: The instance of the class
+        :rtype: :class:`PVKafkaMetricsRetriever`
+        """
         await self.consumer.start()
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        """Method to exit the context manager
+        """
         await self.consumer.stop()
         if exc_type is not None:
             logging.getLogger().error(
@@ -223,6 +240,11 @@ class PVKafkaMetricsRetriever(MetricsRetriever):
         self,
         handler: ResultsHandler
     ) -> None:
+        """Method to retrieve metrics from a Kafka topic
+
+        :param handler: The handler to send the results to
+        :type handler: :class:`ResultsHandler`
+        """
         raw_msgs = await self.consumer.getmany(timeout_ms=1000)
         handler.handle_result(raw_msgs)
 

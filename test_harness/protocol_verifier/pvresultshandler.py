@@ -163,6 +163,14 @@ class PVResultsHandler(QueueHandler):
 
 
 class PVKafkaMetricsHandler(QueueHandler):
+    """Subclass of :class:`QueueHandler` to handle saving of files and data
+    from a PV test run. Uses a context manager and daemon thread to save
+    results in the background whilst a test is running.
+
+    :param results_holder: Instance used to hold the data relating to the sent
+    jobs/events
+    :type results_holder: :class:`PVPerformanceResults`
+    """
     def __init__(
         self,
         results_holder: PVPerformanceResults,
