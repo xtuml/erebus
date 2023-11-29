@@ -268,6 +268,8 @@ def calc_interval(
     :return: Returns a remainder + integer multiples of the interval time
     :rtype: `float`
     """
+    if interval_time <= 0:
+        return 0
     t_diff = t_2 - t_1
     interval = (
         (t_diff // interval_time + 1) * interval_time

@@ -10,6 +10,7 @@ import os
 from datetime import datetime
 from typing import Any, TextIO
 import math
+from threading import Lock
 
 import pandas as pd
 from prometheus_client.parser import text_fd_to_metric_families
@@ -100,6 +101,7 @@ class PVPerformanceResults(PVResults):
 
         self.job_id_event_id_map: dict[str, set[str]] = {}
         self._calculator: PVResultsDataFrameCalculator
+        self._update_lock = Lock()
 
     def __len__(self) -> int:
         """The length of the results
@@ -155,11 +157,13 @@ class PVPerformanceResults(PVResults):
         """
         if event_id not in self.results:
             return
+        self._update_lock.acquire()
         self.results[event_id] = {**self.results[event_id], **update_values}
         if "job_id" in update_values:
             if update_values["job_id"] not in self.job_id_event_id_map:
                 self.job_id_event_id_map[update_values["job_id"]] = set()
             self.job_id_event_id_map[update_values["job_id"]].add(event_id)
+        self._update_lock.release()
 
     def update_event_results_with_job_id(
         self, job_id: str, update_values: dict[str, Any]
@@ -173,11 +177,13 @@ class PVPerformanceResults(PVResults):
         :type update_values: `dict`[`str`, `Any`]
         """
         if job_id in self.job_id_event_id_map:
+            self._update_lock.acquire()
             for event_id in self.job_id_event_id_map[job_id]:
                 self.results[event_id] = {
                     **self.results[event_id],
                     **update_values,
                 }
+            self._update_lock.release()
 
     def create_event_result_row(self, event_id: str) -> None:
         """Method to create a row in the results holder based on an
