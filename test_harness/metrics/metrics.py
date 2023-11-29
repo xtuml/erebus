@@ -19,11 +19,11 @@ class MetricsRetriever(ABC):
         """Constructor method"""
 
     @abstractmethod
-    def __enter__(self) -> Self:
+    async def __aenter__(self) -> Self:
         return self
 
     @abstractmethod
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
         if exc_type is not None:
             logging.getLogger().error(
                 "The folowing type of error occurred %s with value %s",

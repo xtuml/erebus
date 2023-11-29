@@ -4,7 +4,6 @@ import re
 import datetime
 from typing import Generator, Any, Literal, Self
 import logging
-import asyncio
 
 import kafka3
 import aiokafka
@@ -201,17 +200,17 @@ class PVKafkaMetricsRetriever(MetricsRetriever):
         self.topic = topic
         self.group_id = group_id
         self.consumer = aiokafka.AIOKafkaConsumer(
+            topic,
             bootstrap_servers=msgbroker, auto_offset_reset="earliest",
             group_id=self.group_id
         )
 
-    def __enter__(self) -> Self:
-        self.consumer.subscribe(self.topic)
+    async def __aenter__(self) -> Self:
+        await self.consumer.start()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.consumer.unsubscribe()
-        asyncio.run(self.consumer.stop())
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        await self.consumer.stop()
         if exc_type is not None:
             logging.getLogger().error(
                 "The folowing type of error occurred %s with value %s",

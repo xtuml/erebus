@@ -16,7 +16,7 @@ import logging
 import math
 from datetime import datetime
 import glob
-from contextlib import ExitStack
+from contextlib import AsyncExitStack
 
 import aiohttp
 import matplotlib.pyplot as plt
@@ -60,15 +60,17 @@ from test_harness.reporting.report_results import (
 )
 from test_harness.requests import send_get_request  # , download_file_to_path
 from .pvresults import PVResults
-from .pvresultshandler import PVResultsHandler
+from .pvresultshandler import PVResultsHandler, PVKafkaMetricsHandler
 from .pvperformanceresults import PVPerformanceResults
-
+from .kafka_metrics import PVKafkaMetricsRetriever
 # from .pvresultsdaskdataframe import PVResultsDaskDataFrame
 from .pvresultsdataframe import PVResultsDataFrame
 from .pvfunctionalresults import PVFunctionalResults
 from .types import (
     TemplateOptions,
-    MetricsRetriverKwargsPairAndHandlerKwargsPair
+    MetricsRetriverKwargsPairAndHandlerKwargsPair,
+    MetricsRetrieverKwargsPair,
+    ResultsHandlerKwargsPair
 )
 
 
@@ -379,7 +381,7 @@ class Test(ABC):
             test_output_directory=self.test_output_directory,
             save_files=self.save_files,
         ) as pv_results_handler:
-            with ExitStack() as metrics_stack:
+            async with AsyncExitStack() as metrics_stack:
                 metrics_retrievers_awaitables = []
                 for (
                     async_metrics_retriever_kwargs_pair,
@@ -390,10 +392,12 @@ class Test(ABC):
                             results_holder=self.results
                         )
                     )
-                    metrics_retrievers = metrics_stack.enter_context(
-                        async_metrics_retriever_kwargs_pair.
-                        metric_retriever_class(
-                            **async_metrics_retriever_kwargs_pair.kwargs
+                    metrics_retrievers = (
+                        await metrics_stack.enter_async_context(
+                            async_metrics_retriever_kwargs_pair.
+                            metric_retriever_class(
+                                **async_metrics_retriever_kwargs_pair.kwargs
+                            )
                         )
                     )
                     metrics_retrievers_awaitables.append(
@@ -403,16 +407,18 @@ class Test(ABC):
 
                         )
                     )
-            try:
-                await asyncio.gather(
-                    self.send_test_files(results_handler=pv_results_handler),
-                    self.pv_file_inspector.run_pv_file_inspector(),
-                    self.stop_test(),
-                    *metrics_retrievers_awaitables,
-                )
-            except RuntimeError as error:
-                logging.getLogger().info(msg=str(error))
-            self.time_end = datetime.now()
+                try:
+                    await asyncio.gather(
+                        self.send_test_files(
+                            results_handler=pv_results_handler
+                        ),
+                        self.pv_file_inspector.run_pv_file_inspector(),
+                        self.stop_test(),
+                        *metrics_retrievers_awaitables,
+                    )
+                except RuntimeError as error:
+                    logging.getLogger().info(msg=str(error))
+                self.time_end = datetime.now()
 
     @abstractmethod
     def calc_results(self) -> None:
@@ -669,6 +675,27 @@ class PerformanceTest(Test):
         pbar: tqdm | None = None,
     ) -> None:
         """Constructor method"""
+        metrics_retriever_and_handlers = [
+            MetricsRetriverKwargsPairAndHandlerKwargsPair(
+                metric_retriever_kwargs_pair=MetricsRetrieverKwargsPair(
+                    metric_retriever_class=PVKafkaMetricsRetriever,
+                    kwargs={
+                        "msgbroker": (
+                            harness_config.kafka_metrics_host
+                        ),
+                        "topic": (
+                            harness_config.kafka_metrics_topic
+                        ),
+                    },
+                ),
+                handler_kwargs_pair=ResultsHandlerKwargsPair(
+                    handler_class=PVKafkaMetricsHandler,
+                    kwargs={
+                        "interval": harness_config.io_calc_interval_time,
+                    },
+                )
+            )
+        ] if harness_config.metrics_from_kafka else []
         super().__init__(
             test_file_generators=test_file_generators,
             harness_config=harness_config,
@@ -677,7 +704,10 @@ class PerformanceTest(Test):
             save_files=False,
             test_profile=test_profile,
             pbar=pbar,
-            save_log_files=test_config.performance_options["save_logs"]
+            save_log_files=test_config.performance_options["save_logs"],
+            async_metrics_retrievers_and_handlers=(
+                metrics_retriever_and_handlers
+            ),
         )
 
     def set_results_holder(self) -> PVResultsDataFrame:
@@ -748,12 +778,6 @@ class PerformanceTest(Test):
         """Method to get the PV sim data from the grok endpoint and read into
         results
         """
-        if self.harness_config.metrics_from_kafka:
-            self.results.add_kafka_results_from_topic(
-                self.harness_config.kafka_metrics_host,
-                self.harness_config.kafka_metrics_topic,
-            )
-            return
         self.results.add_reception_results_from_log_files(
             file_paths=[
                 os.path.join(self.harness_config.log_file_store, file_name)
