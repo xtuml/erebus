@@ -11,7 +11,7 @@ import logging
 import math
 import os
 import xml.etree.ElementTree as ET
-from copy import deepcopy
+from copy import copy, deepcopy
 from datetime import datetime, timedelta
 from io import StringIO
 from pathlib import Path
@@ -835,8 +835,10 @@ class TestPVResultsDataFrame:
         sent events data loaded
         :type pv_results: :class:`PVResultsDataFrame`
         """
-        pv_results_1 = deepcopy(pv_results)
-        pv_results_2 = deepcopy(pv_results)
+        pv_results_1 = copy(pv_results)
+        pv_results_2 = copy(pv_results)
+        pv_results_1.results = deepcopy(pv_results.results)
+        pv_results_2.results = deepcopy(pv_results.results)
         # add log files to pv_results_1
         pv_results_1.add_verifier_results_from_log_files(
             [test_files_path / "Verifier_test1.log"]
