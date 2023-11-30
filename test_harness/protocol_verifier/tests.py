@@ -691,7 +691,9 @@ class PerformanceTest(Test):
                 handler_kwargs_pair=ResultsHandlerKwargsPair(
                     handler_class=PVKafkaMetricsHandler,
                     kwargs={
-                        "interval": harness_config.io_calc_interval_time,
+                        "interval": (
+                            harness_config.kafka_metrics_collection_interval
+                        ),
                     },
                 )
             )

@@ -107,6 +107,12 @@ class HarnessConfig:
             self.config_parser["non-default"]["pv_test_timeout"]
         )
         # flag to get metrics from kafka
+        self.parse_kafka_metrics_config()
+
+    def parse_kafka_metrics_config(self) -> None:
+        """Method to parse kafka metrics config from config file
+        """
+        # flag to get metrics from kafka
         metrics_from_kafka_raw = self.config_parser["non-default"][
             "metrics_from_kafka"
         ]
@@ -119,6 +125,11 @@ class HarnessConfig:
         self.kafka_metrics_topic = self.config_parser["non-default"][
             "kafka_metrics_topic"
         ]
+        self.kafka_metrics_collection_interval = int(
+            self.config_parser["non-default"][
+                "kafka_metrics_collection_interval"
+            ]
+        )
 
     def parse_message_bus_config(self) -> None:
         """Method to parse message bus config from config file
