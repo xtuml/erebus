@@ -2,11 +2,15 @@
 """
 import re
 import datetime
-from typing import Generator, Any, Literal
+from typing import Generator, Any, Literal, Self
+import logging
 
 import kafka3
+import aiokafka
 
+from test_harness.simulator.simulator import ResultsHandler
 from test_harness.protocol_verifier.types import ResultsDict
+from test_harness.metrics.metrics import MetricsRetriever
 
 
 KEY_EVENTS = (
@@ -92,7 +96,7 @@ def decode_data(
 
 
 def consume_events_from_kafka_topic(
-    msgbroker: str, topic: str
+    msgbroker: str, topic: str, group_id: str = "test_harness"
 ) -> Generator[ResultsDict, Any, dict]:
     """
     Consume events from a Kafka topic and process them to extract relevant
@@ -106,7 +110,8 @@ def consume_events_from_kafka_topic(
     :rtype: `dict`
     """
     consumer = kafka3.KafkaConsumer(
-        bootstrap_servers=msgbroker, auto_offset_reset="earliest"
+        bootstrap_servers=msgbroker, auto_offset_reset="earliest",
+        group_id=group_id
     )
     consumer.subscribe(topic)
 
@@ -133,41 +138,116 @@ def consume_events_from_kafka_topic(
                     yield ResultsDict(
                         field=label, timestamp=d, event_id=evt_id
                     )
-                    # # create or find event
-                    # if evt_id not in events:
-                    #     events[evt_id] = Event(evt_id)
-                    # evt = events[evt_id]
-
-                    # match label:
-                    #     case "reception_event_received":
-                    #         evt.received = d
-                    #     case "reception_event_valid":
-                    #         evt.validated = d
-                    #     case "reception_event_invalid":
-                    #         evt.validated = d
-                    #         evt.valid = False
-                    #     case "reception_event_written":
-                    #         evt.written = d
-                    #     case "aeordering_events_processed":
-                    #         evt.ordering_received = d
-                    #     case "svdc_event_received":
-                    #         evt.svdc_received = d
-                    #     case "svdc_event_processed":
-                    #         evt.processed = d
-                    #     case "svdc_happy_event_processed":
-                    #         evt.processed = d
-                    #     case "svdc_unhappy_event_processed":
-                    #         evt.processed = d
-                    #     # case "svdc_job_success":
-                    #     #     evt.processed = d
-                    #     # case "svdc_job_failure":
-                    #     #     evt.processed = d
-                    #     # case "svdc_job_alarm":
-                    #     #     evt.processed = d
-
-                    # if label == "reception_event_received"
         raw_msgs = consumer.poll(timeout_ms=30000)
     return events
+
+
+async def consume_events_from_subscribed_consumer_async(
+    consumer: aiokafka.AIOKafkaConsumer,
+) -> dict[aiokafka.TopicPartition, list[aiokafka.ConsumerRecord]]:
+    """Consume events from a Kafka topic and return the raw message
+
+    :param consumer: The Kafka consumer to consume events from.
+    :type consumer: :class:`aiokafka.AIOKafkaConsumer`
+    :return: A dictionary containing the raw messages.
+    :rtype: `dict`[:class:`aiokafka.TopicPartition`,
+    `list`[:class:`aiokafka.ConsumerRecord`]]
+    """
+    # get raw messages
+    raw_msgs = await consumer.getmany(timeout_ms=1000)
+    return raw_msgs
+
+
+def decode_and_yield_events_from_raw_msgs(
+    raw_msgs: dict[aiokafka.TopicPartition, list[aiokafka.ConsumerRecord]]
+) -> Generator[ResultsDict, Any, ResultsDict | None]:
+    """Decode the raw messages and yield the events
+
+    :param raw_msgs: The raw messages to decode and yield events from
+    :type raw_msgs: `dict`[:class:`aiokafka.TopicPartition`,
+    `list`[:class:`aiokafka.ConsumerRecord`]]
+    :yield: The decoded events
+    :rtype: :class:`ResultsDict` | `None`
+    """
+    for partition in raw_msgs.values():
+        for msg in partition:
+            data = bytearray(msg.value)
+            # DANGER: decode_data mutates data
+            label, event_content, d = decode_data(
+                data, ("string", "string", "timestamp")
+            )
+            # print(label, event_content, d)
+            if label in KEY_EVENTS:
+                # extract the UUID from the event content
+                match = re.search(PATTERN, event_content)
+                if match:
+                    evt_id = match.group(1)
+                else:
+                    continue
+                yield ResultsDict(
+                    field=label, timestamp=d, event_id=evt_id
+                )
+
+
+class PVKafkaMetricsRetriever(MetricsRetriever):
+    """Class to retrieve metrics from a Kafka topic
+
+    :param msgbroker: The Kafka broker to connect to.
+    :type msgbroker: `str`
+    :param topic: The Kafka topic to consume events from.
+    :type topic: `str`
+    :param group_id: The Kafka consumer group id to use, defaults to
+    "test_harness"
+    :type group_id: `str`, optional
+    """
+    def __init__(
+        self,
+        msgbroker: str,
+        topic: str,
+        group_id: str = "test_harness",
+    ) -> None:
+        """Constructor method"""
+        self.msgbroker = msgbroker
+        self.topic = topic
+        self.group_id = group_id
+        self.consumer = aiokafka.AIOKafkaConsumer(
+            topic,
+            bootstrap_servers=msgbroker, auto_offset_reset="earliest",
+            group_id=self.group_id
+        )
+
+    async def __aenter__(self) -> Self:
+        """Method to enter the context manager
+
+        :return: The instance of the class
+        :rtype: :class:`PVKafkaMetricsRetriever`
+        """
+        await self.consumer.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        """Method to exit the context manager
+        """
+        await self.consumer.stop()
+        if exc_type is not None:
+            logging.getLogger().error(
+                "The folowing type of error occurred %s with value %s",
+                exc_type,
+                exc_value,
+            )
+            raise exc_value
+
+    async def async_retrieve_metrics(
+        self,
+        handler: ResultsHandler
+    ) -> None:
+        """Method to retrieve metrics from a Kafka topic
+
+        :param handler: The handler to send the results to
+        :type handler: :class:`ResultsHandler`
+        """
+        raw_msgs = await self.consumer.getmany(timeout_ms=1000)
+        handler.handle_result(raw_msgs)
 
 
 # if __name__ == "__main__":
