@@ -24,10 +24,17 @@ from .types import PVResultsHandlerItem
 
 
 class PVResultsAdder(ResultsHandler):
+    """Class to add results to a queue
+
+    :param queue: The queue to add the results to
+    :type queue: :class:`Queue`
+    """
     def __init__(
         self,
         queue: Queue,
     ) -> None:
+        """Constructor method
+        """
         self.queue = queue
 
     def handle_result(
@@ -62,6 +69,9 @@ class PVResultsHandler(ResultsHandler):
     :param save_files: Boolean indicating whether the files should be saved or
     not, defaults to `False`
     :type save_files: `bool`, optional
+    :param events_cache_file: The path of the events cache file, defaults to
+    `None`
+    :type events_cache_file: `str`, optional
     """
 
     def __init__(
@@ -104,7 +114,16 @@ class PVResultsHandler(ResultsHandler):
                 for item in shelf.values():
                     self.handle_result(item)
 
-    def _events_cache_worker_function(self, child_conn: Connection, filename):
+    def _events_cache_worker_function(
+        self, child_conn: Connection, filename: str
+    ) -> None:
+        """Worker function for the events cache process
+
+        :param child_conn: The connection to the parent process
+        :type child_conn: :class:`Connection`
+        :param filename: The name of the file to save the events to
+        :type filename: `str`
+        """
         start_time = datetime.utcnow()
         last_updated = datetime.utcnow()
 
@@ -210,6 +229,7 @@ class PVResultsHandler(ResultsHandler):
         """Method to handle saving the data when an item is take from the queue
 
         :param item: PV iteration data taken from the queue
+        :type item: `PVResultsHandlerItem` | `tuple` | `None`
         """
         if item is None:
             return
