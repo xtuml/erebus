@@ -52,6 +52,7 @@ from test_harness.protocol_verifier.simulator_data import (
 from test_harness.simulator.simulator import (
     SimDatum,
     Simulator,
+    MultiProcessDateSync
 )
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.reporting.report_delivery import deliver_test_report_files
@@ -339,13 +340,15 @@ class Test(ABC):
         for delay_chunk in delay_worker_split:
             for i, delay in enumerate(delay_chunk):
                 delay_chunks[i].append(delay)
+        time_sync = MultiProcessDateSync(num_processes=num_workers)
         for i in range(num_workers):
             process = Process(
                 target=self._sync_send_test_files,
                 args=(
                     results_handler,
                     process_safe_generator,
-                    delay_chunks[i]
+                    delay_chunks[i],
+                    time_sync
                 )
             )
             processes.append(process)
@@ -364,11 +367,13 @@ class Test(ABC):
             SimDatum, Any, None
         ],
         delay_times: list[float],
+        time_sync: MultiProcessDateSync | None = None,
     ) -> None:
         asyncio.run(self._send_test_files_with_simulator(
             results_handler=results_handler,
             sim_data_generator=process_safe_generator,
             delay_times=delay_times,
+            time_sync=time_sync,
         ))
 
     async def _send_test_files_with_simulator(
@@ -378,7 +383,7 @@ class Test(ABC):
             SimDatum, Any, None
         ],
         delay_times: list[float],
-        pbar: tqdm | None = None,
+        time_sync: MultiProcessDateSync | None = None,
     ) -> None:
         if self.harness_config.message_bus_protocol == "KAFKA":
             kafka_producer = AIOKafkaProducer(
@@ -395,7 +400,8 @@ class Test(ABC):
                     kafka_producer=kafka_producer,
                 ),
                 results_handler=results_handler,
-                pbar=self.pbar
+                pbar=self.pbar,
+                time_sync=time_sync,
             )
             await self.simulator.simulate()
             await kafka_producer.stop()
@@ -416,7 +422,8 @@ class Test(ABC):
                         session=session,
                     ),
                     results_handler=results_handler,
-                    pbar=self.pbar
+                    pbar=self.pbar,
+                    time_sync=time_sync,
                 )
                 await self.simulator.simulate()
 
