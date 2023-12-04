@@ -3,7 +3,7 @@
 """
 from io import BytesIO
 
-from requests import Response
+import requests
 
 from test_harness.requests import (
     post_sync_file_bytes_in_form,
@@ -16,7 +16,7 @@ def post_config_form_upload(
     url: str,
     max_retries: int = 5,
     timeout: int = 10
-) -> tuple[bool, int, Response]:
+) -> tuple[bool, int, "requests.Response"]:
     """Method to post config files to an endpoint given a list of file bytes
     and file name pairs
 
