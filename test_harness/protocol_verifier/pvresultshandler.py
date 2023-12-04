@@ -11,9 +11,9 @@ import os
 import re
 import shelve
 from datetime import datetime
-from multiprocessing import Pipe, Process
+from multiprocessing import Pipe, Process, Queue
 from multiprocessing.connection import Connection
-from queue import Empty, Queue
+from queue import Empty
 from threading import Thread
 from typing import Type
 
@@ -21,6 +21,31 @@ from test_harness.simulator.simulator import ResultsHandler
 
 from .pvresults import PVResults
 from .types import PVResultsHandlerItem
+
+
+class PVResultsAdder(ResultsHandler):
+    def __init__(
+        self,
+        queue: Queue,
+    ) -> None:
+        self.queue = queue
+
+    def handle_result(
+        self,
+        result: PVResultsHandlerItem | None,
+    ) -> None:
+        """Method to handle the result from a simulation iteration
+
+        :param result: The result from the PV simulation iteration - could be
+        `None` or a tuple of:
+        * the event dicts in a list
+        * a string representing the filename used to send the data
+        * a string representing the job id
+        * a dict representing the job info
+        * a string representing the response from the request
+        :type result: `PVResultsHandlerItem` | `None`
+        """
+        self.queue.put(result)
 
 
 class PVResultsHandler(ResultsHandler):
@@ -96,10 +121,10 @@ class PVResultsHandler(ResultsHandler):
                     last_updated = datetime.utcnow()
         return
 
-    def __enter__(self):
+    def __enter__(self) -> PVResultsAdder:
         """Entry to the context manager"""
         self.daemon_thread.start()
-        return self
+        return PVResultsAdder(self.queue)
 
     def __exit__(
         self,
