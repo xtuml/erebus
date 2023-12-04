@@ -16,6 +16,7 @@ import logging
 import math
 from datetime import datetime
 import glob
+from multiprocessing import Process
 
 import aiohttp
 import matplotlib.pyplot as plt
@@ -23,14 +24,15 @@ import flatdict
 import pandas as pd
 import plotly.express as px
 from plotly.graph_objects import Figure
-from requests import ReadTimeout
 import requests
 import numpy as np
 from aiokafka import AIOKafkaProducer
 from tqdm import tqdm
 
 from test_harness.config.config import HarnessConfig, TestConfig
-from test_harness.utils import clean_directories
+from test_harness.utils import (
+    clean_directories, ProcessGeneratorManager, divide_chunks
+)
 from test_harness.protocol_verifier.calc_pv_finish import (
     PVFileInspector,
     handle_domain_log_file_reception_and_save,
@@ -59,7 +61,7 @@ from test_harness.reporting.report_results import (
 )
 from test_harness.requests import send_get_request  # , download_file_to_path
 from .pvresults import PVResults
-from .pvresultshandler import PVResultsHandler
+from .pvresultshandler import PVResultsHandler, PVResultsAdder
 from .pvperformanceresults import PVPerformanceResults
 
 # from .pvresultsdaskdataframe import PVResultsDaskDataFrame
@@ -298,14 +300,94 @@ class Test(ABC):
         :param results_handler: A list of the template jobs to send
         :type results_handler: `list`[:class:`Job`]
         """
+        if isinstance(self.pbar, tqdm):
+            self.pbar.total = len(self.delay_times)
+        if self.test_config.num_workers <= 1:
+            self.time_start = datetime.now()
+            self.results.time_start = self.time_start
+            await self._send_test_files_with_simulator(
+                results_handler=results_handler,
+                sim_data_generator=self.sim_data_generator,
+                delay_times=self.delay_times,
+            )
+            return
+        with ProcessGeneratorManager(
+            generator=self.sim_data_generator
+        ) as process_safe_generator:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None,
+                self._sync_multi_process_send_test_files,
+                results_handler,
+                process_safe_generator,
+                self.delay_times,
+                self.test_config.num_workers,
+            )
+
+    def _sync_multi_process_send_test_files(
+        self,
+        results_handler: PVResultsAdder,
+        process_safe_generator: ProcessGeneratorManager,
+        delay_times: list[float],
+        num_workers: int = 2,
+    ) -> None:
+        processes: list[Process] = []
+        delay_worker_split = list(divide_chunks(
+            delay_times, num_workers
+        ))
+        delay_chunks = [[] for _ in range(num_workers)]
+        for delay_chunk in delay_worker_split:
+            for i, delay in enumerate(delay_chunk):
+                delay_chunks[i].append(delay)
+        for i in range(num_workers):
+            process = Process(
+                target=self._sync_send_test_files,
+                args=(
+                    results_handler,
+                    process_safe_generator,
+                    delay_chunks[i]
+                )
+            )
+            processes.append(process)
+        self.time_start = datetime.now()
+        self.results.time_start = self.time_start
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join()
+            process.close()
+
+    def _sync_send_test_files(
+        self,
+        results_handler: PVResultsHandler,
+        process_safe_generator: ProcessGeneratorManager | Generator[
+            SimDatum, Any, None
+        ],
+        delay_times: list[float],
+    ) -> None:
+        asyncio.run(self._send_test_files_with_simulator(
+            results_handler=results_handler,
+            sim_data_generator=process_safe_generator,
+            delay_times=delay_times,
+        ))
+
+    async def _send_test_files_with_simulator(
+        self,
+        results_handler: PVResultsHandler,
+        sim_data_generator: ProcessGeneratorManager | Generator[
+            SimDatum, Any, None
+        ],
+        delay_times: list[float],
+        pbar: tqdm | None = None,
+    ) -> None:
         if self.harness_config.message_bus_protocol == "KAFKA":
             kafka_producer = AIOKafkaProducer(
                 bootstrap_servers=self.harness_config.kafka_message_bus_host
             )
             await kafka_producer.start()
             self.simulator = Simulator(
-                delays=self.delay_times,
-                simulation_data=self.sim_data_generator,
+                delays=delay_times,
+                simulation_data=sim_data_generator,
                 action_func=send_list_dict_as_json_wrap_send_function(
                     send_function=send_payload_kafka,
                     list_dict_converter=convert_list_dict_to_pv_json_io_bytes,
@@ -315,17 +397,14 @@ class Test(ABC):
                 results_handler=results_handler,
                 pbar=self.pbar
             )
-            # set the sim start time
-            self.time_start = datetime.now()
-            results_handler.results_holder.time_start = self.time_start
             await self.simulator.simulate()
             await kafka_producer.stop()
         else:
             connector = aiohttp.TCPConnector(limit=2000)
             async with aiohttp.ClientSession(connector=connector) as session:
                 self.simulator = Simulator(
-                    delays=self.delay_times,
-                    simulation_data=self.sim_data_generator,
+                    delays=delay_times,
+                    simulation_data=sim_data_generator,
                     action_func=send_list_dict_as_json_wrap_send_function(
                         send_function=send_payload_async,
                         list_dict_converter=(
@@ -339,9 +418,6 @@ class Test(ABC):
                     results_handler=results_handler,
                     pbar=self.pbar
                 )
-                # set the sim start time
-                self.time_start = datetime.now()
-                results_handler.results_holder.time_start = self.time_start
                 await self.simulator.simulate()
 
     async def stop_test(self) -> None:
@@ -369,7 +445,7 @@ class Test(ABC):
         ) as pv_results_handler:
             try:
                 await asyncio.gather(
-                    self.send_test_files(results_handler=pv_results_handler),
+                    self.send_test_files(pv_results_handler),
                     self.pv_file_inspector.run_pv_file_inspector(),
                     self.stop_test(),
                 )
@@ -442,7 +518,7 @@ class Test(ABC):
                     ),
                     response_tuple[2].text,
                 )
-        except ReadTimeout:
+        except requests.ReadTimeout:
             logging.getLogger().warning(
                 "The read time out limit of %s was reached. Not all PV folders"
                 "will be empty. It is suggested the harness config "
