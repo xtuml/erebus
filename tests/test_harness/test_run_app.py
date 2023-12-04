@@ -9,7 +9,7 @@ from io import BytesIO
 from typing import Literal, Any
 import glob
 import re
-from multiprocessing import Manager
+from multiprocessing import Manager, Process
 
 from aioresponses import aioresponses, CallbackResult
 import responses
@@ -118,7 +118,8 @@ def test_run_harness_app() -> None:
         AssertionError: If the test fails.
     """
     harness_config = HarnessConfig(test_config_path)
-    reception_file = []
+    manager = Manager()
+    reception_file = manager.list()
 
     def call_back(url, **kwargs) -> CallbackResult:
         """
@@ -187,12 +188,11 @@ def test_run_harness_app() -> None:
             body=b'test log',
         )
         response_results = {}
-        thread_1 = Thread(
+        thread_1 = Process(
             target=run_harness_app,
             args=(
                 test_config_path,
             ),
-            daemon=True
         )
         thread_2 = Thread(
             target=run_performance_test_requests,
@@ -217,6 +217,7 @@ def test_run_harness_app() -> None:
         time.sleep(5)
         thread_2.start()
         thread_2.join()
+        thread_1.terminate()
         assert not response_results["first_is_running_check"]["running"]
         assert response_results["second_is_running_check"]["running"]
         assert float(
@@ -294,7 +295,8 @@ def test_run_harness_app_uploaded_zip_file() -> None:
         AssertionError: If the test fails.
     """
     harness_config = HarnessConfig(test_config_path)
-    reception_file = []
+    manager = Manager()
+    reception_file = manager.list()
 
     def call_back(url, **kwargs) -> CallbackResult:
         """
@@ -363,12 +365,11 @@ def test_run_harness_app_uploaded_zip_file() -> None:
             body=b'test log',
         )
         response_results = {}
-        thread_1 = Thread(
+        thread_1 = Process(
             target=run_harness_app,
             args=(
                 test_config_path,
             ),
-            daemon=True
         )
         thread_2 = Thread(
             target=run_performance_test_requests_zip_file_upload,
@@ -380,6 +381,7 @@ def test_run_harness_app_uploaded_zip_file() -> None:
         time.sleep(5)
         thread_2.start()
         thread_2.join()
+        thread_1.terminate()
     assert response_results["upload zip response status"] == 200
     start_test_json = response_results["start test json"]
     actual_test_config_dict = start_test_json["TestConfig"]
@@ -560,12 +562,11 @@ def test_run_harness_app_2_workers() -> None:
             body=b'test log',
         )
         response_results = {}
-        thread_1 = Thread(
+        thread_1 = Process(
             target=run_harness_app,
             args=(
                 test_config_path,
             ),
-            daemon=True
         )
         thread_2 = Thread(
             target=run_performance_test_requests,
@@ -591,6 +592,7 @@ def test_run_harness_app_2_workers() -> None:
         time.sleep(5)
         thread_2.start()
         thread_2.join()
+        thread_1.terminate()
         assert not response_results["first_is_running_check"]["running"]
         assert response_results["second_is_running_check"]["running"]
         assert float(
