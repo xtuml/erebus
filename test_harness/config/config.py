@@ -311,6 +311,7 @@ class TestConfig:
         self.functional_options = {
             "log_domain": "ver"
         }
+        self.num_workers = 1
 
     def config_to_dict(self) -> dict:
         """TODO docstring."""
@@ -318,6 +319,7 @@ class TestConfig:
             "type": self.type,
             "max_different_sequences": 200,
             "event_gen_options": self.event_gen_options,
+            "num_workers": self.num_workers,
         }
         if self.type != "Functional":
             config_dict_to_return["performance_options"] = (
