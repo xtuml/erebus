@@ -9,6 +9,8 @@ import glob
 import logging
 import asyncio
 import shutil
+from threading import Thread
+from multiprocessing import Queue, Event, Lock
 
 import flatdict
 from tqdm import tqdm
@@ -247,3 +249,71 @@ async def delayed_async_func(
 #   updates to happen out of order
     awaited_data = await func(*args, **kwargs)
     return awaited_data
+
+
+class ProcessGeneratorManager:
+    def __init__(
+        self,
+        generator: Generator[Any, Any, Any],
+    ) -> None:
+        self.generator = generator
+        self.receive_request_daemon = Thread(target=self.serve, daemon=True)
+        self.lock = Lock()
+        self.output_queue = Queue(maxsize=1)
+        self.event = Event()
+        self.event.clear()
+        self.stop_event = Event()
+        self.stop_event.clear()
+
+    def serve(self):
+        while True:
+            try:
+                self.event.wait()
+                self.output_queue.put(next(self.generator))
+                self.event.clear()
+            except StopIteration:
+                self.stop_event.set()
+                break
+
+    def __enter__(self):
+        self.receive_request_daemon.start()
+        return ProcessSafeSharedIterator(
+            self.output_queue,
+            self.lock,
+            self.event,
+            self.stop_event
+        )
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        traceback: Any
+    ) -> None:
+        self.stop_event.set()
+        self.event.set()
+        self.receive_request_daemon.join()
+
+
+class ProcessSafeSharedIterator:
+    def __init__(
+        self,
+        queue: Queue,
+        lock: Lock,
+        event: Event,
+        stop_event: Event
+    ) -> None:
+        self.queue = queue
+        self.lock = lock
+        self.event = event
+        self.stop_event = stop_event
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.stop_event.is_set():
+            raise StopIteration
+        with self.lock:
+            self.event.set()
+            return self.queue.get()
