@@ -175,6 +175,7 @@ The fields within the json and yaml file are as follows:
     * `log_domain`: `"aer"` | `"ver"` `str` : The log domain to use for the functional test, defaults to `"ver"`:
         * `"ver"` - Indicates that Verifier.log is the file to use for functional tests
         * `"aer"` - Indicated that Reception.log is the file to use for funtional tests
+* `num_workers`: `int` - The number of worker processes to use for sending files. If this is equal to an integer of 1 or anything less the program will run in serial. If not equal to an integer the program will fail. Defaults to `1`
 
 #### <b>Example Json test config</b>
 ```
