@@ -359,6 +359,7 @@ class Test(ABC):
         for process in processes:
             process.join()
             process.close()
+        self.pbar.n = len(delay_times)
 
     def _sync_send_test_files(
         self,
