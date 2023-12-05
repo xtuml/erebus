@@ -134,10 +134,16 @@ class SimpleResultsHandler(ResultsHandler):
 
 
 class MultiProcessDateSync:
+    """Class to sync the start time of multiple processes
+
+    :param num_processes: The number of processes to sync
+    :type num_processes: `int`
+    """
     def __init__(
         self,
         num_processes: int,
     ) -> None:
+        """Constructor method"""
         self.barrier = Barrier(
             num_processes,
             self.update_queue_with_synced_date
@@ -146,9 +152,15 @@ class MultiProcessDateSync:
         self.sync_list = self.manager.list()
 
     def update_queue_with_synced_date(self) -> None:
+        """Method to update the sync list with the current time"""
         self.sync_list.append(datetime.utcnow())
 
     def sync(self) -> datetime:
+        """Method to sync the processes and return the synced time
+
+        :return: Returns the synced time
+        :rtype: :class:`datetime`
+        """
         self.barrier.wait()
         return self.sync_list[0]
 
