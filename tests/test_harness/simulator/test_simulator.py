@@ -9,6 +9,7 @@ import asyncio
 import math
 from time import time
 from typing import Any
+from multiprocessing import Process, Manager
 
 import pytest
 from hypothesis import given, settings
@@ -22,6 +23,7 @@ from test_harness.simulator.simulator import (
     SimpleSimDatumTranformer,
     Simulator,
     async_do_nothing,
+    MultiProcessDateSync
 )
 
 
@@ -331,3 +333,39 @@ class TestSimpleResultsHandler:
 async def test_async_do_nothing() -> None:
     """Test for `async_do_nothing`"""
     await async_do_nothing()
+
+
+def test_multiprocess_date_sync() -> None:
+    """Test for :class:`MultiProcessDateSync` and it `sync` method"""
+    num_processes = 4
+    date_sync = MultiProcessDateSync(num_processes=num_processes)
+    manager = Manager()
+    sync_dict = manager.dict()
+
+    def process_sync_test(
+        date_sync: MultiProcessDateSync,
+        value_dict,
+        process_num
+    ) -> None:
+        value_dict[process_num] = date_sync.sync().timestamp()
+
+    processes = [
+        Process(
+            target=process_sync_test,
+            args=(date_sync, sync_dict, process_num)
+        )
+        for process_num in range(num_processes)
+    ]
+    for process in processes:
+        process.start()
+    for process in processes:
+        process.join()
+    for process in processes:
+        process.close()
+    assert len(sync_dict) == num_processes
+    values = list(sync_dict.values())
+    for val, next in zip(
+        values[:-1],
+        values[1:]
+    ):
+        assert val == next
