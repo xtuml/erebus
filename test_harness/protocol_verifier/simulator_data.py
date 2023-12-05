@@ -272,7 +272,10 @@ def job_sequencer(
                     rate += 1
                 else:
                     finish_counter[index] = None
-                    if len(finish_counter) == num_chunk_events:
+                    if (
+                        len(finish_counter) == num_chunk_events
+                        or len(finish_counter) == num_jobs
+                    ):
                         continue_bool = False
                         break
 

@@ -13,7 +13,7 @@ def post_sync_file_bytes_in_form(
     url: str,
     max_retries: int = 0,
     timeout: int = 10
-) -> tuple[bool, int, requests.Response]:
+) -> tuple[bool, int, "requests.Response"]:
     """Method to synchronously post to an url a list of files
     (:class:`BytesIO`) as a form under a a parameter with filename bytes and
     mimetype
@@ -93,7 +93,7 @@ def send_json_post_request(
     url: str,
     max_retries: int = 0,
     timeout: int = 10
-) -> tuple[bool, int, requests.Response]:
+) -> tuple[bool, int, "requests.Response"]:
     """Method to send arbitrary json data that is from a serializable
     dictionary.
 
@@ -123,12 +123,12 @@ def send_json_post_request(
 
 
 def request_retry(
-    request_method: Callable[..., requests.Response],
+    request_method: Callable[..., "requests.Response"],
     *request_args,
     max_retries: int = 0,
     acceptable_status_codes: list[int] | None = None,
     **request_kwargs
-) -> tuple[bool, int, requests.Response]:
+) -> tuple[bool, int, "requests.Response"]:
     """Method to retry a :class:`requests` post a maximum number of times if
     there is a failure
 
@@ -160,7 +160,7 @@ def send_get_request(
     url: str,
     max_retries: int = 0,
     timeout: int | tuple[int, int] = 10
-) -> tuple[bool, int, requests.Response]:
+) -> tuple[bool, int, "requests.Response"]:
     """Method to send a get request to an url endpoint
 
     :param url: The url endpoint to send the post request to
@@ -186,7 +186,7 @@ def send_get_request(
 
 
 def check_response_tuple_ok(
-    response_tuple: tuple[bool, int, requests.Response],
+    response_tuple: tuple[bool, int, "requests.Response"],
     url: str
 ) -> None:
     """Method to check the response tuple is ok

@@ -11,6 +11,7 @@ import traceback
 import shutil
 from zipfile import ZipFile
 import glob
+from multiprocessing import Value
 
 from flask import Flask, request, make_response, Response, jsonify
 from werkzeug.datastructures import FileStorage
@@ -19,7 +20,6 @@ from tqdm import tqdm
 import yaml
 
 from test_harness.config.config import HarnessConfig, TestConfig
-from multiprocessing import Value
 
 
 class HarnessApp(Flask):
@@ -617,8 +617,9 @@ class TestHarnessPbar(tqdm):
         defaults to 1
         :type n: `int`, optional
         """
-        super().update(n)
         self.th_progress.value += n
+        self.n = self.th_progress.value
+        super().update(0)
 
     def get_th_progress(self) -> int:
         """Method to get the progress of the progress bar

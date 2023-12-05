@@ -10,16 +10,50 @@ import os
 import re
 import shelve
 from datetime import datetime
-from multiprocessing import Pipe, Process
+from multiprocessing import Pipe, Process, Queue
 from multiprocessing.connection import Connection
+from typing import Type
+import queue
 
 import aiokafka
 
-from test_harness.simulator.simulator import QueueHandler
+from test_harness.simulator.simulator import QueueHandler, ResultsHandler
 from .pvresults import PVResults
 from .pvperformanceresults import PVPerformanceResults
 from .kafka_metrics import decode_and_yield_events_from_raw_msgs
 from .types import PVResultsHandlerItem
+
+
+class PVResultsAdder(ResultsHandler):
+    """Class to add results to a queue
+
+    :param queue: The queue to add the results to
+    :type queue: :class:`Queue`
+    """
+    def __init__(
+        self,
+        queue: Queue,
+    ) -> None:
+        """Constructor method
+        """
+        self.queue = queue
+
+    def handle_result(
+        self,
+        result: PVResultsHandlerItem | None,
+    ) -> None:
+        """Method to handle the result from a simulation iteration
+
+        :param result: The result from the PV simulation iteration - could be
+        `None` or a tuple of:
+        * the event dicts in a list
+        * a string representing the filename used to send the data
+        * a string representing the job id
+        * a dict representing the job info
+        * a string representing the response from the request
+        :type result: `PVResultsHandlerItem` | `None`
+        """
+        self.queue.put(result)
 
 
 class PVResultsHandler(QueueHandler):
@@ -36,6 +70,9 @@ class PVResultsHandler(QueueHandler):
     :param save_files: Boolean indicating whether the files should be saved or
     not, defaults to `False`
     :type save_files: `bool`, optional
+    :param events_cache_file: The path of the events cache file, defaults to
+    `None`
+    :type events_cache_file: `str`, optional
     """
 
     def __init__(
@@ -44,9 +81,13 @@ class PVResultsHandler(QueueHandler):
         test_output_directory: str,
         save_files: bool = False,
         events_cache_file: str | None = None,
+        queue_type: Type[Queue] | Type[queue.Queue] = Queue,
     ) -> None:
         """Constructor method"""
-        super().__init__(results_holder)
+        super().__init__(
+            results_holder,
+            queue_type=queue_type,
+        )
         self.test_output_directory = test_output_directory
         self.save_files = save_files
 
@@ -75,7 +116,16 @@ class PVResultsHandler(QueueHandler):
                 for item in shelf.values():
                     self.handle_result(item)
 
-    def _events_cache_worker_function(self, child_conn: Connection, filename):
+    def _events_cache_worker_function(
+        self, child_conn: Connection, filename: str
+    ) -> None:
+        """Worker function for the events cache process
+
+        :param child_conn: The connection to the parent process
+        :type child_conn: :class:`Connection`
+        :param filename: The name of the file to save the events to
+        :type filename: `str`
+        """
         start_time = datetime.utcnow()
         last_updated = datetime.utcnow()
 
@@ -91,6 +141,11 @@ class PVResultsHandler(QueueHandler):
                     shelf.sync()
                     last_updated = datetime.utcnow()
         return
+
+    def __enter__(self) -> PVResultsAdder:
+        """Entry to the context manager"""
+        self.daemon_thread.start()
+        return PVResultsAdder(self.queue)
 
     def handle_result(
         self,
@@ -142,6 +197,7 @@ class PVResultsHandler(QueueHandler):
         """Method to handle saving the data when an item is take from the queue
 
         :param item: PV iteration data taken from the queue
+        :type item: `PVResultsHandlerItem` | `tuple` | `None`
         """
         if item is None:
             return

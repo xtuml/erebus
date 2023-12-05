@@ -2,13 +2,15 @@
 # pylint: disable=R0903
 """Utility functions
 """
-from typing import Generator, Any, Literal, Callable, Awaitable
+from typing import Generator, Any, Literal, Callable, Awaitable, Self
 from io import BytesIO
 import os
 import glob
 import logging
 import asyncio
 import shutil
+from threading import Thread
+from multiprocessing import Queue, Event, Lock
 
 import flatdict
 from tqdm import tqdm
@@ -276,3 +278,119 @@ def calc_interval(
         - t_diff
     )
     return interval
+
+
+class ProcessSafeSharedIterator:
+    """Class to create an iterator that can be shared between processes
+
+    :param queue: The queue to use
+    :type queue: :class:`multiprocessing`.`Queue`
+    :param lock: The lock to use
+    :type lock: :class:`multiprocessing`.`Lock`
+    :param event: The event to use
+    :type event: :class:`multiprocessing`.`Event`
+    :param stop_event: The stop event to use
+    :type stop_event: :class:`multiprocessing`.`Event`
+    """
+    def __init__(
+        self,
+        queue: Queue,
+        lock: Lock,
+        event: Event,
+        stop_event: Event
+    ) -> None:
+        """Constructor method
+        """
+        self.queue = queue
+        self.lock = lock
+        self.event = event
+        self.stop_event = stop_event
+
+    def __iter__(self) -> Self:
+        """Method to return self as the iterator
+        """
+        return self
+
+    def __next__(self) -> Any:
+        """Method to get the next item from the queue as an iterator
+
+        :raises StopIteration: Raises a :class:`StopIteration` if the stop
+        event is set
+        :return: Returns the next item from the queue
+        :rtype: `Any`
+        """
+        if self.stop_event.is_set():
+            raise StopIteration
+        with self.lock:
+            self.event.set()
+            return self.queue.get()
+
+
+class ProcessGeneratorManager:
+    """Class to manage a generator in a separate process
+
+    :param generator: The generator to manage
+    :type generator: :class:`Generator`[`Any`, `Any`, `Any`]
+    """
+    def __init__(
+        self,
+        generator: Generator[Any, Any, Any],
+    ) -> None:
+        """Constructor method
+        """
+        self.generator = generator
+        self.receive_request_daemon = Thread(target=self.serve, daemon=True)
+        self.lock = Lock()
+        self.output_queue = Queue(maxsize=1)
+        self.event = Event()
+        self.event.clear()
+        self.stop_event = Event()
+        self.stop_event.clear()
+
+    def serve(self) -> None:
+        """Method to serve the generator
+        """
+        while True:
+            try:
+                self.event.wait()
+                self.output_queue.put(next(self.generator))
+                self.event.clear()
+            except StopIteration:
+                self.stop_event.set()
+                break
+
+    def __enter__(self) -> ProcessSafeSharedIterator:
+        """Method to enter the context manager
+
+        :return: Returns a :class:`ProcessSafeSharedIterator` instance
+        :rtype: :class:`ProcessSafeSharedIterator`
+        """
+        self.receive_request_daemon.start()
+        return ProcessSafeSharedIterator(
+            self.output_queue,
+            self.lock,
+            self.event,
+            self.stop_event
+        )
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        traceback: Any
+    ) -> None:
+        """Method to exit the context manager
+
+        :param exc_type: The type of exception raised if any
+        :type exc_type: `type`[:class:`BaseException`]
+        :param exc_value: The exception raised if any
+        :type exc_value: :class:`BaseException`
+        :param traceback: The traceback of the exception raised if any
+        :type traceback: `Any`
+        :raises exc_value: Raises the exception if any
+        """
+        self.stop_event.set()
+        self.event.set()
+        self.receive_request_daemon.join()
+        if exc_type is not None:
+            raise exc_value

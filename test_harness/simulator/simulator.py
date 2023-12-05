@@ -8,6 +8,8 @@ from typing import (
 )
 import asyncio
 from datetime import datetime
+from multiprocessing import Barrier, Manager
+import multiprocessing
 import logging
 from queue import Empty, Queue
 from threading import Thread
@@ -115,37 +117,6 @@ class ResultsHandler(ABC):
         self.results_holder = results_holder
 
     @abstractmethod
-    def __enter__(self) -> Self:
-        """Entry to the context manager"""
-        return self
-
-    @abstractmethod
-    def __exit__(
-        self,
-        exc_type: Type[Exception] | None,
-        exc_value: Exception | None,
-        *args,
-    ) -> None:
-        """Exit from context manager
-
-        :param exc_type: The type of the exception
-        :type exc_type: :class:`Type` | `None`
-        :param exc_value: The value of the excpetion
-        :type exc_value: `str` | `None`
-        :param traceback: The traceback fo the error
-        :type traceback: `str` | `None`
-        :raises RuntimeError: Raises a :class:`RuntimeError`
-        if an error occurred in the main thread
-        """
-        if exc_type is not None:
-            logging.getLogger().error(
-                "The folowing type of error occurred %s with value %s",
-                exc_type,
-                exc_value,
-            )
-            raise exc_value
-
-    @abstractmethod
     def handle_result(self, result: Any) -> None:
         """Abstract method that will be called in the simulation class to
         handle the results provided
@@ -164,29 +135,6 @@ class SimpleResultsHandler(ResultsHandler):
         """Constructor method"""
         super().__init__(results_holder)
 
-    def __enter__(self) -> Self:
-        """Entry to the context manager"""
-        return super().__enter__()
-
-    def __exit__(
-        self,
-        exc_type: Type[Exception] | None,
-        exc_value: Exception | None,
-        *args,
-    ) -> None:
-        """Exit from context manager
-
-        :param exc_type: The type of the exception
-        :type exc_type: :class:`Type` | `None`
-        :param exc_value: The value of the excpetion
-        :type exc_value: `str` | `None`
-        :param traceback: The traceback fo the error
-        :type traceback: `str` | `None`
-        :raises RuntimeError: Raises a :class:`RuntimeError`
-        if an error occurred in the main thread
-        """
-        super().__exit__(exc_type, exc_value, *args)
-
     def handle_result(self, result: Any) -> None:
         """Method to append the given result to the results list
 
@@ -199,11 +147,22 @@ class SimpleResultsHandler(ResultsHandler):
 class QueueHandler(ResultsHandler):
     """Abstract Subclass of :class:`ResultsHandler` to handle queueing
     of queuing of items added to the queue through queue_handler method.
+
+    :param results_holder: The results holder to add the results to, defaults
+    to `None`
+    :type results_holder: `Any` | `None`, optional
+    :param queue_type: The type of queue to use, defaults to :class:`Queue`
+    :type queue_type: :class:`Type`[:class:`Queue`] | :class:`Type`[
+    :class:`multiprocessing.Queue`], optional
     """
-    def __init__(self, results_holder: Any | None = None) -> None:
+    def __init__(
+        self,
+        results_holder: Any | None = None,
+        queue_type: Type[Queue] | Type[multiprocessing.Queue] = Queue,
+    ) -> None:
         """Constructor method"""
         super().__init__(results_holder)
-        self.queue = Queue()
+        self.queue = queue_type()
         self.daemon_thread = Thread(target=self.queue_handler, daemon=True)
         self.daemon_not_done = True
 
@@ -273,6 +232,38 @@ class QueueHandler(ResultsHandler):
         """
 
 
+class MultiProcessDateSync:
+    """Class to sync the start time of multiple processes
+
+    :param num_processes: The number of processes to sync
+    :type num_processes: `int`
+    """
+    def __init__(
+        self,
+        num_processes: int,
+    ) -> None:
+        """Constructor method"""
+        self.barrier = Barrier(
+            num_processes,
+            self.update_queue_with_synced_date
+        )
+        self.manager = Manager()
+        self.sync_list = self.manager.list()
+
+    def update_queue_with_synced_date(self) -> None:
+        """Method to update the sync list with the current time"""
+        self.sync_list.append(datetime.utcnow())
+
+    def sync(self) -> datetime:
+        """Method to sync the processes and return the synced time
+
+        :return: Returns the synced time
+        :rtype: :class:`datetime`
+        """
+        self.barrier.wait()
+        return self.sync_list[0]
+
+
 class Simulator:
     """Generic Simulator class for simulating asynchronous scheduled workloads.
 
@@ -307,6 +298,7 @@ class Simulator:
         results_handler: ResultsHandler | None = None,
         schedule_ahead_time=10,
         pbar: tqdm | None = None,
+        time_sync: MultiProcessDateSync | None = None,
     ) -> None:
         """Constructor method"""
         self.delays = delays
@@ -322,6 +314,7 @@ class Simulator:
                 "behaviour, consider increasing the value"
             )
         self.pbar = pbar
+        self.time_sync = time_sync
 
     async def _execute_simulation_data(self) -> Any:
         """Asynchronous method to execute the next :class:`SimDatum` in the
@@ -368,7 +361,10 @@ class Simulator:
     async def run_simulation(self, pbar: tqdm) -> None:
         """Method to run the simulation with the given progress bar"""
         async with asyncio.TaskGroup() as task_group:
-            start_time = datetime.utcnow()
+            if isinstance(self.time_sync, MultiProcessDateSync):
+                start_time = self.time_sync.sync()
+            else:
+                start_time = datetime.utcnow()
             for delay in self.delays:
                 time_from_start = (
                     datetime.utcnow() - start_time
@@ -393,5 +389,4 @@ class Simulator:
             with tqdm(total=len(self.delays)) as pbar:
                 await self.run_simulation(pbar)
         else:
-            self.pbar.total = len(self.delays)
             await self.run_simulation(self.pbar)

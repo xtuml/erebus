@@ -18,3 +18,5 @@ performance_options:
 
 functional_options:
   log_domain: "ver"
+
+num_workers: 1
