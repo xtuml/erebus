@@ -6,20 +6,21 @@
 # pylint: disable=C0302
 # pylint: disable=C0114
 import json
-import logging
 import os
 import re
 import shelve
 from datetime import datetime
 from multiprocessing import Pipe, Process, Queue
 from multiprocessing.connection import Connection
-from queue import Empty
-from threading import Thread
 from typing import Type
+import queue
 
-from test_harness.simulator.simulator import ResultsHandler
+import aiokafka
 
+from test_harness.simulator.simulator import QueueHandler, ResultsHandler
 from .pvresults import PVResults
+from .pvperformanceresults import PVPerformanceResults
+from .kafka_metrics import decode_and_yield_events_from_raw_msgs
 from .types import PVResultsHandlerItem
 
 
@@ -55,8 +56,8 @@ class PVResultsAdder(ResultsHandler):
         self.queue.put(result)
 
 
-class PVResultsHandler(ResultsHandler):
-    """Subclass of :class:`ResultsHandler` to handle saving of files and data
+class PVResultsHandler(QueueHandler):
+    """Subclass of :class:`QueueHandler` to handle saving of files and data
     from a PV test run. Uses a context manager and daemon thread to save
     results in the background whilst a test is running.
 
@@ -80,13 +81,14 @@ class PVResultsHandler(ResultsHandler):
         test_output_directory: str,
         save_files: bool = False,
         events_cache_file: str | None = None,
+        queue_type: Type[Queue] | Type[queue.Queue] = Queue,
     ) -> None:
         """Constructor method"""
-        self.queue = Queue()
-        self.results_holder = results_holder
+        super().__init__(
+            results_holder,
+            queue_type=queue_type,
+        )
         self.test_output_directory = test_output_directory
-        self.daemon_thread = Thread(target=self.queue_handler, daemon=True)
-        self.daemon_not_done = True
         self.save_files = save_files
 
         self.events_cache_process: Process | None = None
@@ -145,35 +147,6 @@ class PVResultsHandler(ResultsHandler):
         self.daemon_thread.start()
         return PVResultsAdder(self.queue)
 
-    def __exit__(
-        self,
-        exc_type: Type[Exception] | None,
-        exc_value: Exception | None,
-        *args,
-    ) -> None:
-        """Exit from context manager
-
-        :param exc_type: The type of the exception
-        :type exc_type: :class:`Type` | `None`
-        :param exc_value: The value of the excpetion
-        :type exc_value: `str` | `None`
-        :param traceback: The traceback fo the error
-        :type traceback: `str` | `None`
-        :raises RuntimeError: Raises a :class:`RuntimeError`
-        if an error occurred in the main thread
-        """
-        if exc_type is not None:
-            logging.getLogger().error(
-                "The folowing type of error occurred %s with value %s",
-                exc_type,
-                exc_value,
-            )
-            raise exc_value
-        while self.queue.qsize() != 0:
-            continue
-        self.daemon_not_done = False
-        self.daemon_thread.join()
-
     def handle_result(
         self,
         result: PVResultsHandlerItem | None,
@@ -211,12 +184,7 @@ class PVResultsHandler(ResultsHandler):
             )
             self.events_cache_process.start()
 
-        while self.daemon_not_done:
-            try:
-                item = self.queue.get(timeout=0.1)
-                self.handle_item_from_queue(item)
-            except Empty:
-                continue
+        super().queue_handler()
 
         if self.events_cache_file is not None:
             self.events_cache_parent_conn.send(None)
@@ -248,3 +216,37 @@ class PVResultsHandler(ResultsHandler):
             )
             with open(output_file_path, "w", encoding="utf-8") as file:
                 json.dump(item.event_list, file)
+
+
+class PVKafkaMetricsHandler(QueueHandler):
+    """Subclass of :class:`QueueHandler` to handle saving of files and data
+    from a PV test run. Uses a context manager and daemon thread to save
+    results in the background whilst a test is running.
+
+    :param results_holder: Instance used to hold the data relating to the sent
+    jobs/events
+    :type results_holder: :class:`PVPerformanceResults`
+    """
+    def __init__(
+        self,
+        results_holder: PVPerformanceResults,
+    ) -> None:
+        """Constructor method"""
+        super().__init__(results_holder)
+
+    def handle_item_from_queue(
+        self,
+        item: dict[
+            aiokafka.TopicPartition, list[aiokafka.ConsumerRecord]
+        ] | None,
+    ) -> None:
+        """Method to handle saving the data when an item is take from the queue
+
+        :param item: PV iteration data taken from the queue
+        """
+        if item is None:
+            return
+
+        for result in decode_and_yield_events_from_raw_msgs(item):
+            # TODO: Sort out the typing here - probably a new base class
+            self.results_holder.add_result(result)

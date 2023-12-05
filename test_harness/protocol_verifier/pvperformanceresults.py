@@ -10,6 +10,7 @@ import os
 from datetime import datetime
 from typing import Any, TextIO
 import math
+from threading import Lock
 
 import pandas as pd
 from prometheus_client.parser import text_fd_to_metric_families
@@ -100,6 +101,7 @@ class PVPerformanceResults(PVResults):
 
         self.job_id_event_id_map: dict[str, set[str]] = {}
         self._calculator: PVResultsDataFrameCalculator
+        self._update_lock = Lock()
 
     def __len__(self) -> int:
         """The length of the results
@@ -154,12 +156,14 @@ class PVPerformanceResults(PVResults):
         :type update_values: `dict`[`str`, `Any`]
         """
         if event_id not in self.results:
-            return
+            self.create_event_result_row(event_id)
+        self._update_lock.acquire()
         self.results[event_id] = {**self.results[event_id], **update_values}
         if "job_id" in update_values:
             if update_values["job_id"] not in self.job_id_event_id_map:
                 self.job_id_event_id_map[update_values["job_id"]] = set()
             self.job_id_event_id_map[update_values["job_id"]].add(event_id)
+        self._update_lock.release()
 
     def update_event_results_with_job_id(
         self, job_id: str, update_values: dict[str, Any]
@@ -173,11 +177,13 @@ class PVPerformanceResults(PVResults):
         :type update_values: `dict`[`str`, `Any`]
         """
         if job_id in self.job_id_event_id_map:
+            self._update_lock.acquire()
             for event_id in self.job_id_event_id_map[job_id]:
                 self.results[event_id] = {
                     **self.results[event_id],
                     **update_values,
                 }
+            self._update_lock.release()
 
     def create_event_result_row(self, event_id: str) -> None:
         """Method to create a row in the results holder based on an
@@ -240,7 +246,7 @@ class PVPerformanceResults(PVResults):
         :param time_completed: The time the request was completed at
         :type time_completed: :class:`datetime`
         """
-        self.create_event_result_row(event_id)
+        # self.create_event_result_row(event_id)
         if self.time_start is None:
             raise ValueError("self.time_start has not been defined")
         time_sent_sim_time = (time_completed - self.time_start).total_seconds()
@@ -430,6 +436,7 @@ class PVPerformanceResults(PVResults):
         defaults to `1.0`
         :type agg_time_window: `float`, optional
         """
+        self._filter_out_events_not_from_test()
         self.results = self.calculator.results
         self.create_response_time_fields()
         self.end_times = self.calc_end_times()
@@ -443,6 +450,14 @@ class PVPerformanceResults(PVResults):
         self.agg_results = self.calculate_aggregated_results_dataframe(
             agg_time_window
         )
+
+    def _filter_out_events_not_from_test(self):
+        """Method to filter out events that are not from the current test"""
+        self.results = {
+            event_id: event_data
+            for event_id, event_data in self.results.items()
+            if "time_sent" in event_data
+        }
 
     def create_response_time_fields(self) -> None:
         """Method used to create response fields in the results holder

@@ -186,10 +186,10 @@ class TestSimulator:
             t_2 = time()
         assert round(t_2 - t_1) == delays[0]
 
-        assert simulator.results_handler.results[0][0] == (
+        assert simulator.results_handler.results_holder[0][0] == (
             simulation_data[0].args[0]
         )
-        assert simulator.results_handler.results[0][1] == (
+        assert simulator.results_handler.results_holder[0][1] == (
             simulation_data[0].kwargs["kwarg"]
         )
 
@@ -253,10 +253,10 @@ class TestSimulator:
                         )}"""
         )
 
-        assert simulator.results_handler.results[0][0] == (
+        assert simulator.results_handler.results_holder[0][0] == (
             simulation_data[0].args[0]
         )
-        assert simulator.results_handler.results[0][1] == (
+        assert simulator.results_handler.results_holder[0][1] == (
             simulation_data[0].kwargs["kwarg"]
         )
 

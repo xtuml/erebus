@@ -3,9 +3,14 @@ This is a module for assorted types with no have behaviour attached.
 
 """
 from datetime import datetime
-from typing import TypedDict, NotRequired, NamedTuple, Any, Iterator, Self
+from typing import (
+    TypedDict, NotRequired, NamedTuple, Any, Iterator, Self, Type
+)
 
 from matplotlib import pyplot as plt
+
+from test_harness.metrics.metrics import MetricsRetriever
+from test_harness.simulator.simulator import ResultsHandler
 
 
 class AveragesDict(TypedDict):
@@ -230,4 +235,40 @@ class SequenceTypeData(NamedTuple):
     """
     options: dict[str, Any] = {}
     """The options for the template jobs
+    """
+
+
+class MetricsRetrieverKwargsPair(NamedTuple):
+    """Named tuple that holds the metrics retriever class and the kwargs
+    for the metrics retriever
+    """
+    metric_retriever_class: Type[MetricsRetriever]
+    """The metrics retriever class
+    """
+    kwargs: dict[str, Any]
+    """The kwargs for the metrics retriever
+    """
+
+
+class ResultsHandlerKwargsPair(NamedTuple):
+    """Named tuple that holds the results handler class and the kwargs
+    for the results handler
+    """
+    handler_class: Type[ResultsHandler]
+    """The results handler class
+    """
+    kwargs: dict[str, Any]
+    """The kwargs for the results handler
+    """
+
+
+class MetricsRetriverKwargsPairAndHandlerKwargsPair(NamedTuple):
+    """Named tuple that holds the metrics retriever class and the kwargs
+    for the metrics retriever and the handler class and the kwargs
+    """
+    metric_retriever_kwargs_pair: MetricsRetrieverKwargsPair
+    """The metrics retriever class and kwargs
+    """
+    handler_kwargs_pair: ResultsHandlerKwargsPair
+    """The handler for the results and kwargs
     """

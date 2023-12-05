@@ -123,6 +123,12 @@ To change default values of these files a parameter can be copied under the `[no
     * `ver_get_file_names_url` - The url of the endpoint that requests are sent to to obtain the names of the Verifier log files. Defaults to `http://host.docker.internal:9000/download/verifier-log-file-names`
     * `get_log_file_names_url` - The url of the endpoint that requests are sent to to obtain the names of log files. Defaults to `http://host.docker.internal:9000/download/log-file-names`
     * `get_log_file_url` - The url of the endpoint that requests are sent to receive a named log file for a specified PV domain. Defaults to `http://host.docker.internal:9000/download/log-file`
+* Config relating to metrics collections
+    * Kafka metrics collection config
+        * `metrics_from_kafka` - Boolean indicating whether to collect metrics from a kafka topic. Defaults to `False``
+        * `kafka_metrics_host` - The kafka host to collect the metrics from. Defaults to `host.docker.internal:9092`
+        * `kafka_metrics_topic` - The topic to colect the metrics from. Defaults to `default.BenchmarkingProbe_service0`
+        * `kafka_metrics_collection_interval` - An integer indicating the interval, in seconds, in which to collect metrics. Defaults to 1.
 * Config relating to sending files
     * `message_bus_protocol` - The protocol to use for sending data to the application being tested. Currently supports the following two values (this will default to HTTP if any inccorect config is given):
         * HTTP - use the HTTP protocol to send data
