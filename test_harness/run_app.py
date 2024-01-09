@@ -63,6 +63,7 @@ def run_harness_app(
                     logging.getLogger().info(
                         "Test Harness test run completed successfully"
                     )
+            harness_app.test_stopper.reset()
     except KeyboardInterrupt:
         sys.exit()
 

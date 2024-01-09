@@ -613,3 +613,139 @@ def test_run_harness_app_2_workers() -> None:
         harness_config.report_file_store,
         harness_config.uml_file_store
     ])
+
+
+@responses.activate
+def test_run_harness_app_stop_test() -> None:
+    """Test the `run_harness_app` function with a stop test request.
+
+    This function sets up a test environment for the `run_harness_app`
+    function, which is responsible for running a performance testing harness.
+    The test environment includes a mock server that simulates the performance
+    testing requests, and a callback function that logs the events received by
+    the server. The function then starts two threads: one that runs the
+    `run_harness_app` function, and another that sends performance testing
+    requests to the mock server. The function waits for the second thread to
+    finish, and then prints a message to indicate that the test is complete.
+
+    Raises:
+        AssertionError: If the test fails.
+    """
+    harness_config = HarnessConfig(test_config_path)
+    manager = Manager()
+    reception_file = manager.list()
+
+    def call_back(url, **kwargs) -> CallbackResult:
+        """
+        Callback function that extracts the event payload from the
+        multipart data and appends it to the reception file.
+
+        :param url: The URL to call back to.
+        :type url: `str`
+        :param **kwargs: Arbitrary keyword arguments.
+        :type **kwargs: `dict`
+        :return: Returns a callback result
+        :rtype: `CallbackResult`
+        """
+        data: aiohttp.multipart.MultipartWriter = kwargs["data"]
+        io_data: BytesIO = data._parts[0][0]._value
+        json_payload_list = json.load(io_data)
+        event_payload = json_payload_list[0]
+        reception_file.append(
+            f"reception_event_valid : EventId = {event_payload['eventId']}"
+        )
+
+        return CallbackResult(
+            status=200,
+        )
+
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
+        return (
+            200,
+            {},
+            "\n".join(reception_file).encode("utf-8")
+        )
+    responses.add_passthru("http://localhost:8800")
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True,
+            callback=call_back
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.add_callback(
+            responses.POST,
+            url=harness_config.log_urls["aer"]["getFile"],
+            callback=reception_log_call_back
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        response_results = {}
+        thread_1 = Process(
+            target=run_harness_app,
+            args=(
+                test_config_path,
+            ),
+        )
+        thread_2 = Thread(
+            target=run_performance_test_requests,
+            args=(
+                response_results,
+                harness_config.pv_config_update_time,
+                harness_config.pv_finish_interval,
+                {
+                    "type": "Performance",
+                    "performance_options": {
+                        "num_files_per_sec": 10,
+                        "shard": True,
+                        "total_jobs": 50
+                    },
+                    "event_gen_options": {
+                        "invalid": False,
+                    }
+                }
+            )
+        )
+        thread_1.start()
+        time.sleep(5)
+        thread_2.start()
+        time.sleep(2)
+        requests.post(
+            url="http://localhost:8800/stopTest",
+            json={}
+        )
+        thread_2.join()
+        thread_1.terminate()
+    data = pd.read_csv(
+        os.path.join(
+            harness_config.report_file_store,
+            "PerformanceTest",
+            "AggregatedResults.csv"
+        )
+    )
+    assert data["Cumulative Events Sent"].iloc[-1] < 100
+    clean_directories([
+        harness_config.report_file_store,
+        harness_config.uml_file_store
+    ])

@@ -573,3 +573,20 @@ def test_start_test_with_uploaded_zip_files(
     clean_directories(
         [test_app.harness_config.report_file_store]
     )
+
+
+def test_stop_test(client: FlaskClient, test_app: HarnessApp) -> None:
+    """Test that the stop test endpoint works as expected
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    assert test_app.test_stopper.stop_test is False
+    response = client.post(
+        "/stopTest",
+        json={}
+    )
+    assert response.status_code == 200
+    assert test_app.test_stopper.stop_test is True

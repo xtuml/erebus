@@ -305,15 +305,31 @@ class HarnessApp(Flask):
         return make_response("Zip archives uploaded successfully\n", 200)
 
     def stop_test(self) -> Response:
-        """Handler for stopping a test
+        """API for stopping a test given a json POST request
 
         :return: Returns a :class:`Response`
         :rtype: :class:`Response`
         """
+        try:
+            json_dict = request.get_json()
+            return self._handle_stop_test_json_request(
+                json_dict
+            )
+        except BadRequest as error:
+            return error.get_response()
+
+    def _handle_stop_test_json_request(
+        self, request_json: dict
+    ) -> Response:
+        """Handler for stopping a test given a json POST request
+
+        :param request_json: The request json sent as a python dictionary
+        :type request_json: `dict`
+        :return: Returns the response
+        :rtype: `Response`
+        """
         self.test_stopper.set()
-        if not self.test_stopper.is_stopped:
-            return make_response("Test not stopped successfully\n", 400)
-        return make_response("Test stopped successfully\n", 200)
+        return make_response("Request to stop test successful\n", 200)
 
     @property
     def test_to_run(self) -> dict | None:
@@ -402,6 +418,10 @@ def create_app(
     @app.route("/upload/named-zip-files", methods=["POST"])
     def upload_named_zip_files() -> None:
         return app.upload_named_zip_files()
+
+    @app.route("/stopTest", methods=["POST"])
+    def stop_test() -> None:
+        return app.stop_test()
 
     return app
 
@@ -750,6 +770,7 @@ class AsyncTestStopper:
         """Method to reset the test"""
         with self.lock:
             self.stop_test = False
+            self.is_stopped = False
 
     def set(self) -> None:
         """Method to set the test"""
