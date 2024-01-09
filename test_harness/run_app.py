@@ -56,7 +56,8 @@ def run_harness_app(
                     test_output_directory=test_to_run[
                         "TestOutputDirectory"
                     ],
-                    pbar=pbar
+                    pbar=pbar,
+                    test_stopper=harness_app.test_stopper
                 )
                 if success:
                     logging.getLogger().info(

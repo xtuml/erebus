@@ -32,6 +32,7 @@ from test_harness.protocol_verifier import (
 from test_harness.protocol_verifier.generate_test_files import TestJobFile
 from test_harness.utils import clean_directories
 from test_harness.simulator.simulator_profile import Profile
+from test_harness import AsyncTestStopper
 
 # get test config
 test_config_path = os.path.join(
@@ -1202,6 +1203,80 @@ def test_puml_files_performance_test_timeout(
             "Protocol Verifier failed to finish within the test timeout of "
             f"{harness_config.pv_test_timeout} seconds.\nResults will "
             "be calculated at this point"
+        ) in caplog.text
+        clean_directories(
+            [
+                harness_config.report_file_store,
+                harness_config.log_file_store
+            ]
+        )
+
+
+@responses.activate
+def test_puml_files_performance_test_async_stop(
+    caplog: pytest.LogCaptureFixture,
+    grok_exporter_string: str
+) -> None:
+    """Tests method `puml_test_files` for a performance test that times out
+    """
+    harness_config = HarnessConfig(test_config_path)
+    harness_config.pv_test_timeout = 100000
+    harness_config.pv_finish_interval = 100000
+    test_config = TestConfig()
+    test_config.parse_from_dict({
+        "type": "Performance",
+        "event_gen_options": {
+            "invalid": False
+        }
+    })
+    caplog.set_level(logging.INFO)
+    with aioresponses() as mock:
+        responses.get(
+            url=harness_config.pv_clean_folders_url
+        )
+        responses.post(
+            url=harness_config.pv_send_job_defs_url
+        )
+        mock.post(
+            url=harness_config.pv_send_url,
+            repeat=True
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={
+                "fileNames": ["Reception.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b'test log',
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={
+                "fileNames": ["Verifier.log"]
+            },
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b'test log',
+        )
+        profile = Profile()
+        profile.load_raw_profile_from_file_path(test_csv_file_path_1)
+        with NamedTemporaryFile(suffix='.db') as db_file:
+            os.environ["PV_RESULTS_DB_ADDRESS"] = f"sqlite:///{db_file.name}"
+            test_stopper = AsyncTestStopper()
+            test_stopper.set()
+            puml_files_test(
+                puml_file_paths=[test_file_path],
+                test_output_directory=harness_config.report_file_store,
+                harness_config=harness_config,
+                test_config=test_config,
+                profile=profile,
+                test_stopper=test_stopper
+            )
+        assert (
+            "Test stopped"
         ) in caplog.text
         clean_directories(
             [

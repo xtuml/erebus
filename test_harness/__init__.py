@@ -12,6 +12,8 @@ import shutil
 from zipfile import ZipFile
 import glob
 from multiprocessing import Value
+from threading import Lock
+import asyncio
 
 from flask import Flask, request, make_response, Response, jsonify
 from werkzeug.datastructures import FileStorage
@@ -88,6 +90,7 @@ class HarnessApp(Flask):
             root_path,
         )
         self.test_to_run = {}
+        self.test_stopper = AsyncTestStopper()
 
     def handle_multipart_file_upload(
         self,
@@ -300,6 +303,17 @@ class HarnessApp(Flask):
                 400
             )
         return make_response("Zip archives uploaded successfully\n", 200)
+
+    def stop_test(self) -> Response:
+        """Handler for stopping a test
+
+        :return: Returns a :class:`Response`
+        :rtype: :class:`Response`
+        """
+        self.test_stopper.set()
+        if not self.test_stopper.is_stopped:
+            return make_response("Test not stopped successfully\n", 400)
+        return make_response("Test stopped successfully\n", 200)
 
     @property
     def test_to_run(self) -> dict | None:
@@ -710,6 +724,37 @@ class TestHarnessProgessManager:
         """
         del self.pbars[name]
         self.test_is_running.value = False
+
+
+class AsyncTestStopper:
+    """Class to stop a test"""
+
+    def __init__(
+        self
+    ) -> None:
+        """Constructor method"""
+        self.stop_test = False
+        self.lock = Lock()
+        self.is_stopped = False
+
+    async def stop(self) -> None:
+        """Method to stop the test"""
+        while True:
+            await asyncio.sleep(1)
+            with self.lock:
+                if self.stop_test:
+                    self.is_stopped = True
+                    raise RuntimeError("Test stopped")
+
+    def reset(self) -> None:
+        """Method to reset the test"""
+        with self.lock:
+            self.stop_test = False
+
+    def set(self) -> None:
+        """Method to set the test"""
+        with self.lock:
+            self.stop_test = True
 
 
 if __name__ == "__main__":

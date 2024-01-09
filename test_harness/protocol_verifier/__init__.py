@@ -22,13 +22,15 @@ from test_harness.protocol_verifier.tests import (
     PerformanceTest
 )
 from test_harness.simulator.simulator_profile import Profile
+from test_harness import AsyncTestStopper
 
 
 def full_pv_test(
     harness_config: HarnessConfig,
     test_config: TestConfig,
     test_output_directory: str,
-    pbar: tqdm | None = None
+    pbar: tqdm | None = None,
+    test_stopper: AsyncTestStopper | None = None
 ) -> None:
     """Full protocol verifier test for the config provided
 
@@ -40,6 +42,9 @@ def full_pv_test(
     :type test_output_directory: `str`
     :param pbar: A progress bar to update, defaults to `None`
     :type pbar: :class:`tqdm` | `None`, optional
+    :param test_stopper: A test stopper object to stop the test, defaults to
+    `None`
+    :type test_stopper: :class:`AsyncTestStopper` | `None`, optional
     """
     # select stores to use based on test output directory contents
     store_paths = select_store_paths(
@@ -66,7 +71,8 @@ def full_pv_test(
         test_config=test_config,
         profile=profile,
         test_file_paths=test_file_paths,
-        pbar=pbar
+        pbar=pbar,
+        test_stopper=test_stopper
     )
 
 
@@ -77,7 +83,8 @@ def puml_files_test(
     test_config: TestConfig,
     profile: Profile | None = None,
     test_file_paths: list[str] | None = None,
-    pbar: tqdm | None = None
+    pbar: tqdm | None = None,
+    test_stopper: AsyncTestStopper | None = None
 ) -> None:
     """Method to perform and end to end test
 
@@ -95,6 +102,9 @@ def puml_files_test(
     :type test_file_paths: `list`[`str`] | `None`, optional
     :param pbar: A progress bar to update, defaults to `None`
     :type pbar: :class:`tqdm` | `None`, optional
+    :param test_stopper: A test stopper object to stop the test, defaults to
+    `None`
+    :type test_stopper: :class:`AsyncTestStopper` | `None`, optional
     """
     # choose test from test config and run test
     test_class = (
@@ -137,7 +147,10 @@ def puml_files_test(
         test_config=test_config,
         test_output_directory=test_output_directory,
         test_profile=profile,
-        pbar=pbar
+        pbar=pbar,
+        test_graceful_kill_functions=[
+            test_stopper.stop
+        ] if test_stopper else None
     )
     logging.getLogger().info(
         "Beggining test"
