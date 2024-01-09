@@ -6,7 +6,7 @@
 # pylint: disable=C0302
 """Methods and classes relating to tests
 """
-from typing import Generator, Any, Callable, Iterable, Iterator
+from typing import Generator, Any, Callable, Iterable, Iterator, Awaitable
 from abc import ABC, abstractmethod
 from random import choice, choices
 import os
@@ -103,6 +103,19 @@ class Test(ABC):
     :param pbar: A progress bar to track the progress of the test, defaults to
     `None`
     :type pbar: :class:`tqdm` | `None`, optional
+    :param save_log_files: Boolean indicating whether to save log files -
+    will only save if a test output directory has been given, defaults to
+    `True`
+    :type save_log_files: `bool`, optional
+    :param async_metrics_retrievers_and_handlers: A list of
+    :class:`MetricsRetriverKwargsPairAndHandlerKwargsPair` objects to
+    asynchronously retrieve metrics, defaults to `None`
+    :type async_metrics_retrievers_and_handlers: `list`[
+    :class:`MetricsRetriverKwargsPairAndHandlerKwargsPair`] | `None`, optional
+    :param test_graceful_kill_functions: A list of functions to run to
+    gracefully kill the test, defaults to `None`
+    :type test_graceful_kill_functions: `list`[ `Callable`[ `...`,
+    `Awaitable`[ `None`]]] | `None`, optional
     """
 
     def __init__(
@@ -131,6 +144,9 @@ class Test(ABC):
         save_log_files: bool = True,
         async_metrics_retrievers_and_handlers: list[
             MetricsRetriverKwargsPairAndHandlerKwargsPair
+        ] | None = None,
+        test_graceful_kill_functions: list[
+            Callable[..., Awaitable[None]]
         ] | None = None
 
     ) -> None:
@@ -171,6 +187,10 @@ class Test(ABC):
         self.async_metrics_retrievers_and_handlers = (
             async_metrics_retrievers_and_handlers
             if async_metrics_retrievers_and_handlers else []
+        )
+        self.graceful_kill_functions = [self.timeout_test] + (
+            test_graceful_kill_functions
+            if test_graceful_kill_functions else []
         )
 
     @abstractmethod
@@ -465,8 +485,8 @@ class Test(ABC):
                 )
                 await simulator.simulate()
 
-    async def stop_test(self) -> None:
-        """Method to stop the test after a a certain amount of time if all the
+    async def timeout_test(self) -> None:
+        """Method to timeout the test after a certain amount of time if all the
         events have been sent
 
         :raises RuntimeError: Raises a :class:`RuntimeError` when the test has
@@ -479,6 +499,18 @@ class Test(ABC):
             "Protocol Verifier failed to finish within the test timeout of "
             f"{self.harness_config.pv_test_timeout} seconds.\nResults will "
             "be calculated at this point"
+        )
+
+    async def stop_test(self) -> None:
+        """Method to stop the test after a :class: `RuntimeError` has been
+        raised in one of the graceful kill Coroutines
+
+        :raises RuntimeError: Raises a :class:`RuntimeError` when the test has
+        been cancelled
+        """
+        await asyncio.gather(
+            *[func() for func in self.graceful_kill_functions]
+
         )
 
     async def run_test(self) -> None:
@@ -652,6 +684,9 @@ class FunctionalTest(Test):
         test_output_directory: str | None = None,
         test_profile: None = None,
         pbar: tqdm | None = None,
+        test_graceful_kill_functions: list[
+            Callable[..., Awaitable[None]]
+        ] | None = None
     ) -> None:
         super().__init__(
             test_file_generators=test_file_generators,
@@ -661,6 +696,7 @@ class FunctionalTest(Test):
             save_files=True,
             test_profile=test_profile,
             pbar=pbar,
+            test_graceful_kill_functions=test_graceful_kill_functions,
         )
 
     def set_results_holder(self) -> PVResults:
@@ -788,6 +824,9 @@ class PerformanceTest(Test):
         test_output_directory: str | None = None,
         test_profile: Profile | None = None,
         pbar: tqdm | None = None,
+        test_graceful_kill_functions: list[
+            Callable[..., Awaitable[None]]
+        ] | None = None
     ) -> None:
         """Constructor method"""
         metrics_retriever_and_handlers = [
@@ -825,6 +864,7 @@ class PerformanceTest(Test):
             async_metrics_retrievers_and_handlers=(
                 metrics_retriever_and_handlers
             ),
+            test_graceful_kill_functions=test_graceful_kill_functions,
         )
 
     def set_results_holder(self) -> PVResultsDataFrame:
