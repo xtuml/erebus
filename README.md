@@ -188,7 +188,7 @@ The fields within the json and yaml file are as follows:
 * `test_finish`: `dict` - Options stopping a test. This option contains the following sub-fields: ,
    * `metric_get_interval`: `int` => 0, defaults to 5 - The interval with which to grab metrics that determine the end of a test
    * `finish_interval`: `int` => 0, defaults to 30 - The interval with which to calculate the end of a test if there has been no change in the grabbed metrics within that time. Should some integer multiple of `metric_get_interval`
-   * `timeout``: `int` => 0, defaults to 120 - Time to wait before ending the test after all test data has been sent.
+   * `timeout`: `int` => 0, defaults to 120 - Time to wait before ending the test after all test data has been sent.
 
 #### <b>Example Json test config</b>
 ```
