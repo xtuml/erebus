@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Optional
 import json
 import asyncio
+from zipfile import ZipFile
+from tempfile import TemporaryDirectory
 
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
@@ -594,6 +596,41 @@ def test_stop_test(client: FlaskClient, test_app: HarnessApp) -> None:
     )
     assert response.status_code == 200
     assert test_app.test_stopper.stop_test is True
+
+
+def test_get_test_output_directory(
+    client: FlaskClient,
+) -> None:
+    """Test that the get test output directory endpoint works as expected
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    response = client.post(
+        "/startTest",
+        json={
+            "TestName": "test_1"
+        }
+    )
+    response = client.post(
+        "/getTestOutputFolder",
+        json={
+            "TestName": "test_1"
+        }
+    )
+    assert response.status_code == 200
+    assert response.mimetype == "application/zip"
+    assert response.headers["Content-Disposition"] == (
+        "attachment; filename=test_1.zip"
+    )
+    with ZipFile(BytesIO(response.data), "r") as zip_file:
+        with TemporaryDirectory() as temp_dir:
+            os.mkdir(os.path.join(temp_dir, "test_1"))
+            zip_file.extractall(os.path.join(temp_dir, "test_1"))
+            path = os.path.join(temp_dir, "test_1", "used_config.yaml")
+            assert os.path.exists(
+                path
+            )
 
 
 class TestAsyncTestStopper:

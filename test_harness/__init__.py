@@ -15,14 +15,16 @@ from multiprocessing import Value
 from threading import Lock
 import asyncio
 import logging
+from tempfile import TemporaryDirectory
 
-from flask import Flask, request, make_response, Response, jsonify
+from flask import Flask, request, make_response, Response, jsonify, send_file
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from tqdm import tqdm
 import yaml
 
 from test_harness.config.config import HarnessConfig, TestConfig
+from test_harness.utils import create_zip_file_from_folder
 
 
 class HarnessApp(Flask):
@@ -332,6 +334,59 @@ class HarnessApp(Flask):
         self.test_stopper.set()
         return make_response("Request to stop test successful\n", 200)
 
+    def get_test_output_folder(self) -> Response:
+        """Method to get the test output folder
+
+        :return: Returns a reponse containing the test output folder data
+        :rtype: `Reponse`
+        """
+        try:
+            json_dict = request.get_json()
+            return self._handle_get_test_output_folder_json_request(
+                json_dict
+            )
+        except BadRequest as error:
+            return error.get_response()
+
+    def _handle_get_test_output_folder_json_request(
+        self, request_json: dict
+    ) -> Response:
+        """Handler for getting the test output folder and returning it as a zip
+
+        :param request_json: The request json sent as a python dictionary
+        :type request_json: `dict`
+        :return: Returns the response
+        :rtype: `Response`
+        """
+        if "TestName" not in request_json:
+            return make_response(
+                "Field 'TestName' not in request json\n", 400
+            )
+        test_name = request_json["TestName"]
+        test_output_directory_path = os.path.join(
+            self.harness_config.report_file_store,
+            test_name
+        )
+        if not os.path.exists(test_output_directory_path):
+            return make_response(
+                f"Test with name {test_name} does not exist\n", 400
+            )
+        with TemporaryDirectory() as temp_dir:
+            zip_file_path = os.path.join(
+                temp_dir,
+                f"{test_name}.zip"
+            )
+            create_zip_file_from_folder(
+                test_output_directory_path,
+                zip_file_path
+            )
+            return send_file(
+                zip_file_path,
+                mimetype="application/zip",
+                as_attachment=True,
+                download_name=f"{test_name}.zip"
+            )
+
     @property
     def test_to_run(self) -> dict | None:
         """Property providing the most recent test to run
@@ -423,6 +478,10 @@ def create_app(
     @app.route("/stopTest", methods=["POST"])
     def stop_test() -> None:
         return app.stop_test()
+
+    @app.route("/getTestOutputFolder", methods=["POST"])
+    def get_test_output_folder() -> None:
+        return app.get_test_output_folder()
 
     return app
 

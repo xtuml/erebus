@@ -525,3 +525,21 @@ class ProcessGeneratorManager:
 #         self.receive_request_daemon.join()
 #         if exc_type is not None:
 #             raise exc_value
+
+
+def create_zip_file_from_folder(
+    folder_path: str,
+    zip_file_path: str
+) -> None:
+    """Method to create a zip file from a folder
+
+    :param folder_path: The path of the folder to zip
+    :type folder_path: `str`
+    :param zip_file_path: The path of the zip file to create
+    :type zip_file_path: `str`
+    """
+    shutil.make_archive(
+        zip_file_path[:-4],
+        "zip",
+        folder_path
+    )
