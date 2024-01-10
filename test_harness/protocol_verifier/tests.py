@@ -6,7 +6,7 @@
 # pylint: disable=C0302
 """Methods and classes relating to tests
 """
-from typing import Generator, Any, Callable
+from typing import Generator, Any, Callable, Iterable, Iterator
 from abc import ABC, abstractmethod
 from random import choice, choices
 import os
@@ -27,13 +27,12 @@ import pandas as pd
 import plotly.express as px
 from plotly.graph_objects import Figure
 import requests
-import numpy as np
 from aiokafka import AIOKafkaProducer
 from tqdm import tqdm
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import (
-    clean_directories, ProcessGeneratorManager, divide_chunks
+    clean_directories, ProcessGeneratorManager
 )
 from test_harness.protocol_verifier.calc_pv_finish import (
     PVFileInspector,
@@ -56,7 +55,10 @@ from test_harness.simulator.simulator import (
     Simulator,
     MultiProcessDateSync
 )
-from test_harness.simulator.simulator_profile import Profile
+from test_harness.simulator.simulator_profile import (
+    Profile,
+    InterpolatedProfile
+)
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
 from test_harness.reporting.report_results import (
@@ -158,7 +160,7 @@ class Test(ABC):
             save_log_files=save_log_files,
         )
         self.total_number_of_events: int
-        self.delay_times: list[float]
+        self.delay_times: InterpolatedProfile
         self.jobs_to_send: list[Job]
         self.set_test_rate()
         # prepare the test given inputs
@@ -269,7 +271,9 @@ class Test(ABC):
         ]
 
     def _get_min_interval(self) -> float | int:
-        return np.min(np.diff(self.delay_times))
+        """Method to get the minimum interval between events
+        """
+        return 1 / self.delay_times.get_max_num_per_sec()
 
     @abstractmethod
     def _get_sim_data(
@@ -319,131 +323,147 @@ class Test(ABC):
         :type results_handler: `list`[:class:`Job`]
         """
         if isinstance(self.pbar, tqdm):
-            self.pbar.total = len(self.delay_times)
-        if self.test_config.num_workers <= 1:
+            self.pbar.total = self.total_number_of_events
+        if self.test_config.num_workers == 0:
             self.time_start = datetime.now()
             self.results.time_start = self.time_start
-            await self._send_test_files_with_simulator(
+            await self.send_test_files_with_simulator(
                 results_handler=results_handler,
-                sim_data_generator=self.sim_data_generator,
+                sim_data_iterator=self.sim_data_generator,
                 delay_times=self.delay_times,
+                harness_config=self.harness_config,
+                pbar=self.pbar
             )
             return
-        with ProcessGeneratorManager(
-            generator=self.sim_data_generator
-        ) as process_safe_generator:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                self._sync_multi_process_send_test_files,
-                results_handler,
-                process_safe_generator,
-                self.delay_times,
-                self.test_config.num_workers,
-            )
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            self._sync_multi_process_send_test_files,
+            results_handler,
+        )
 
     def _sync_multi_process_send_test_files(
         self,
         results_handler: PVResultsAdder,
-        process_safe_generator: ProcessGeneratorManager,
-        delay_times: list[float],
-        num_workers: int = 2,
     ) -> None:
-        processes: list[Process] = []
-        delay_worker_split = list(divide_chunks(
-            delay_times, num_workers
-        ))
-        delay_chunks = [[] for _ in range(num_workers)]
-        for delay_chunk in delay_worker_split:
-            for i, delay in enumerate(delay_chunk):
-                delay_chunks[i].append(delay)
-        time_sync = MultiProcessDateSync(num_processes=num_workers)
-        for i in range(num_workers):
-            process = Process(
-                target=self._sync_send_test_files,
-                args=(
-                    results_handler,
-                    process_safe_generator,
-                    delay_chunks[i],
-                    time_sync
-                )
-            )
-            processes.append(process)
-        self.time_start = datetime.now()
-        self.results.time_start = self.time_start
-        for process in processes:
-            process.start()
-        for process in processes:
-            process.join()
-            process.close()
-        self.pbar.n = len(delay_times)
+        """Method to send test files to the PV using multiple processes
 
+        :param results_handler: The results handler to add results to
+        :type results_handler: :class:`PVResultsAdder`
+        """
+        processes: list[Process] = []
+        with ProcessGeneratorManager(
+            generator=self.sim_data_generator
+        ) as process_safe_sim_data_iterator:
+            time_sync = MultiProcessDateSync(
+                num_processes=self.test_config.num_workers
+            )
+            for i in range(self.test_config.num_workers):
+                process = Process(
+                    target=self._sync_send_test_files,
+                    args=(
+                        results_handler,
+                        process_safe_sim_data_iterator,
+                        self.delay_times[i::self.test_config.num_workers],
+                        self.harness_config,
+                        self.pbar,
+                        time_sync
+                    )
+                )
+                processes.append(process)
+            self.time_start = datetime.now()
+            self.results.time_start = self.time_start
+            for process in processes:
+                process.start()
+            for process in processes:
+                process.join()
+                process.close()
+        self.pbar.n = self.total_number_of_events
+
+    @staticmethod
     def _sync_send_test_files(
-        self,
         results_handler: PVResultsHandler,
-        process_safe_generator: ProcessGeneratorManager | Generator[
-            SimDatum, Any, None
-        ],
-        delay_times: list[float],
+        sim_data_iterator: Iterator[SimDatum],
+        delay_times: Iterable[float],
+        harness_config: HarnessConfig,
+        pbar: tqdm,
         time_sync: MultiProcessDateSync | None = None,
     ) -> None:
-        asyncio.run(self._send_test_files_with_simulator(
+        asyncio.run(Test.send_test_files_with_simulator(
             results_handler=results_handler,
-            sim_data_generator=process_safe_generator,
+            sim_data_iterator=sim_data_iterator,
             delay_times=delay_times,
+            harness_config=harness_config,
+            pbar=pbar,
             time_sync=time_sync,
         ))
 
-    async def _send_test_files_with_simulator(
-        self,
-        results_handler: PVResultsHandler,
-        sim_data_generator: ProcessGeneratorManager | Generator[
-            SimDatum, Any, None
-        ],
-        delay_times: list[float],
+    @staticmethod
+    async def send_test_files_with_simulator(
+        results_handler: PVResultsAdder,
+        sim_data_iterator: Iterator[SimDatum],
+        delay_times: Iterable[float],
+        harness_config: HarnessConfig,
+        pbar: tqdm,
         time_sync: MultiProcessDateSync | None = None,
     ) -> None:
-        if self.harness_config.message_bus_protocol == "KAFKA":
+        """Asynchronous method to send test data
+
+        :param results_handler: The results handler to add results to
+        :type results_handler: :class:`PVResultsAdder`
+        :param sim_data_iterator: Iterator of simulation data
+        :type sim_data_iterator: :class:`Iterator`[:class:`SimDatum`]
+        :param delay_times: Iterable of delay times
+        :type delay_times: :class:`Iterable`[:class:`float`]
+        :param harness_config: The harness config
+        :type harness_config: :class:`HarnessConfig`
+        :param pbar: A progress bar to track the progress of the test
+        :type pbar: :class:`tqdm`
+        :param time_sync: A time sync object for multiple processes,
+        defaults to `None`
+        :type time_sync: :class:`MultiProcessDateSync` | `None`, optional
+        """
+        if harness_config.message_bus_protocol == "KAFKA":
             kafka_producer = AIOKafkaProducer(
-                bootstrap_servers=self.harness_config.kafka_message_bus_host
+                bootstrap_servers=harness_config.kafka_message_bus_host
             )
             await kafka_producer.start()
-            self.simulator = Simulator(
+            simulator = Simulator(
                 delays=delay_times,
-                simulation_data=sim_data_generator,
+                simulation_data=sim_data_iterator,
                 action_func=send_list_dict_as_json_wrap_send_function(
                     send_function=send_payload_kafka,
                     list_dict_converter=convert_list_dict_to_pv_json_io_bytes,
-                    kafka_topic=self.harness_config.kafka_message_bus_topic,
+                    kafka_topic=harness_config.kafka_message_bus_topic,
                     kafka_producer=kafka_producer,
                 ),
                 results_handler=results_handler,
-                pbar=self.pbar,
+                pbar=pbar,
                 time_sync=time_sync,
             )
-            await self.simulator.simulate()
+            await simulator.simulate()
             await kafka_producer.stop()
         else:
             connector = aiohttp.TCPConnector(limit=2000)
             async with aiohttp.ClientSession(connector=connector) as session:
-                self.simulator = Simulator(
+                simulator = Simulator(
                     delays=delay_times,
-                    simulation_data=sim_data_generator,
+                    simulation_data=sim_data_iterator,
                     action_func=send_list_dict_as_json_wrap_send_function(
                         send_function=send_payload_async,
                         list_dict_converter=(
                             convert_list_dict_to_pv_json_io_bytes
-                            if self.harness_config.pv_send_as_pv_bytes
+                            if harness_config.pv_send_as_pv_bytes
                             else convert_list_dict_to_json_io_bytes
                         ),
-                        url=self.harness_config.pv_send_url,
+                        url=harness_config.pv_send_url,
                         session=session,
                     ),
                     results_handler=results_handler,
-                    pbar=self.pbar,
+                    pbar=pbar,
                     time_sync=time_sync,
                 )
-                await self.simulator.simulate()
+                await simulator.simulate()
 
     async def stop_test(self) -> None:
         """Method to stop the test after a a certain amount of time if all the
@@ -549,6 +569,11 @@ class Test(ABC):
 
     def clean_directories(self) -> None:
         """Method to clean up log and uml file store directories"""
+        results_db_path = os.path.join(
+            self.test_output_directory, "results.db"
+        )
+        if os.path.exists(results_db_path):
+            os.remove(results_db_path)
         clean_directories(
             [
                 self.harness_config.uml_file_store,
@@ -803,7 +828,12 @@ class PerformanceTest(Test):
         )
 
     def set_results_holder(self) -> PVResultsDataFrame:
-        return PVResultsDataFrame()
+        return PVResultsDataFrame(
+            test_output_directory=self.test_output_directory,
+            sample_rate=self.test_config.sample_rate,
+            agg_during_test=self.test_config.aggregate_during,
+            low_memory=self.test_config.low_memory,
+        )
 
     def _get_sim_data(
         self, jobs_to_send: list[Job]

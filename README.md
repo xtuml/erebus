@@ -181,7 +181,10 @@ The fields within the json and yaml file are as follows:
     * `log_domain`: `"aer"` | `"ver"` `str` : The log domain to use for the functional test, defaults to `"ver"`:
         * `"ver"` - Indicates that Verifier.log is the file to use for functional tests
         * `"aer"` - Indicated that Reception.log is the file to use for funtional tests
-* `num_workers`: `int` - The number of worker processes to use for sending files. If this is equal to an integer of 1 or anything less the program will run in serial. If not equal to an integer the program will fail. Defaults to `1`
+* `num_workers`: `int` - The number of worker processes to use for sending files. If this is equal to an integer of `0` or anything less the program will run in serial. If not equal to an integer the program will fail. Defaults to `0` and runs in serial.
+* `aggregate_during`: `bool` - Boolean indicating whether to aggregate metrics during a test (`True`) or not (`False`). There is a small performance penalty for aggregating metrics during a test as the aggregations are computed on the fly. If `low_memory` option is set to `True` the input value from the user is ignored and metrics are aggregated during the test.  Defaults to `False` otherwise.
+* `sample_rate`: `int` - Integer indicating the approximate number of "events" to sample per second (calculates a probability of `min(1, sample_rate/actual_rate)`) when saving results as the test proceeds for calculating metrics after the test is complete. If set to `0` or lower no sampling is performed. Defaults to `0`
+* `low_memory`: `bool` - Boolean indicating whether to save results to memory/disk (`False`) or not (`True`) as the test proceeds. If set to `True` any metrics (calculated over time) that rely on knowing information when each "event" is sent and when it is received or processed by the system (this could be an unbounded amount of time before all quantities are available) cannot be calculated e.g. response times, queue times etc. If set to `True`, `aagregate_during` value is ignored and metrics are aggregated during the test. Defaults to `False`
 
 #### <b>Example Json test config</b>
 ```
@@ -199,11 +202,16 @@ The fields within the json and yaml file are as follows:
     "performance_options": {
         "num_files_per_sec": 10,
         "total_jobs": 100,
-        "shard": false
+        "shard": false,
+        "save_logs": true
     },
     "functional_options": {
         "log_domain": "ver"
     }
+    "num_workers": 0,
+    "aggregate_during": false,
+    "sample_rate": 0,
+    "low_memory": false
 }
 ```
 
@@ -224,6 +232,18 @@ performance_options:
   num_files_per_sec: 10
   shard: False
   total_jobs: 100
+  save_logs: True
+
+functional_options:
+  log_domain: "ver"
+
+num_workers: 0
+
+aggregate_during: False
+
+sample_rate: 0
+
+low_memory: False
 ```
 
 ### <b>Flask Service</b>
@@ -287,7 +307,7 @@ A test can be run with the four following stages (`/startTest` endpoint must be 
     ```
     The `options` json field currently supports the following options:
         * `invariant_matched` - Boolean indicating whether invariants that have the same name should match at runtime for a test event sequence
-        * `invaraint_length` - Integer value greater than or equal to 1 that specifies the length multiples of a 36 character length uuid that is produced for invariants
+        * `invariant_length` - Integer value greater than or equal to 1 that specifies the length multiples of a 36 character length uuid that is produced for invariants
     An example file is shown below:
     ```
     {

@@ -9,6 +9,7 @@ from pandas import DataFrame
 import pytest
 
 from test_harness.simulator.simulator_profile import Profile
+from test_harness.utils import ProcessGeneratorManager
 
 # get resources folder in tests folder
 input_resources = Path(__file__).parent.parent / "test_files"
@@ -223,3 +224,131 @@ class TestProfile:
             expected_delay_times, profile.delay_times
         ):
             assert pytest.approx(expected, 1e-6) == actual
+
+
+class TestInterpolatedProfile:
+    """Class to hold groups of tests for :class:`InterpolatedProfile`
+    """
+    @staticmethod
+    def check_generated_vs_actual(
+        generated: list[float],
+        actual: list[float]
+    ) -> None:
+        """Helper method to check generated vs actual
+
+        :param generated: The generated list
+        :type generated: `list`[`float`]
+        :param actual: The actual list
+        :type actual: `list`[`float`]
+        """
+        for expected, actual in zip(
+            generated, actual
+        ):
+            assert pytest.approx(expected, 1e-6) == actual
+
+    @staticmethod
+    @pytest.mark.skip(reason="Not implemented yet and will hang indefinitely")
+    def test_iterate_with_shared_generator(
+        raw_profile: DataFrame,
+        expected_delay_times: list[float]
+    ) -> None:
+        """Tests :class:`InterpolatedProfile`.`__iter__` inside a shared
+        iterator
+
+        :param raw_profile: The raw profile dataframe
+        :type raw_profile: :class:`DataFrame`
+        :param expected_delay_times: Fixture providing the expected task
+        delay times
+        :type expected_delay_times: `list`[`float`]
+        """
+        profile = Profile(raw_profile)
+        profile.transform_raw_profile()
+        with ProcessGeneratorManager(
+            iter(profile.delay_times)
+        ) as gen:
+            list_from_gen = list(gen)
+            assert len(list_from_gen) == len(expected_delay_times)
+            TestInterpolatedProfile.check_generated_vs_actual(
+                list(gen),
+                expected_delay_times
+            )
+
+    @staticmethod
+    def test_slice_with_steps_and_iterate(
+        raw_profile: DataFrame,
+        expected_delay_times: list[float]
+    ) -> None:
+        """Tests :class:`InterpolatedProfile`.`__iter__` inside a separate
+        iterator
+
+        :param raw_profile: The raw profile dataframe
+        :type raw_profile: :class:`DataFrame`
+        :param expected_delay_times: Fixture providing the expected task delay
+        times
+        :type expected_delay_times: `list`[`float`]
+        """
+        profile = Profile(raw_profile)
+        profile.transform_raw_profile()
+        slice_1 = list(profile.delay_times[0:-1:2])
+        slice_2 = list(profile.delay_times[1:-1:2])
+        assert len(slice_1) == len(expected_delay_times[0:-1:2])
+        assert len(slice_2) == len(expected_delay_times[1:-1:2])
+        TestInterpolatedProfile.check_generated_vs_actual(
+            slice_1, expected_delay_times[0:-1:2]
+        )
+        TestInterpolatedProfile.check_generated_vs_actual(
+            slice_2, expected_delay_times[1:-1:2]
+        )
+
+    @staticmethod
+    def test_slice_with_steps_and_iterate_unbounded_end(
+        raw_profile: DataFrame,
+        expected_delay_times: list[float]
+    ) -> None:
+        """Tests :class:`InterpolatedProfile`.`__iter__` inside a separate
+        iterator
+
+        :param raw_profile: The raw profile dataframe
+        :type raw_profile: :class:`DataFrame`
+        :param expected_delay_times: Fixture providing the expected task delay
+        times
+        :type expected_delay_times: `list`[`float`]
+        """
+        profile = Profile(raw_profile)
+        profile.transform_raw_profile()
+        slice_1 = list(profile.delay_times[0::2])
+        slice_2 = list(profile.delay_times[1::2])
+        assert len(slice_1) == len(expected_delay_times[0::2])
+        assert len(slice_2) == len(expected_delay_times[1::2])
+        TestInterpolatedProfile.check_generated_vs_actual(
+            slice_1, expected_delay_times[0::2]
+        )
+        TestInterpolatedProfile.check_generated_vs_actual(
+            slice_2, expected_delay_times[1::2]
+        )
+
+    @staticmethod
+    def test_len(
+        raw_profile: DataFrame,
+        expected_delay_times: list[float]
+    ) -> None:
+        """Tests :class:`InterpolatedProfile`.`__len__`
+        """
+        profile = Profile(raw_profile)
+        profile.transform_raw_profile()
+        assert len(profile.delay_times) == len(expected_delay_times)
+        # check that the length of the slice is correct for negative indices
+        assert len(profile.delay_times[:-2]) == len(expected_delay_times[:-2])
+        # check that the length of the slice is correct for positive indices
+        assert len(profile.delay_times[:74]) == len(expected_delay_times[:74])
+        # check that the length of the slice is correct for unbounded indices
+        assert len(profile.delay_times[:]) == len(
+            expected_delay_times[:]
+        )
+        # check that the length of the slice is correct for step indices
+        assert len(profile.delay_times[::2]) == len(
+            expected_delay_times[::2]
+        )
+        assert len(profile.delay_times[1::3]) == len(
+            expected_delay_times[1::3]
+        )

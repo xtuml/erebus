@@ -8,17 +8,29 @@
 # pylint: disable=R0904
 import os
 from datetime import datetime
-from typing import Any, TextIO
 import math
 from threading import Lock
+import tempfile
+import random
+from typing import Any, TextIO
 
 import pandas as pd
 from prometheus_client.parser import text_fd_to_metric_families
 from pygrok import Grok
 
 from test_harness.reporting.log_analyser import yield_grok_metrics_from_files
+from test_harness.results.aggregation import (
+    AggregationBin,
+    AggregationCount,
+    AggregationMax,
+    AggregationTask,
+    BinValueCount,
+)
 from .pvresults import PVResults
-from .pvresultsdataframecalculator import PVResultsDataFrameCalculator
+from .pvresultsdataframecalculator import (
+    PVResultsDataFrameCalculatorV2,
+    PVResultsDataFrameCalculator,
+)
 from .types import (
     AveragesDict,
     FailuresDict,
@@ -26,6 +38,7 @@ from .types import (
     ReceptionCountsDict,
     ResultsDict,
 )
+from test_harness.results.results import ResultsHolder, DictResultsHolder
 from .kafka_metrics import consume_events_from_kafka_topic
 
 
@@ -84,12 +97,21 @@ class PVPerformanceResults(PVResults):
         )
     ]
 
-    def __init__(self, binning_window: int = 1) -> None:
+    def __init__(
+        self,
+        binning_window: int = 1,
+        test_output_directory: str | None = None,
+        sample_rate: int = 0,
+        agg_during_test: bool = False,
+        low_memory: bool = False,
+    ) -> None:
         """Constructor method"""
         super().__init__()
         self.results = None
         self.binning_window = binning_window
         self.process_errors: dict[int, ProcessErrorDataDict] = {}
+        self.test_output_directory = test_output_directory
+        self._low_memory = low_memory
         self._create_results_holder()
         self.end_times: dict[str, float] | None = None
         self.failures: FailuresDict | None = None
@@ -100,8 +122,20 @@ class PVPerformanceResults(PVResults):
         self.process_errors_agg_results: pd.DataFrame | None = None
 
         self.job_id_event_id_map: dict[str, set[str]] = {}
-        self._calculator: PVResultsDataFrameCalculator
+        self._calculator: PVResultsDataFrameCalculatorV2 | None = None
         self._update_lock = Lock()
+        self._aggregation_tasks = None
+        self._aggregation_map = None
+        if sample_rate == 0 or not agg_during_test:
+            # if sample rate is 0 or not aggregating during test
+            # then do not sample
+            self._sampler = None
+        else:
+            self._sampler = Sampler(sample_rate)
+        self._agg_during_test = agg_during_test
+        # must aggregate during test if in low memory mode
+        if self._low_memory:
+            self._agg_during_test = True
 
     def __len__(self) -> int:
         """The length of the results
@@ -114,35 +148,104 @@ class PVPerformanceResults(PVResults):
     @property
     def calculator(self):
         """A just-in-time instantiated PVResultsDataFrameCalculator."""
-        if isinstance(self.results, dict):
-            return PVResultsDataFrameCalculator(
-                events_dict=self.results,
-                end_times=(
-                    self.end_times if hasattr(self, "end_times") else None
-                ),
-                data_fields=(
-                    self.data_fields if hasattr(self, "data_fields") else None
-                ),
-            )
-        elif isinstance(self.results, pd.DataFrame):
-            return PVResultsDataFrameCalculator(
-                events_dict=self.results.to_dict(orient="index"),
-                end_times=(
-                    self.end_times if hasattr(self, "end_times") else None
-                ),
-                data_fields=(
-                    self.data_fields if hasattr(self, "data_fields") else None
-                ),
-            )
-        else:
-            raise TypeError(
-                f"self.results is unsupported type: {type(self.results)}"
-            )
+        if self._calculator is None:
+            if isinstance(self.results, ResultsHolder):
+                self._calculator = PVResultsDataFrameCalculatorV2(
+                    results_holder=self.results,
+                    end_times=(
+                        self.end_times if hasattr(self, "end_times") else None
+                    ),
+                    aggregation_holders=self.aggregation_tasks,
+                )
+            elif isinstance(self.results, dict):
+                return PVResultsDataFrameCalculator(
+                    events_dict=self.results,
+                    end_times=(
+                        self.end_times if hasattr(self, "end_times") else None
+                    ),
+                    data_fields=(
+                        self.data_fields
+                        if hasattr(self, "data_fields")
+                        else None
+                    ),
+                )
+            elif isinstance(self.results, pd.DataFrame):
+                return PVResultsDataFrameCalculator(
+                    events_dict=self.results.to_dict(orient="index"),
+                    end_times=(
+                        self.end_times if hasattr(self, "end_times") else None
+                    ),
+                    data_fields=(
+                        self.data_fields
+                        if hasattr(self, "data_fields")
+                        else None
+                    ),
+                )
+            else:
+                raise TypeError(
+                    f"self.results is unsupported type: {type(self.results)}"
+                )
+        return self._calculator
 
     def _create_results_holder(self) -> None:
         """Creates the results holder as pandas DataFrame"""
         # self.results = pd.DataFrame(columns=self.data_fields)
-        self.results = {}
+        if self.test_output_directory is None:
+            self.test_output_directory = tempfile.mkdtemp()
+        self.results = DictResultsHolder(
+            fields=self.data_fields if self._low_memory else None
+        )
+        # TODO: implement DataBaseTableResultsHolder functionality
+        # self.results = DataBaseTableResultsHolder(
+        #     db_path=f"sqlite:///{self.test_output_directory}/results.db",
+        #     columns=[
+        #         {
+        #             "name": "event_id",
+        #             "type_": "string",
+        #             "primary_key": True
+        #         },
+        #         {
+        #             "name": "job_id",
+        #             "type_": "string",
+        #             "primary_key": False
+        #         },
+        #         {
+        #             "name": "time_sent",
+        #             "type_": "float",
+        #             "primary_key": False
+        #         },
+        #         {
+        #             "name": "response",
+        #             "type_": "string",
+        #             "primary_key": False
+        #         },
+        #         {
+        #             "name": "AER_start",
+        #             "type_": "float",
+        #             "primary_key": False
+        #         },
+        #         {
+        #             "name": "AER_end",
+        #             "type_": "float",
+        #             "primary_key": False
+        #         },
+        #         {
+        #             "name": "AEOSVDC_start",
+        #             "type_": "float",
+        #             "primary_key": False,
+        #         },
+        #         {
+        #             "name": "AEOSVDC_end",
+        #             "type_": "float",
+        #             "primary_key": False,
+        #         },
+        #     ],
+        # )
+        # os.makedirs(self.test_output_directory, exist_ok=True)
+        # self.results = shelve.open(
+        #     os.path.join(self.test_output_directory, "results.shelve")
+        # )
+        # self.results = {}
 
     def update_event_results_with_event_id(
         self, event_id: str, update_values: dict[str, Any]
@@ -155,15 +258,13 @@ class PVPerformanceResults(PVResults):
         :param update_values: Arbitrary named update values
         :type update_values: `dict`[`str`, `Any`]
         """
-        if event_id not in self.results:
-            self.create_event_result_row(event_id)
-        self._update_lock.acquire()
-        self.results[event_id] = {**self.results[event_id], **update_values}
+        self._update_results(event_id, update_values)
+        if self._low_memory:
+            return
         if "job_id" in update_values:
             if update_values["job_id"] not in self.job_id_event_id_map:
                 self.job_id_event_id_map[update_values["job_id"]] = set()
             self.job_id_event_id_map[update_values["job_id"]].add(event_id)
-        self._update_lock.release()
 
     def update_event_results_with_job_id(
         self, job_id: str, update_values: dict[str, Any]
@@ -176,14 +277,30 @@ class PVPerformanceResults(PVResults):
         :param update_values: Arbitrary named update values
         :type update_values: `dict`[`str`, `Any`]
         """
+        if self._low_memory:
+            return
         if job_id in self.job_id_event_id_map:
-            self._update_lock.acquire()
             for event_id in self.job_id_event_id_map[job_id]:
-                self.results[event_id] = {
-                    **self.results[event_id],
-                    **update_values,
-                }
+                self._update_results(event_id, update_values)
+
+    def _update_results(self, event_id: str, update_values: dict[str, Any]):
+        self._update_lock.acquire()
+        if self._agg_during_test:
+            for key, value in update_values.items():
+                if key in self.aggregation_map:
+                    for agg_key in self.aggregation_map[key]:
+                        self.aggregation_tasks[agg_key].update(value)
+        if self._low_memory:
             self._update_lock.release()
+            return
+        if event_id in self.results or self._sampler is None:
+            pass
+        else:
+            if not self._sampler():
+                self._update_lock.release()
+                return
+        self.results[event_id] = update_values
+        self._update_lock.release()
 
     def create_event_result_row(self, event_id: str) -> None:
         """Method to create a row in the results holder based on an
@@ -409,11 +526,7 @@ class PVPerformanceResults(PVResults):
             file_paths, self.reception_grok_priority_patterns
         )
 
-    def add_kafka_results_from_topic(
-        self,
-        host,
-        topic
-    ) -> None:
+    def add_kafka_results_from_topic(self, host, topic) -> None:
         """Method to add results from kafka topic
 
         :param host: Kafka host
@@ -423,9 +536,7 @@ class PVPerformanceResults(PVResults):
         """
         events = consume_events_from_kafka_topic(host, topic)
         for result in events:
-            self.add_result(
-                result
-            )
+            self.add_result(result)
 
     def calc_all_results(self, agg_time_window: float = 1.0) -> None:
         """Method to calculate al aggregated results. Data aggregations happen
@@ -437,6 +548,8 @@ class PVPerformanceResults(PVResults):
         :type agg_time_window: `float`, optional
         """
         self._filter_out_events_not_from_test()
+        if not self._agg_during_test:
+            self.results = self.results.to_pandas()
         self.results = self.calculator.results
         self.create_response_time_fields()
         self.end_times = self.calc_end_times()
@@ -451,13 +564,78 @@ class PVPerformanceResults(PVResults):
             agg_time_window
         )
 
+    @property
+    def aggregation_tasks(self) -> dict[str, AggregationTask]:
+        """Dictionary of aggregation tasks
+
+        :return: Returns a dictionary of aggregation tasks
+        :rtype: `dict`[`str`, :class:`AggregationTask`]
+        """
+        if self._aggregation_tasks is None:
+            self._aggregation_tasks = {
+                **{
+                    field: AggregationTask(
+                        agg_holder=AggregationBin(
+                            binning_window=self.binning_window,
+                            bin_type=BinValueCount,
+                        ),
+                    )
+                    for field in [
+                        "binned_num_sent",
+                        "binned_num_processed",
+                        "binned_num_aer_processed"
+                    ]
+                },
+                **{
+                    field: AggregationTask(
+                        agg_holder=AggregationMax(),
+                    )
+                    for field in [
+                        "th_end",
+                        "pv_end",
+                        "aer_end",
+                    ]
+                },
+                "num_errors": AggregationTask(
+                    agg_holder=AggregationCount(),
+                    pre_agg_func=lambda x: 1 if x != "" else None,
+                ),
+                **{
+                    field: AggregationTask(
+                        agg_holder=AggregationCount(),
+                    )
+                    for field in [
+                        "num_aer_start",
+                        "num_aer_end",
+                    ]
+                },
+            }
+        return self._aggregation_tasks
+
+    @property
+    def aggregation_map(self) -> dict[str, str]:
+        """Dictionary of aggregation map
+
+        :return: Returns a dictionary of aggregation map
+        :rtype: `dict`[`str`, `str`]
+        """
+        if self._aggregation_map is None:
+            self._aggregation_map = {
+                "time_sent": ["binned_num_sent", "th_end"],
+                "response": ["num_errors"],
+                "AER_start": ["num_aer_start"],
+                "AER_end": [
+                    "num_aer_end",
+                    "binned_num_aer_processed",
+                    "aer_end",
+                ],
+                "AEOSVDC_end": ["binned_num_processed", "pv_end"],
+            }
+        return self._aggregation_map
+
     def _filter_out_events_not_from_test(self):
         """Method to filter out events that are not from the current test"""
-        self.results = {
-            event_id: event_data
-            for event_id, event_data in self.results.items()
-            if "time_sent" in event_data
-        }
+        self.results.filter_rows_on_field_value(field="time_sent", value=None)
 
     def create_response_time_fields(self) -> None:
         """Method used to create response fields in the results holder
@@ -582,3 +760,54 @@ class PVPerformanceResults(PVResults):
         return self.calculator.calculate_aggregated_results_dataframe(
             time_window=time_window
         )
+
+
+class Sampler:
+    """Class to sample at a given rate
+
+    :param sample_rate: The sample rate in samples per second
+    :type sample_rate: `int`
+    """
+    def __init__(
+        self,
+        sample_rate: int,
+    ) -> None:
+        """Constructor method"""
+        self.sample_rate = sample_rate
+        self._count = 0
+        self._t_prev = None
+        self._rate = sample_rate
+        self._probability = self.sample_rate / self._rate
+        self._lock = Lock()
+
+    def __call__(self) -> bool:
+        """Method to call the sampler
+
+        :return: Returns a boolean of whether to sample or not
+        :rtype: `bool`
+        """
+        try:
+            return self._sample()
+        except TypeError:
+            self._t_prev = datetime.now()
+            return True
+
+    def _sample(self) -> bool:
+        """Method to sample
+
+        :return: Returns a boolean of whether to sample or not
+        :rtype: `bool`
+        """
+        t_now = datetime.now()
+        t_delta = (t_now - self._t_prev).total_seconds()
+        self._count += 1
+        if t_delta >= 1:
+            self._rate = self._count / t_delta
+            self._t_prev = t_now
+            self._count = 0
+            self._probability = min(self.sample_rate / self._rate, 1)
+        return random.choices(
+            [True, False],
+            weights=[self._probability, 1 - self._probability],
+            k=1,
+        )[0]

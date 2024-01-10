@@ -5,7 +5,9 @@
 """Methods to create simulator data
 """
 from __future__ import annotations
-from typing import Generator, Any, Callable, Awaitable, TypedDict, Literal
+from typing import (
+    Generator, Any, Callable, Awaitable, TypedDict, Literal, Iterable
+)
 import json
 from uuid import uuid4
 from datetime import datetime
@@ -121,10 +123,11 @@ class BatchJobSimDatumTransformer(PVSimDatumTransformer):
 def generate_events_from_template_jobs(
     template_jobs: list["Job"],
     sequence_generator: Callable[
-        [list[Generator[SimDatum, Any, None]]], Generator[SimDatum, Any, None]
+        [Iterable[Generator[SimDatum, Any, None]]],
+        Generator[SimDatum, Any, None]
     ],
     generator_function: Callable[
-        [list["Job"]], list[Generator[SimDatum, Any, None]]
+        [list["Job"]], Iterable[Generator[SimDatum, Any, None]]
     ],
     sequencer_kwargs: dict[str, Any] | None = None,
 ) -> Generator[SimDatum, Any, None]:
@@ -155,7 +158,7 @@ def generate_events_from_template_jobs(
 
 def generate_job_batch_events(
     template_jobs: list["Job"],
-) -> list[Generator[SimDatum, Any, None]]:
+) -> Generator[Generator[SimDatum, Any, None], Any, None]:
     """Method to generate job batch :class:`SimDatum`'s using
     :class:`BatchJobSimDatumTransformer`
 
@@ -175,49 +178,45 @@ def generate_job_batch_events(
                 job_id=job_id_data_map[job_id].get_data(),
                 length=named_job_id.count,
             )
-        generators.append(
-            job.generate_simulation_job_events(
-                job_id_data_map=job_id_data_map,
-                sim_datum_transformer=sim_datum_transformer,
-            )
+        yield job.generate_simulation_job_events(
+            job_id_data_map=job_id_data_map,
+            sim_datum_transformer=sim_datum_transformer,
         )
     return generators
 
 
 def generate_single_events(
     template_jobs: list["Job"],
-) -> list[Generator[SimDatum, Any, None]]:
+) -> Generator[Generator[SimDatum, Any, None], Any, None]:
     """Method to generate non-batched single events
 
     :param template_jobs: A list of the template jobs with which to generate
     the sim data
     :type template_jobs: `list`[:class:`Job`]
-    :return: Returns a list of :class:`Generator`'s of :class:`SimDatum` for
-    each job
+    :return: Returns an iterable of :class:`Generator`'s of :class:`SimDatum`
+    for each job
     :rtype: `list`[:class:`Generator`[:class:`SimDatum`, `Any`, `None`]]
     """
     sim_datum_transformer = EventSimDatumTransformer()
     generators = []
     for job in template_jobs:
         job_id_data_map = job.create_job_id_data_map()
-        generators.append(
-            job.generate_simulation_job_events(
-                job_id_data_map=job_id_data_map,
-                sim_datum_transformer=sim_datum_transformer,
-            )
+        yield job.generate_simulation_job_events(
+            job_id_data_map=job_id_data_map,
+            sim_datum_transformer=sim_datum_transformer,
         )
     return generators
 
 
 def simple_sequencer(
-    generated_events: list[Generator[SimDatum, Any, None]]
+    generated_events: Iterable[Generator[SimDatum, Any, None]]
 ) -> Generator[SimDatum, Any, None]:
-    """A simple sequencer that flattens a list of generators of
+    """A simple sequencer that flattens an iterable of generators of
     :class:`SimDatum`
 
-    :param generated_events: A list of generated :class:`SimDatum`
-    :type generated_events: `list`[:class:`Generator`[:class:`SimDatum`, `Any`,
-    `None`]]
+    :param generated_events: An iterable of generated :class:`SimDatum`
+    :type generated_events:
+    :class:`Iterable`[:class:`Generator`[:class:`SimDatum`, `Any`, `None`]]
     :yield: Generates :class:`SimDatum`
     :rtype: :class:`Generator`[:class:`SimDatum`, `Any`, `None`]
     """
@@ -226,7 +225,7 @@ def simple_sequencer(
 
 
 def job_sequencer(
-    generated_events: list[Generator[SimDatum, Any, None]],
+    generated_events: Iterable[Generator[SimDatum, Any, None]],
     min_interval_between_job_events: float,
     desired_job_event_gap: float = 1.0,
 ) -> Generator[SimDatum, Any, None]:
@@ -234,11 +233,13 @@ def job_sequencer(
     gap (in seconds
     between them). This won't guarentee that the final sequenced events will
     have the gap but for numbers of events much larger than the maximum rate
-    this will be good enough
+    this will be good enough.
 
-    :param generated_events: List of generated :class:`SimDatum` for jobs
-    :type generated_events: `list`[:class:`Generator`[:class:`SimDatum`, `Any`,
-    `None`]]
+    This method assumes a job has at least 1 event.
+
+    :param generated_events: Iterable of generated :class:`SimDatum` for jobs
+    :type generated_events:
+    :class:`Iterable`[:class:`Generator`[:class:`SimDatum`, `Any`, `None`]]
     :param min_interval_between_job_events: The minimum interval between jobs
     in the input profile
     :type min_interval_between_job_events: `float`
@@ -256,28 +257,39 @@ def job_sequencer(
             "placed in order"
         )
     rate = round(ratio)
-    chunk_generated_events = generated_events[:rate]
-    num_chunk_events = rate
-    num_jobs = len(generated_events)
-    finish_counter = {}
-    continue_bool = True
-    while continue_bool:
-        for index, generated_job_events in enumerate(chunk_generated_events):
+    chunk_generated_events = []
+    iterator_generated_events = iter(generated_events)
+    # fill up the chunk of generated events
+    while True:
+        if len(chunk_generated_events) < rate:
             try:
-                yield next(generated_job_events)
+                chunk_generated_events.append(next(iterator_generated_events))
+                continue
             except StopIteration:
-                if rate < num_jobs:
-                    chunk_generated_events[index] = generated_events[rate]
-                    yield next(generated_events[rate])
-                    rate += 1
-                else:
-                    finish_counter[index] = None
-                    if (
-                        len(finish_counter) == num_chunk_events
-                        or len(finish_counter) == num_jobs
+                break
+        else:
+            break
+    continue_bool = True
+    indexes = {
+        index: True
+        for index in range(len(chunk_generated_events))
+    }
+    while continue_bool:
+        for index in indexes.keys():
+            try:
+                yield next(chunk_generated_events[index])
+            except StopIteration:
+                try:
+                    chunk_generated_events[index] = next(
+                        iterator_generated_events
+                    )
+                    yield next(chunk_generated_events[index])
+                except StopIteration:
+                    indexes[index] = False
+                    if all(
+                        not truth_value for truth_value in indexes.values()
                     ):
                         continue_bool = False
-                        break
 
 
 def convert_list_dict_to_json_io_bytes(

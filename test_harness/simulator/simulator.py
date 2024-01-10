@@ -376,7 +376,6 @@ class Simulator:
                         datetime.utcnow() - start_time
                     ).total_seconds()
                     new_delay = delay - time_from_start
-
                 task_group.create_task(
                     self._pass_data_to_delay_function(
                         delay=new_delay, pbar=pbar

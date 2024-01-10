@@ -19,7 +19,14 @@ class PVResultsDataFrame(PVPerformanceResults):
     using a pandas dataframe as the results holder.
     """
 
-    def __init__(self, binning_window: int = 1) -> None:
+    def __init__(
+        self,
+        binning_window: int = 1,
+        test_output_directory: str | None = None,
+        sample_rate: int | None = None,
+        agg_during_test: bool = False,
+        low_memory: bool = False,
+    ) -> None:
         """Constructor method"""
         warnings.warn(
             (
@@ -28,4 +35,10 @@ class PVResultsDataFrame(PVPerformanceResults):
             ),
             DeprecationWarning,
         )
-        super().__init__(binning_window)
+        super().__init__(
+            binning_window,
+            test_output_directory,
+            sample_rate,
+            agg_during_test=agg_during_test,
+            low_memory=low_memory,
+        )

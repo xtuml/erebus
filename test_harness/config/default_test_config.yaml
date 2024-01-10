@@ -14,9 +14,15 @@ performance_options:
   num_files_per_sec: 10
   shard: False
   total_jobs: 100
-  save_log_files: True
+  save_logs: True
 
 functional_options:
   log_domain: "ver"
 
-num_workers: 1
+num_workers: 0
+
+aggregate_during: False
+
+sample_rate: 0
+
+low_memory: False

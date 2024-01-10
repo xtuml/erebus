@@ -945,7 +945,7 @@ def test_generate_job_batch_events(
     """
     job = Job()
     job.parse_input_jobfile(job_list)
-    generators = generate_job_batch_events([job])
+    generators = list(generate_job_batch_events([job]))
     assert len(generators) == 1
     sim_datums = list(generators[0])
     assert len(sim_datums) == 4
@@ -972,7 +972,7 @@ def test_generate_job_batch_events_multiple_job_ids(
     """
     job = Job()
     job.parse_input_jobfile(job_list_with_multiple_job_ids)
-    generators = generate_job_batch_events([job])
+    generators = list(generate_job_batch_events([job]))
     assert len(generators) == 1
     sim_datums = list(generators[0])
     assert len(sim_datums) == 4
@@ -1008,7 +1008,7 @@ def test_generate_single_events(
     """
     job = Job()
     job.parse_input_jobfile(job_list)
-    generators = generate_single_events([job])
+    generators = list(generate_single_events([job]))
     assert len(generators) == 1
     sim_datums = list(generators[0])
     assert len(sim_datums) == 4
@@ -1033,7 +1033,7 @@ def test_generate_single_events_multiple_job_ids(
     """
     job = Job()
     job.parse_input_jobfile(job_list_with_multiple_job_ids)
-    generators = generate_single_events([job])
+    generators = list(generate_single_events([job]))
     assert len(generators) == 1
     sim_datums = list(generators[0])
     assert len(sim_datums) == 4

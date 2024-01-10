@@ -322,7 +322,10 @@ class TestConfig:
         self.functional_options = {
             "log_domain": "ver"
         }
-        self.num_workers = 1
+        self.num_workers = 0
+        self.aggregate_during = False
+        self.sample_rate = 0
+        self.low_memory = False
 
     def config_to_dict(self) -> dict:
         """TODO docstring."""
@@ -331,6 +334,8 @@ class TestConfig:
             "max_different_sequences": 200,
             "event_gen_options": self.event_gen_options,
             "num_workers": self.num_workers,
+            "aggregate_during": self.aggregate_during,
+            "sample_rate": self.sample_rate,
         }
         if self.type != "Functional":
             config_dict_to_return["performance_options"] = (
