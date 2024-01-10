@@ -134,11 +134,15 @@ def puml_files_test(
         uml_file_paths=puml_file_paths,
         harness_config=harness_config
     )
+    if "pv_config_update_time" not in test_config.pv_specific_options:
+        test_config.pv_specific_options["pv_config_update_time"] = (
+            harness_config.pv_config_update_time
+        )
     logging.getLogger().info(
         "Waiting %ds for job defs to load",
-        harness_config.pv_config_update_time
+        test_config.pv_specific_options["pv_config_update_time"]
     )
-    time.sleep(harness_config.pv_config_update_time)
+    time.sleep(test_config.pv_specific_options["pv_config_update_time"])
 
     # perform the test
     test = test_class(

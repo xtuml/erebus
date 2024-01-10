@@ -11,7 +11,7 @@ from test_harness.requests.request_logs import get_log_files
 from test_harness.requests.request_pv_io import (
     gather_get_requests_json_response
 )
-from test_harness.config.config import HarnessConfig
+from test_harness.config.config import HarnessConfig, TestConfig
 
 logging.basicConfig(level=logging.INFO)
 
@@ -363,11 +363,13 @@ class PVFileInspector:
     def __init__(
         self,
         harness_config: HarnessConfig,
+        test_config: TestConfig,
         save_log_files: bool = True
     ) -> None:
         """Constructor method
         """
         self.harness_config = harness_config
+        self.test_config = test_config
         self.coords: dict[str, list[tuple[int, int]]] = {
             domain: []
             for domain in ["aer", "ver"]
@@ -388,9 +390,13 @@ class PVFileInspector:
             pv_finish_inspector_logs(
                 file_names=self.file_names,
                 urls=self.harness_config.log_urls,
-                interval_time=self.harness_config.log_calc_interval_time,
+                interval_time=self.test_config.test_finish[
+                    "metric_get_interval"
+                ],
                 required_time_interval=(
-                    self.harness_config.pv_finish_interval
+                    self.test_config.test_finish[
+                        "finish_interval"
+                    ]
                 ),
                 log_file_store_path=self.harness_config.log_file_store,
                 save_log_files=self.save_log_files

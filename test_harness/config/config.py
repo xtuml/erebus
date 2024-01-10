@@ -83,10 +83,6 @@ class HarnessConfig:
         self.parse_log_retrieval_config()
         # message bus
         self.parse_message_bus_config()
-        # max files in memory
-        self.max_files_in_memory = int(
-            self.config_parser["non-default"]["max_files_in_memory"]
-        )
         # url send pv job defs
         self.pv_send_job_defs_url = self.config_parser["non-default"][
             "pv_send_job_defs_url"
@@ -274,7 +270,20 @@ class TestConfig:
             },
             "functional_options": `dict`, {
                 "log_domain": "ver" | "aer", defaults to "ver";
+            },
+            "num_workers": `int` => 0, defaults to 0;
+            "aggregate_during": `bool`, defaults to `False`;
+            "sample_rate": `int` => 0, defaults to 0;
+            "low_memory": `bool`, defaults to `False`;
+            "test_finish": `dict`, {
+                "metric_get_interval": `int` => 0, defaults to 5;
+                "finish_interval": `int` => 0, defaults to 30;
+                "timeout": `int` => 0, defaults to 120;
+            },
             }
+            "pv_specific_options": `dict`, {
+                "pv_config_update_time": `int` => 0, defaults to 60;
+            },
         }
         :type test_config: `dict`[`str`, `str` | `dict`]
         """
@@ -309,6 +318,8 @@ class TestConfig:
         self.aggregate_during = False
         self.sample_rate = 0
         self.low_memory = False
+        self.test_finish = {}
+        self.pv_specific_options = {}
 
     def config_to_dict(self) -> dict:
         """TODO docstring."""
@@ -319,6 +330,9 @@ class TestConfig:
             "num_workers": self.num_workers,
             "aggregate_during": self.aggregate_during,
             "sample_rate": self.sample_rate,
+            "low_memory": self.low_memory,
+            "test_finish": self.test_finish,
+            "pv_specific_options": self.pv_specific_options,
         }
         if self.type != "Functional":
             config_dict_to_return["performance_options"] = (
