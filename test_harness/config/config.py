@@ -280,10 +280,6 @@ class TestConfig:
                 "finish_interval": `int` => 0, defaults to 30;
                 "timeout": `int` => 0, defaults to 120;
             },
-            }
-            "pv_specific_options": `dict`, {
-                "pv_config_update_time": `int` => 0, defaults to 60;
-            },
         }
         :type test_config: `dict`[`str`, `str` | `dict`]
         """
@@ -319,7 +315,6 @@ class TestConfig:
         self.sample_rate = 0
         self.low_memory = False
         self.test_finish = {}
-        self.pv_specific_options = {}
 
     def config_to_dict(self) -> dict:
         """TODO docstring."""
@@ -332,7 +327,6 @@ class TestConfig:
             "sample_rate": self.sample_rate,
             "low_memory": self.low_memory,
             "test_finish": self.test_finish,
-            "pv_specific_options": self.pv_specific_options,
         }
         if self.type != "Functional":
             config_dict_to_return["performance_options"] = (
