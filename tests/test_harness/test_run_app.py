@@ -744,6 +744,7 @@ def test_run_harness_app_stop_test() -> None:
             "AggregatedResults.csv"
         )
     )
+    assert data["Cumulative Events Sent"].iloc[-1] > 0
     assert data["Cumulative Events Sent"].iloc[-1] < 100
     clean_directories([
         harness_config.report_file_store,

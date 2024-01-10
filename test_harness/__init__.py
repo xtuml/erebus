@@ -14,6 +14,7 @@ import glob
 from multiprocessing import Value
 from threading import Lock
 import asyncio
+import logging
 
 from flask import Flask, request, make_response, Response, jsonify
 from werkzeug.datastructures import FileStorage
@@ -756,6 +757,30 @@ class AsyncTestStopper:
         self.stop_test = False
         self.lock = Lock()
         self.is_stopped = False
+
+    @contextmanager
+    def run_test(
+        self,
+    ) -> Generator["AsyncTestStopper", Any, None]:
+        """Method to run the test as a context manager
+
+        :raises exception: Raises an exception if an exception is raised
+        :yield: Yields the instance of the class
+        :rtype: `Generator`[:class:`AsyncTestStopper`, `Any`, `None`]
+        """
+        try:
+            self.reset()
+            yield self
+        except Exception as exception:
+            logging.getLogger().error(
+                "The folowing type of error occurred %s with value %s",
+                type(exception),
+                exception,
+            )
+            raise exception
+
+        finally:
+            self.reset()
 
     async def stop(self) -> None:
         """Method to stop the test"""
