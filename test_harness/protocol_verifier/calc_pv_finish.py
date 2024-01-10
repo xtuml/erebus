@@ -370,11 +370,11 @@ class PVFileInspector:
         self.harness_config = harness_config
         self.coords: dict[str, list[tuple[int, int]]] = {
             domain: []
-            for domain in self.harness_config.io_urls.keys()
+            for domain in ["aer", "ver"]
         }
         self.file_names: dict[str, list[str]] = {
             domain: []
-            for domain in self.harness_config.io_urls.keys()
+            for domain in ["aer", "ver"]
         }
         self.test_boundaries: tuple[int, int, int, int, int] | None = None
         self.save_log_files = save_log_files

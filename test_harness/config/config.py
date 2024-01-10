@@ -79,8 +79,6 @@ class HarnessConfig:
         )
         # parse config for request to server
         self.parse_requests_config()
-        # parse config for io tracking
-        self.parse_io_tracking_config()
         # parse config log retrieval
         self.parse_log_retrieval_config()
         # message bus
@@ -166,21 +164,6 @@ class HarnessConfig:
         self.requests_timeout = int(
             self.config_parser["non-default"]["requests_timeout"]
         )
-
-    def parse_io_tracking_config(self):
-        """TODO docstring."""
-        self.io_calc_interval_time = int(
-            self.config_parser["non-default"]["io_calc_interval_time"]
-        )
-        self.io_read_timeout = float(
-            self.config_parser["non-default"]["io_read_timeout"]
-        )
-        aer_io_url = self.config_parser["non-default"]["aer_io_url"]
-        ver_io_url = self.config_parser["non-default"]["ver_io_url"]
-        self.io_urls = {
-            "aer": aer_io_url,
-            "ver": ver_io_url,
-        }
 
     def parse_log_retrieval_config(self):
         """TODO docstring."""
