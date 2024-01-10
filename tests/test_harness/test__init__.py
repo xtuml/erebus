@@ -6,11 +6,15 @@ from io import BufferedReader, BytesIO
 from pathlib import Path
 from typing import Optional
 import json
+import asyncio
 
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
+import pytest
 
-from test_harness import create_test_output_directory, HarnessApp
+from test_harness import (
+    create_test_output_directory, HarnessApp, AsyncTestStopper
+)
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import check_dict_equivalency, clean_directories
 
@@ -573,3 +577,82 @@ def test_start_test_with_uploaded_zip_files(
     clean_directories(
         [test_app.harness_config.report_file_store]
     )
+
+
+def test_stop_test(client: FlaskClient, test_app: HarnessApp) -> None:
+    """Test that the stop test endpoint works as expected
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    assert test_app.test_stopper.stop_test is False
+    response = client.post(
+        "/stopTest",
+        json={}
+    )
+    assert response.status_code == 200
+    assert test_app.test_stopper.stop_test is True
+
+
+class TestAsyncTestStopper:
+    """Test the AsyncTestStopper class
+    """
+    @staticmethod
+    async def sleep_and_set(
+        async_test_stopper: AsyncTestStopper
+    ) -> None:
+        """Sleep for 1 second and then set the stop test flag
+
+        :param async_test_stopper: The async test stopper
+        :type async_test_stopper: :class:`AsyncTestStopper`
+        """
+        await asyncio.sleep(1)
+        async_test_stopper.set()
+
+    @staticmethod
+    async def gather_stop_test(
+        async_test_stopper: AsyncTestStopper
+    ) -> None:
+        """Gather the stop test method and the sleep and set method
+
+        :param async_test_stopper: The async test stopper
+        :type async_test_stopper: :class:`AsyncTestStopper`
+        """
+        await asyncio.gather(
+            async_test_stopper.stop(),
+            TestAsyncTestStopper.sleep_and_set(
+                async_test_stopper
+            )
+        )
+
+    @staticmethod
+    def test_stop_test() -> None:
+        """Test that the stop test method works as expected
+        """
+        test_stopper = AsyncTestStopper()
+        assert test_stopper.stop_test is False
+        with pytest.raises(RuntimeError) as error:
+            asyncio.run(TestAsyncTestStopper.gather_stop_test(test_stopper))
+        assert str(error.value) == (
+            "Test stopped"
+        )
+        assert test_stopper.stop_test is True
+        assert test_stopper.is_stopped is True
+
+    @staticmethod
+    def test_stop_test_context_manager() -> None:
+        """Test that the AsyncTestStopper context manager works as expected
+        """
+        test_stopper = AsyncTestStopper()
+        assert test_stopper.stop_test is False
+        with test_stopper.run_test() as _:
+            with pytest.raises(RuntimeError):
+                asyncio.run(
+                    TestAsyncTestStopper.gather_stop_test(test_stopper)
+                )
+            assert test_stopper.stop_test is True
+            assert test_stopper.is_stopped is True
+        assert test_stopper.stop_test is False
+        assert test_stopper.is_stopped is False

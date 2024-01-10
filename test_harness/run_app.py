@@ -6,6 +6,7 @@ import threading
 import logging
 import sys
 import os
+from contextlib import ExitStack
 
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -47,16 +48,22 @@ def run_harness_app(
                 continue
             test_to_run: dict = harness_app.test_to_run
             harness_app.test_to_run = {}
-
 #           test has started running
-            with harness_app.harness_progress_manager.run_test() as pbar:
+            with ExitStack() as context_stack:
+                pbar = context_stack.enter_context(
+                    harness_app.harness_progress_manager.run_test()
+                )
+                test_stopper = context_stack.enter_context(
+                    harness_app.test_stopper.run_test()
+                )
                 success, _ = harness_test_manager(
                     harness_config=harness_app.harness_config,
                     test_config=test_to_run["TestConfig"],
                     test_output_directory=test_to_run[
                         "TestOutputDirectory"
                     ],
-                    pbar=pbar
+                    pbar=pbar,
+                    test_stopper=test_stopper
                 )
                 if success:
                     logging.getLogger().info(

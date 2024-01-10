@@ -356,7 +356,10 @@ A test can be run with the four following stages (`/startTest` endpoint must be 
     ```
     curl -X POST -d '{"TestName": "A_perfomance_test", "TestConfig":{"event_gen_options":{"invalid":false}, "type":"Performance", "performance_options": {"num_files_per_sec":10, "total_jobs":100}}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
     ```
-
+* To stop a test gracefully once it is running one must send a POST request with a JSON body (must use header `'Content-Type: application/json'`) to the endpoint `/stopTest`. Currently the JSON accepted is empty. If succesful the response will be a `200 OK` and `400` if not. An example request is provided below:
+    ```
+    curl -X POST -d '{}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/stopTest'
+    ```
 ### <b>CLI Tool</b>
 Functionality has been provided to use the Test Harness as a CLI tool.
 

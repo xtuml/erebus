@@ -37,7 +37,7 @@ class PVResultsDataFrameCalculator:
         self.end_times = end_times
         self.data_fields = data_fields
         self._results = pd.DataFrame.from_dict(events_dict, orient="index")
-        for new_col in self.data_fields[3:]:
+        for new_col in self.data_fields:
             if new_col not in self.results.columns:
                 self.results[new_col] = np.nan
 
@@ -111,7 +111,13 @@ class PVResultsDataFrameCalculator:
         * "aer_end" - the time when aer processed its last event
         :rtype: `dict`[`str`, `float`]
         """
-        self.end_times = {
+        if len(self.results) == 0:
+            return {
+                "th_end": np.nan,
+                "pv_end": np.nan,
+                "aer_end": np.nan,
+            }
+        return {
             "th_end": np.nanmax(self.results["time_sent"]),
             "pv_end": np.nanmax(self.results["AEOSVDC_end"]),
             "aer_end": np.nanmax(self.results["AER_end"]),
@@ -188,6 +194,19 @@ class PVResultsDataFrameCalculator:
         if self.end_times is None:
             raise ValueError("self.end_times has not been defined")
         test_end_ceil = np.ceil(np.nanmax(list(self.end_times.values())))
+        if np.isnan(test_end_ceil):
+            # there doesn't seem to be any sent data or otherwise
+            return pd.DataFrame({}, columns=[
+                "Time (s)",
+                "Events Sent (/s)",
+                "Events Processed (/s)",
+                "AER Events Processed (/s)",
+                "Queue Time (s)",
+                "Response Time (s)",
+                "Cumulative Events Sent",
+                "Cumulative Events Processed",
+                "Cumulative AER Events Processed",
+            ])
         time_range = np.arange(0, test_end_ceil + time_window, time_window)
         # get aggregated events sent per second
         aggregated_sent = sps.binned_statistic(

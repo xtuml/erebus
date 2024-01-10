@@ -12,6 +12,9 @@ import shutil
 from zipfile import ZipFile
 import glob
 from multiprocessing import Value
+from threading import Lock
+import asyncio
+import logging
 
 from flask import Flask, request, make_response, Response, jsonify
 from werkzeug.datastructures import FileStorage
@@ -88,6 +91,7 @@ class HarnessApp(Flask):
             root_path,
         )
         self.test_to_run = {}
+        self.test_stopper = AsyncTestStopper()
 
     def handle_multipart_file_upload(
         self,
@@ -301,6 +305,33 @@ class HarnessApp(Flask):
             )
         return make_response("Zip archives uploaded successfully\n", 200)
 
+    def stop_test(self) -> Response:
+        """API for stopping a test given a json POST request
+
+        :return: Returns a :class:`Response`
+        :rtype: :class:`Response`
+        """
+        try:
+            json_dict = request.get_json()
+            return self._handle_stop_test_json_request(
+                json_dict
+            )
+        except BadRequest as error:
+            return error.get_response()
+
+    def _handle_stop_test_json_request(
+        self, request_json: dict
+    ) -> Response:
+        """Handler for stopping a test given a json POST request
+
+        :param request_json: The request json sent as a python dictionary
+        :type request_json: `dict`
+        :return: Returns the response
+        :rtype: `Response`
+        """
+        self.test_stopper.set()
+        return make_response("Request to stop test successful\n", 200)
+
     @property
     def test_to_run(self) -> dict | None:
         """Property providing the most recent test to run
@@ -388,6 +419,10 @@ def create_app(
     @app.route("/upload/named-zip-files", methods=["POST"])
     def upload_named_zip_files() -> None:
         return app.upload_named_zip_files()
+
+    @app.route("/stopTest", methods=["POST"])
+    def stop_test() -> None:
+        return app.stop_test()
 
     return app
 
@@ -710,6 +745,62 @@ class TestHarnessProgessManager:
         """
         del self.pbars[name]
         self.test_is_running.value = False
+
+
+class AsyncTestStopper:
+    """Class to stop a test"""
+
+    def __init__(
+        self
+    ) -> None:
+        """Constructor method"""
+        self.stop_test = False
+        self.lock = Lock()
+        self.is_stopped = False
+
+    @contextmanager
+    def run_test(
+        self,
+    ) -> Generator["AsyncTestStopper", Any, None]:
+        """Method to run the test as a context manager
+
+        :raises exception: Raises an exception if an exception is raised
+        :yield: Yields the instance of the class
+        :rtype: `Generator`[:class:`AsyncTestStopper`, `Any`, `None`]
+        """
+        try:
+            self.reset()
+            yield self
+        except Exception as exception:
+            logging.getLogger().error(
+                "The folowing type of error occurred %s with value %s",
+                type(exception),
+                exception,
+            )
+            raise exception
+
+        finally:
+            self.reset()
+
+    async def stop(self) -> None:
+        """Method to stop the test"""
+        while True:
+            await asyncio.sleep(1)
+            with self.lock:
+                if self.stop_test:
+                    self.is_stopped = True
+                    raise RuntimeError("Test stopped")
+
+    def reset(self) -> None:
+        """Method to reset the test"""
+        with self.lock:
+            self.stop_test = False
+            self.is_stopped = False
+
+    def set(self) -> None:
+        """Method to set the test"""
+        with self.lock:
+            self.stop_test = True
 
 
 if __name__ == "__main__":
