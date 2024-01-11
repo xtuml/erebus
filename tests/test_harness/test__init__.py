@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Optional
 import json
 import asyncio
+from zipfile import ZipFile
+from tempfile import TemporaryDirectory
 
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
@@ -634,6 +636,101 @@ def test_stop_test(client: FlaskClient, test_app: HarnessApp) -> None:
     )
     assert response.status_code == 200
     assert test_app.test_stopper.stop_test is True
+
+
+def test_get_test_output_directory(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the get test output directory endpoint works as expected
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    response = client.post(
+        "/startTest",
+        json={
+            "TestName": "test_1"
+        }
+    )
+    response = client.post(
+        "/getTestOutputFolder",
+        json={
+            "TestName": "test_1"
+        }
+    )
+    assert response.status_code == 200
+    assert response.mimetype == "application/zip"
+    assert response.headers["Content-Disposition"] == (
+        "attachment; filename=test_1.zip"
+    )
+    with ZipFile(BytesIO(response.data), "r") as zip_file:
+        with TemporaryDirectory() as temp_dir:
+            os.mkdir(os.path.join(temp_dir, "test_1"))
+            zip_file.extractall(os.path.join(temp_dir, "test_1"))
+            path = os.path.join(temp_dir, "test_1", "used_config.yaml")
+            assert os.path.exists(
+                path
+            )
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
+
+
+def test_get_test_output_directory_incorrect_test_name(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the get test output directory endpoint works as expected when
+    the test name is incorrect
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    response = client.post(
+        "/startTest",
+        json={
+            "TestName": "test_1"
+        }
+    )
+    response = client.post(
+        "/getTestOutputFolder",
+        json={
+            "TestName": "test_2"
+        }
+    )
+    assert response.status_code == 400
+    assert response.data == b"Test with name test_2 does not exist\n"
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
+
+
+def test_get_test_output_directory_no_test_name_field(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the get test output directory endpoint works as expected when
+    no TestName field is given
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    response = client.post(
+        "/getTestOutputFolder",
+        json={}
+    )
+    assert response.status_code == 400
+    assert response.data == b"Field 'TestName' not in request json\n"
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
 
 
 class TestAsyncTestStopper:
