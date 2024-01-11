@@ -185,6 +185,10 @@ The fields within the json and yaml file are as follows:
 * `aggregate_during`: `bool` - Boolean indicating whether to aggregate metrics during a test (`True`) or not (`False`). There is a small performance penalty for aggregating metrics during a test as the aggregations are computed on the fly. If `low_memory` option is set to `True` the input value from the user is ignored and metrics are aggregated during the test.  Defaults to `False` otherwise.
 * `sample_rate`: `int` - Integer indicating the approximate number of "events" to sample per second (calculates a probability of `min(1, sample_rate/actual_rate)`) when saving results as the test proceeds for calculating metrics after the test is complete. If set to `0` or lower no sampling is performed. Defaults to `0`
 * `low_memory`: `bool` - Boolean indicating whether to save results to memory/disk (`False`) or not (`True`) as the test proceeds. If set to `True` any metrics (calculated over time) that rely on knowing information when each "event" is sent and when it is received or processed by the system (this could be an unbounded amount of time before all quantities are available) cannot be calculated e.g. response times, queue times etc. If set to `True`, `aagregate_during` value is ignored and metrics are aggregated during the test. Defaults to `False`
+* `test_finish`: `dict` - Options stopping a test. This option contains the following sub-fields: ,
+   * `metric_get_interval`: `int` => 0, defaults to 5 - The interval with which to grab metrics that determine the end of a test
+   * `finish_interval`: `int` => 0, defaults to 30 - The interval with which to calculate the end of a test if there has been no change in the grabbed metrics within that time. Should some integer multiple of `metric_get_interval`
+   * `timeout`: `int` => 0, defaults to 120 - Time to wait before ending the test after all test data has been sent.
 
 #### <b>Example Json test config</b>
 ```

@@ -2038,3 +2038,65 @@ def test_run_test_performance_low_memory(
     clean_directories(
         [harness_config.report_file_store, harness_config.log_file_store]
     )
+
+
+def test_use_harness_config_instead_of_test_config() -> None:
+    """Tests :class:`PerformanceTests` using test_finish parameters in
+    HarnessConfig
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    assert all(
+        field not in test_config.test_finish
+        for field in ["timeout", "finish_interval", "metric_get_interval"]
+    )
+    PerformanceTest(
+        test_file_generators=test_events,
+        test_config=test_config,
+        harness_config=harness_config,
+    )
+    assert test_config.test_finish["timeout"] == harness_config.pv_test_timeout
+    assert test_config.test_finish["finish_interval"] == (
+        harness_config.pv_finish_interval
+    )
+    assert test_config.test_finish["metric_get_interval"] == (
+        harness_config.log_calc_interval_time
+    )
+
+
+def test_use_test_config_instead_of_harness_config() -> None:
+    """Tests :class:`PerformanceTests` using test_finish parameters in
+    TestConfig
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "test_finish": {
+                "timeout": 51,
+                "finish_interval": 53,
+                "metric_get_interval": 54,
+            }
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    PerformanceTest(
+        test_file_generators=test_events,
+        test_config=test_config,
+        harness_config=harness_config,
+    )
+    assert test_config.test_finish["timeout"] == 51
+    assert test_config.test_finish["timeout"] != harness_config.pv_test_timeout
+    assert test_config.test_finish["finish_interval"] == 53
+    assert test_config.test_finish["finish_interval"] != (
+        harness_config.pv_finish_interval
+    )
+    assert test_config.test_finish["metric_get_interval"] == 54
+    assert test_config.test_finish["metric_get_interval"] != (
+        harness_config.log_calc_interval_time
+    )

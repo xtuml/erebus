@@ -26,3 +26,8 @@ aggregate_during: False
 sample_rate: 0
 
 low_memory: False
+
+test_finish:
+  metric_get_interval: 5
+  finish_interval: 30
+  timeout: 120

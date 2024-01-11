@@ -579,6 +579,46 @@ def test_start_test_with_uploaded_zip_files(
     )
 
 
+def test_start_test_with_test_finish_options(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the start test endpoint works when zip files are uploaded
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    test_config_to_send = {
+        "test_finish": {
+            "timeout": 13,
+            "finish_interval": 14,
+            "metric_get_interval": 15,
+        }
+    }
+    response = client.post(
+        "/startTest",
+        json={
+            "TestConfig": test_config_to_send
+        }
+    )
+    assert response.status_code == 200
+    response_dict = response.json
+    expected_test_config = TestConfig()
+    expected_test_config.parse_from_dict(
+        test_config_to_send
+    )
+    expected_config_dict = expected_test_config.config_to_dict()
+    check_dict_equivalency(
+        response_dict["TestConfig"],
+        expected_config_dict
+    )
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
+
+
 def test_stop_test(client: FlaskClient, test_app: HarnessApp) -> None:
     """Test that the stop test endpoint works as expected
 

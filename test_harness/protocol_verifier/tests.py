@@ -157,6 +157,7 @@ class Test(ABC):
             harness_config if harness_config else HarnessConfig()
         )
         self.test_config = test_config if test_config else TestConfig()
+        self._check_config_test_finish_values()
         self.test_profile = test_profile
         self.simulator: Simulator | None = None
         self.sim_data_generator: Generator[SimDatum, Any, None] | None = None
@@ -173,6 +174,7 @@ class Test(ABC):
         self.results = self.set_results_holder()
         self.pv_file_inspector = PVFileInspector(
             harness_config,
+            test_config=self.test_config,
             save_log_files=save_log_files,
         )
         self.total_number_of_events: int
@@ -192,6 +194,23 @@ class Test(ABC):
             test_graceful_kill_functions
             if test_graceful_kill_functions else []
         )
+
+    def _check_config_test_finish_values(self):
+        """Method to check the configs for the test"""
+        for harness_config_attr, test_config_finish_val_field in zip(
+            [
+                "pv_test_timeout",
+                "pv_finish_interval",
+                "log_calc_interval_time"
+            ],
+            ["timeout", "finish_interval", "metric_get_interval"],
+        ):
+            if test_config_finish_val_field not in (
+                self.test_config.test_finish
+            ):
+                self.test_config.test_finish[test_config_finish_val_field] = (
+                    getattr(self.harness_config, harness_config_attr)
+                )
 
     @abstractmethod
     def set_results_holder(self) -> (
@@ -493,12 +512,12 @@ class Test(ABC):
         timed out
         """
         await asyncio.sleep(
-            self.harness_config.pv_test_timeout + self.delay_times[-1]
+            self.test_config.test_finish["timeout"] + self.delay_times[-1]
         )
         raise RuntimeError(
             "Protocol Verifier failed to finish within the test timeout of "
-            f"{self.harness_config.pv_test_timeout} seconds.\nResults will "
-            "be calculated at this point"
+            f"{self.test_config.test_finish['timeout']} seconds.\nResults will"
+            " be calculated at this point"
         )
 
     async def stop_test(self) -> None:
