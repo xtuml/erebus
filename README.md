@@ -356,10 +356,23 @@ A test can be run with the four following stages (`/startTest` endpoint must be 
     ```
     curl -X POST -d '{"TestName": "A_perfomance_test", "TestConfig":{"event_gen_options":{"invalid":false}, "type":"Performance", "performance_options": {"num_files_per_sec":10, "total_jobs":100}}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
     ```
-* To stop a test gracefully once it is running one must send a POST request with a JSON body (must use header `'Content-Type: application/json'`) to the endpoint `/stopTest`. Currently the JSON accepted is empty. If succesful the response will be a `200 OK` and `400` if not. An example request is provided below:
-    ```
-    curl -X POST -d '{}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/stopTest'
-    ```
+#### <b>Stopping a Test</b>
+To stop a test gracefully once it is running one must send a POST request with a JSON body (must use header `'Content-Type: application/json'`) to the endpoint `/stopTest`. Currently the JSON accepted is empty. If succesful the response will be a `200 OK` and `400` if not. An example request is provided below:
+```
+curl -X POST -d '{}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/stopTest'
+```
+#### <b>Retrieving Output Data</b>
+To retrieve output data from a finished test a POST request can be sent to the endpoint `/getTestOutputFolder` with a JSON body (must use header 'Content-Type: application/json'). The JSON body should specify the `TestName` given in the `/startTest` endpoint requets used to start the test. The JSON body should have the following form
+```
+{
+    "TestName": <name of test as string>
+}
+```
+A correctly formed request will receive a response of a zip file (mime type `application/zip`) containing all the test output data within the folder at that time.
+```
+curl -X POST -d '{"TestName": "test_1"}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/getTestOutputFolder'
+```
+An example curl request to this endpoint is as follows 
 ### <b>CLI Tool</b>
 Functionality has been provided to use the Test Harness as a CLI tool.
 
