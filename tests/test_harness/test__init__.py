@@ -600,11 +600,14 @@ def test_stop_test(client: FlaskClient, test_app: HarnessApp) -> None:
 
 def test_get_test_output_directory(
     client: FlaskClient,
+    test_app: HarnessApp
 ) -> None:
     """Test that the get test output directory endpoint works as expected
 
     :param client: The flask client
     :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
     """
     response = client.post(
         "/startTest",
@@ -631,6 +634,63 @@ def test_get_test_output_directory(
             assert os.path.exists(
                 path
             )
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
+
+
+def test_get_test_output_directory_incorrect_test_name(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the get test output directory endpoint works as expected when
+    the test name is incorrect
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    response = client.post(
+        "/startTest",
+        json={
+            "TestName": "test_1"
+        }
+    )
+    response = client.post(
+        "/getTestOutputFolder",
+        json={
+            "TestName": "test_2"
+        }
+    )
+    assert response.status_code == 400
+    assert response.data == b"Test with name test_2 does not exist\n"
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
+
+
+def test_get_test_output_directory_no_test_name_field(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the get test output directory endpoint works as expected when
+    no TestName field is given
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    response = client.post(
+        "/getTestOutputFolder",
+        json={}
+    )
+    assert response.status_code == 400
+    assert response.data == b"Field 'TestName' not in request json\n"
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
 
 
 class TestAsyncTestStopper:
