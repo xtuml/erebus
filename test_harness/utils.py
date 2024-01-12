@@ -11,7 +11,6 @@ import asyncio
 import shutil
 from threading import Thread
 from multiprocessing import Queue, Event, Lock
-from collections import deque
 
 import flatdict
 from tqdm import tqdm
@@ -387,7 +386,7 @@ class ProcessGeneratorManager:
         """
         # exhaust generator
         logging.getLogger().info("Exhausting generator")
-        deque(self.generator, maxlen=0)
+        self.generator = iter(())
         logging.getLogger().info("Generator exhausted")
         self.event.set()
         self.receive_request_daemon.join()
