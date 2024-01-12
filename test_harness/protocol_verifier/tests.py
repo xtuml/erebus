@@ -658,24 +658,31 @@ class Test(ABC):
             ]
         )
         try:
-            response_tuple = send_get_request(
-                url=self.harness_config.pv_clean_folders_url,
-                max_retries=self.harness_config.requests_max_retries,
-                timeout=(
-                    self.harness_config.requests_timeout,
-                    self.harness_config.pv_clean_folders_read_timeout,
-                ),
-            )
-            if not response_tuple[0]:
-                logging.getLogger().warning(
-                    (
-                        "There was an error with the request to clean up PV"
-                        "folders"
-                        " for next test with request response: %s"
+            try:
+                response_tuple = send_get_request(
+                    url=self.harness_config.pv_clean_folders_url,
+                    max_retries=self.harness_config.requests_max_retries,
+                    timeout=(
+                        self.harness_config.requests_timeout,
+                        self.harness_config.pv_clean_folders_read_timeout,
                     ),
-                    response_tuple[2].text,
                 )
-        except requests.ReadTimeout:
+                if not response_tuple[0]:
+                    logging.getLogger().warning(
+                        (
+                            "There was an error with the request to clean up "
+                            "PV folders"
+                            " for next test with request response: %s"
+                        ),
+                        response_tuple[2].text,
+                    )
+            except (requests.ConnectionError, requests.ConnectTimeout):
+                logging.getLogger().warning(
+                    "There was an error with the request to clean up PV"
+                    "folders"
+                    " for next test"
+                )
+        except (requests.ReadTimeout, requests.ConnectionError):
             logging.getLogger().warning(
                 "The read time out limit of %s was reached. Not all PV folders"
                 "will be empty. It is suggested the harness config "
