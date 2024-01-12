@@ -109,7 +109,7 @@ class BinValueMax(BinValue):
 
     def __init__(self) -> None:
         """Constructor method"""
-        self.max = 0
+        self.max = np.nan
 
     def update(self, value: float) -> None:
         """Method to update the bin value
@@ -118,7 +118,7 @@ class BinValueMax(BinValue):
         :type value: `float`
         """
 
-        self.max = max(self.max, value)
+        self.max = np.nanmax([self.max, value])
 
     def get_value(self) -> float:
         """Method to get the bin value
