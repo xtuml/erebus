@@ -19,6 +19,7 @@ from test_harness import (
 )
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import check_dict_equivalency, clean_directories
+from test_harness.async_management import AsyncKillException
 
 # get test config
 test_config_path = os.path.join(
@@ -770,7 +771,7 @@ class TestAsyncTestStopper:
         """
         test_stopper = AsyncTestStopper()
         assert test_stopper.stop_test is False
-        with pytest.raises(RuntimeError) as error:
+        with pytest.raises(AsyncKillException) as error:
             asyncio.run(TestAsyncTestStopper.gather_stop_test(test_stopper))
         assert str(error.value) == (
             "Test stopped"
@@ -785,7 +786,7 @@ class TestAsyncTestStopper:
         test_stopper = AsyncTestStopper()
         assert test_stopper.stop_test is False
         with test_stopper.run_test() as _:
-            with pytest.raises(RuntimeError):
+            with pytest.raises(AsyncKillException):
                 asyncio.run(
                     TestAsyncTestStopper.gather_stop_test(test_stopper)
                 )
