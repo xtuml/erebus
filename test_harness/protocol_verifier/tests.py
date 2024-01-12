@@ -520,6 +520,12 @@ class Test(ABC):
         await asyncio.sleep(
             self.test_config.test_finish["timeout"] + self.delay_times[-1]
         )
+        logging.getLogger().info(
+            "Protocol Verifier failed to finish within the test timeout of "
+            f"{self.harness_config.pv_test_timeout} seconds.\nResults will "
+            "be calculated at this point"
+        )
+
         raise AsyncKillException(
             "Protocol Verifier failed to finish within the test timeout of "
             f"{self.test_config.test_finish['timeout']} seconds.\nResults will"
