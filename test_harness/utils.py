@@ -11,6 +11,7 @@ import asyncio
 import shutil
 from threading import Thread
 from multiprocessing import Queue, Event, Lock
+from collections import deque
 
 import flatdict
 from tqdm import tqdm
@@ -366,12 +367,7 @@ class ProcessGeneratorManager:
         :rtype: :class:`ProcessSafeSharedIterator`
         """
         self.receive_request_daemon.start()
-        return ProcessSafeSharedIterator(
-            self.output_queue,
-            self.lock,
-            self.event,
-            self.stop_event
-        )
+        return self._create_iterator()
 
     def __exit__(
         self,
@@ -389,11 +385,25 @@ class ProcessGeneratorManager:
         :type traceback: `Any`
         :raises exc_value: Raises the exception if any
         """
-        self.stop_event.set()
+        # exhaust generator
+        deque(self.generator, maxlen=0)
         self.event.set()
         self.receive_request_daemon.join()
         if exc_type is not None:
             raise exc_value
+
+    def _create_iterator(self) -> ProcessSafeSharedIterator:
+        """Method to create an iterator
+
+        :return: Returns a :class:`ProcessSafeSharedIterator` instance
+        :rtype: :class:`ProcessSafeSharedIterator`
+        """
+        return ProcessSafeSharedIterator(
+            self.output_queue,
+            self.lock,
+            self.event,
+            self.stop_event
+        )
 
 # TODO: Test this code and remove the old code if performance is fine and it
 # works as expected
