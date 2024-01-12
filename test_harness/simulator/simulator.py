@@ -398,8 +398,16 @@ class Simulator:
 
 
 class SimMockKillManager:
+    """Mock class to replace the :class:`AsyncKillManager` class in the
+    simulator
+    """
     async def __call__(
         self,
         coro: Coroutine[Any, Any, Any],
     ) -> Any:
+        """Method to run the coroutine
+
+        :param coro: The coroutine to run
+        :type coro: :class:`Coroutine`[`Any`, `Any`, `Any`]
+        """
         await coro
