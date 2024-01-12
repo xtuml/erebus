@@ -386,7 +386,9 @@ class ProcessGeneratorManager:
         :raises exc_value: Raises the exception if any
         """
         # exhaust generator
+        logging.getLogger().info("Exhausting generator")
         deque(self.generator, maxlen=0)
+        logging.getLogger().info("Generator exhausted")
         self.event.set()
         self.receive_request_daemon.join()
         if exc_type is not None:

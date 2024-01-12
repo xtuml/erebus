@@ -418,6 +418,9 @@ class Test(ABC):
             self.time_start = datetime.now()
             self.results.time_start = self.time_start
             await async_mp_manager.run_processes()
+            logging.getLogger().info(
+                "All processes have finished"
+            )
         self.pbar.update(0)
 
     @staticmethod
@@ -598,6 +601,9 @@ class Test(ABC):
                 except RuntimeError as error:
                     logging.getLogger().info(msg=str(error))
                 self.time_end = datetime.now()
+                logging.getLogger().info(
+                    "Sending test files has completed"
+                )
 
     @abstractmethod
     def calc_results(self) -> None:
