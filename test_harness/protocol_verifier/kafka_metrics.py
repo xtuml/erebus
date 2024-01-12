@@ -230,7 +230,12 @@ class PVKafkaMetricsRetriever(MetricsRetriever):
         """Method to exit the context manager
         """
         logging.getLogger().info("Test Harness Stopping Kafka consumer")
-        await asyncio.wait_for(self.consumer.stop(), timeout=30)
+        try:
+            await asyncio.wait_for(self.consumer.stop(), timeout=30)
+        except asyncio.TimeoutError:
+            logging.getLogger().warning(
+                "Timeout error occurred whilst stopping Kafka consumer"
+            )
         if exc_type is not None:
             logging.getLogger().error(
                 "The folowing type of error occurred %s with value %s",
