@@ -229,6 +229,7 @@ class PVKafkaMetricsRetriever(MetricsRetriever):
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
         """Method to exit the context manager
         """
+        logging.getLogger().info("Test Harness Stopping Kafka consumer")
         await asyncio.wait_for(self.consumer.stop(), timeout=30)
         if exc_type is not None:
             logging.getLogger().error(
