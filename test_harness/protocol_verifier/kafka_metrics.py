@@ -4,6 +4,7 @@ import re
 import datetime
 from typing import Generator, Any, Literal, Self
 import logging
+import asyncio
 
 import kafka3
 import aiokafka
@@ -228,7 +229,7 @@ class PVKafkaMetricsRetriever(MetricsRetriever):
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
         """Method to exit the context manager
         """
-        await self.consumer.stop()
+        await asyncio.wait_for(self.consumer.stop(), timeout=30)
         if exc_type is not None:
             logging.getLogger().error(
                 "The folowing type of error occurred %s with value %s",
