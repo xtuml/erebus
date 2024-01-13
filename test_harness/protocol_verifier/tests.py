@@ -489,7 +489,13 @@ class Test(ABC):
                 kill_manager=kill_manager,
             )
             await simulator.simulate()
+            logging.getLogger().info(
+                "Stopping Kafka Producer"
+            )
             await kafka_producer.stop()
+            logging.getLogger().info(
+                "Kafka Producer stopped"
+            )
         else:
             connector = aiohttp.TCPConnector(limit=2000)
             async with aiohttp.ClientSession(connector=connector) as session:

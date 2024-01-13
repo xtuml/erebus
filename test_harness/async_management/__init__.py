@@ -4,6 +4,7 @@ import asyncio
 from typing import Callable, Iterable, Any, Coroutine
 from multiprocessing import Process
 import threading
+import logging
 
 
 class AsyncMPManager:
@@ -71,6 +72,7 @@ class AsyncMPManager:
         while True:
             await asyncio.sleep(1)
             if all(process.exitcode is not None for process in self.processes):
+                logging.getLogger().info("All processes completed")
                 break
 
 
