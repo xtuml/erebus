@@ -479,7 +479,7 @@ async def send_payload_kafka(
     try:
         future = kafka_producer.send(topic=kafka_topic, value=file)
         while not future.is_done:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.001)
         # await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
         future.get()
         result = ""
