@@ -15,6 +15,7 @@ from multiprocessing import Queue, Event, Lock
 import flatdict
 from tqdm import tqdm
 import numpy as np
+from kafka3.producer.future import FutureRecordMetadata
 
 
 def create_file_io_file_name_tuple(
@@ -536,6 +537,26 @@ class ProcessGeneratorManager:
 #         self.receive_request_daemon.join()
 #         if exc_type is not None:
 #             raise exc_value
+
+
+def wrap_kafka_future(
+    future: FutureRecordMetadata
+) -> asyncio.Future[Any]:
+    loop = asyncio.get_event_loop()
+    aio_future = loop.create_future()
+
+    def on_err(*_):
+        loop.call_soon_threadsafe(
+            aio_future.set_exception, future.exception
+        )
+
+    def on_success(*_):
+        loop.call_soon_threadsafe(
+            aio_future.set_result, future.value
+        )
+    future.add_callback(on_success)
+    future.add_errback(on_err)
+    return aio_future
 
 
 def create_zip_file_from_folder(

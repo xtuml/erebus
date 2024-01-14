@@ -23,6 +23,7 @@ from kafka3 import KafkaProducer
 from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
 from test_harness.protocol_verifier.types import TemplateOptions
+from test_harness.utils import wrap_kafka_future
 
 
 class PVSimDatumTransformer(ABC):
@@ -477,11 +478,14 @@ async def send_payload_kafka(
     :type producer: :class:`KafkaProducer`
     """
     try:
-        future = kafka_producer.send(topic=kafka_topic, value=file)
-        while not future.is_done:
-            await asyncio.sleep(0.001)
-        # await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
-        future.get()
+        await wrap_kafka_future(
+            kafka_producer.send(topic=kafka_topic, value=file)
+        )
+        # future = kafka_producer.send(topic=kafka_topic, value=file)
+        # while not future.is_done:
+        #     await asyncio.sleep(0.001)
+        # # await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
+        # future.get()
         result = ""
         logging.getLogger().debug(
             f"Sent file {file_name} payload to kafka topic {kafka_topic}"
