@@ -28,7 +28,8 @@ import plotly.express as px
 from plotly.graph_objects import Figure
 import requests
 from aiokafka import AIOKafkaProducer
-from kafka3 import KafkaProducer
+# TODO: will use in later versions
+# from kafka3 import KafkaProducer
 from tqdm import tqdm
 
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -471,13 +472,14 @@ class Test(ABC):
         :type time_sync: :class:`MultiProcessDateSync` | `None`, optional
         """
         if harness_config.message_bus_protocol == "KAFKA":
-            # kafka_producer = AIOKafkaProducer(
-            #     bootstrap_servers=harness_config.kafka_message_bus_host
-            # )
-            # await kafka_producer.start()
-            kafka_producer = KafkaProducer(
+            kafka_producer = AIOKafkaProducer(
                 bootstrap_servers=harness_config.kafka_message_bus_host
             )
+            await kafka_producer.start()
+            # TODO: use for later versions
+            # kafka_producer = KafkaProducer(
+            #     bootstrap_servers=harness_config.kafka_message_bus_host
+            # )
             simulator = Simulator(
                 delays=delay_times,
                 simulation_data=sim_data_iterator,
@@ -496,8 +498,9 @@ class Test(ABC):
             logging.getLogger().info(
                 "Stopping Kafka Producer"
             )
-            # await asyncio.wait_for(kafka_producer.stop(), timeout=30)
-            kafka_producer.close(timeout=10)
+            await asyncio.wait_for(kafka_producer.stop(), timeout=30)
+            # TODO: use for later versions
+            # kafka_producer.close(timeout=10)
             logging.getLogger().info(
                 "Kafka Producer stopped"
             )

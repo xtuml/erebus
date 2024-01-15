@@ -72,7 +72,7 @@ class AsyncMPManager:
         while True:
             await asyncio.sleep(1)
             if all(process.exitcode is not None for process in self.processes):
-                logging.getLogger().info("All processes completed")
+                logging.getLogger().debug("All processes completed")
                 break
 
 
