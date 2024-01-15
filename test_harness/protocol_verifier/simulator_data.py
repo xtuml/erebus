@@ -467,7 +467,7 @@ def send_list_dict_as_json_wrap_send_function(
 async def send_payload_kafka(
     file: bytes,
     file_name: str,
-    kafka_producer: KafkaProducer,  # AIOKafkaProducer,
+    kafka_producer: AIOKafkaProducer,
     kafka_topic: str,
 ) -> Literal["", "KafkaTimeoutError"]:
     """Async method to send a payload to a kafka producer
@@ -478,13 +478,13 @@ async def send_payload_kafka(
     :type producer: :class:`KafkaProducer`
     """
     try:
-        await wrap_kafka_future(
-            kafka_producer.send(topic=kafka_topic, value=file)
-        )
+        # await wrap_kafka_future(
+        #     kafka_producer.send(topic=kafka_topic, value=file)
+        # )
         # future = kafka_producer.send(topic=kafka_topic, value=file)
         # while not future.is_done:
         #     await asyncio.sleep(0.001)
-        # # await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
+        await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
         # future.get()
         result = ""
         logging.getLogger().debug(

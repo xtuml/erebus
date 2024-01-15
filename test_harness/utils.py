@@ -281,31 +281,150 @@ def calc_interval(
     return interval
 
 
+# class ProcessSafeSharedIterator:
+#     """Class to create an iterator that can be shared between processes
+
+#     :param queue: The queue to use
+#     :type queue: :class:`multiprocessing`.`Queue`
+#     :param lock: The lock to use
+#     :type lock: :class:`multiprocessing`.`Lock`
+#     :param event: The event to use
+#     :type event: :class:`multiprocessing`.`Event`
+#     :param stop_event: The stop event to use
+#     :type stop_event: :class:`multiprocessing`.`Event`
+#     """
+#     def __init__(
+#         self,
+#         queue: Queue,
+#         lock: Lock,
+#         event: Event,
+#         stop_event: Event
+#     ) -> None:
+#         """Constructor method
+#         """
+#         self.queue = queue
+#         self.lock = lock
+#         self.event = event
+#         self.stop_event = stop_event
+
+#     def __iter__(self) -> Self:
+#         """Method to return self as the iterator
+#         """
+#         return self
+
+#     def __next__(self) -> Any:
+#         """Method to get the next item from the queue as an iterator
+
+#         :raises StopIteration: Raises a :class:`StopIteration` if the stop
+#         event is set
+#         :return: Returns the next item from the queue
+#         :rtype: `Any`
+#         """
+#         if self.stop_event.is_set():
+#             raise StopIteration
+#         with self.lock:
+#             self.event.set()
+#             return self.queue.get()
+
+
+# class ProcessGeneratorManager:
+#     """Class to manage a generator in a separate process
+
+#     :param generator: The generator to manage
+#     :type generator: :class:`Generator`[`Any`, `Any`, `Any`]
+#     """
+#     def __init__(
+#         self,
+#         generator: Generator[Any, Any, Any],
+#     ) -> None:
+#         """Constructor method
+#         """
+#         self.generator = generator
+#         self.receive_request_daemon = Thread(target=self.serve, daemon=True)
+#         self.lock = Lock()
+#         self.output_queue = Queue(maxsize=1)
+#         self.event = Event()
+#         self.event.clear()
+#         self.stop_event = Event()
+#         self.stop_event.clear()
+
+#     def serve(self) -> None:
+#         """Method to serve the generator
+#         """
+#         while True:
+#             try:
+#                 self.event.wait()
+#                 self.output_queue.put(next(self.generator))
+#                 self.event.clear()
+#             except StopIteration:
+#                 self.stop_event.set()
+#                 break
+
+#     def __enter__(self) -> ProcessSafeSharedIterator:
+#         """Method to enter the context manager
+
+#         :return: Returns a :class:`ProcessSafeSharedIterator` instance
+#         :rtype: :class:`ProcessSafeSharedIterator`
+#         """
+#         self.receive_request_daemon.start()
+#         return self._create_iterator()
+
+#     def __exit__(
+#         self,
+#         exc_type: type[BaseException],
+#         exc_value: BaseException,
+#         traceback: Any
+#     ) -> None:
+#         """Method to exit the context manager
+
+#         :param exc_type: The type of exception raised if any
+#         :type exc_type: `type`[:class:`BaseException`]
+#         :param exc_value: The exception raised if any
+#         :type exc_value: :class:`BaseException`
+#         :param traceback: The traceback of the exception raised if any
+#         :type traceback: `Any`
+#         :raises exc_value: Raises the exception if any
+#         """
+#         # exhaust generator
+#         logging.getLogger().info("Exhausting generator")
+#         self.generator = iter(())
+#         logging.getLogger().info("Generator exhausted")
+#         self.event.set()
+#         self.receive_request_daemon.join()
+#         if exc_type is not None:
+#             raise exc_value
+
+#     def _create_iterator(self) -> ProcessSafeSharedIterator:
+#         """Method to create an iterator
+
+#         :return: Returns a :class:`ProcessSafeSharedIterator` instance
+#         :rtype: :class:`ProcessSafeSharedIterator`
+#         """
+#         return ProcessSafeSharedIterator(
+#             self.output_queue,
+#             self.lock,
+#             self.event,
+#             self.stop_event
+#         )
+
+
 class ProcessSafeSharedIterator:
     """Class to create an iterator that can be shared between processes
 
     :param queue: The queue to use
     :type queue: :class:`multiprocessing`.`Queue`
-    :param lock: The lock to use
-    :type lock: :class:`multiprocessing`.`Lock`
-    :param event: The event to use
-    :type event: :class:`multiprocessing`.`Event`
-    :param stop_event: The stop event to use
-    :type stop_event: :class:`multiprocessing`.`Event`
+    :param request_queue: The request queue to use
+    :type request_queue: :class:`multiprocessing`.`Queue`
     """
     def __init__(
         self,
         queue: Queue,
-        lock: Lock,
-        event: Event,
-        stop_event: Event
+        request_queue: Queue
     ) -> None:
         """Constructor method
         """
         self.queue = queue
-        self.lock = lock
-        self.event = event
-        self.stop_event = stop_event
+        self.request_queue = request_queue
 
     def __iter__(self) -> Self:
         """Method to return self as the iterator
@@ -320,11 +439,11 @@ class ProcessSafeSharedIterator:
         :return: Returns the next item from the queue
         :rtype: `Any`
         """
-        if self.stop_event.is_set():
+        self.request_queue.put(True)
+        value = self.queue.get()
+        if value is False:
             raise StopIteration
-        with self.lock:
-            self.event.set()
-            return self.queue.get()
+        return value
 
 
 class ProcessGeneratorManager:
@@ -341,33 +460,38 @@ class ProcessGeneratorManager:
         """
         self.generator = generator
         self.receive_request_daemon = Thread(target=self.serve, daemon=True)
-        self.lock = Lock()
-        self.output_queue = Queue(maxsize=1)
-        self.event = Event()
-        self.event.clear()
-        self.stop_event = Event()
-        self.stop_event.clear()
+        self.output_queue = Queue()
+        self.receive_queue = Queue()
+        self.num_children = 0
+
+    def _update_num_children(self) -> None:
+        """Method to update the number of children
+        """
+        self.num_children += 1
 
     def serve(self) -> None:
         """Method to serve the generator
         """
         while True:
             try:
-                self.event.wait()
+                request = self.receive_queue.get()
+                if request is False:
+                    break
                 self.output_queue.put(next(self.generator))
-                self.event.clear()
             except StopIteration:
-                self.stop_event.set()
                 break
+        # clear up for children
+        for _ in range(max(self.num_children, 1)):
+            self.output_queue.put(False)
 
-    def __enter__(self) -> ProcessSafeSharedIterator:
+    def __enter__(self) -> Self:
         """Method to enter the context manager
 
-        :return: Returns a :class:`ProcessSafeSharedIterator` instance
-        :rtype: :class:`ProcessSafeSharedIterator`
+        :return: Returns a :class:`ProcessGeneratorManager` instance
+        :rtype: :class:`ProcessGeneratorManager`
         """
         self.receive_request_daemon.start()
-        return self._create_iterator()
+        return self
 
     def __exit__(
         self,
@@ -389,24 +513,22 @@ class ProcessGeneratorManager:
         logging.getLogger().info("Exhausting generator")
         self.generator = iter(())
         logging.getLogger().info("Generator exhausted")
-        self.event.set()
+        self.receive_queue.put(False)
         self.receive_request_daemon.join()
         if exc_type is not None:
             raise exc_value
 
-    def _create_iterator(self) -> ProcessSafeSharedIterator:
+    def create_iterator(self) -> ProcessSafeSharedIterator:
         """Method to create an iterator
 
         :return: Returns a :class:`ProcessSafeSharedIterator` instance
         :rtype: :class:`ProcessSafeSharedIterator`
         """
+        self._update_num_children()
         return ProcessSafeSharedIterator(
             self.output_queue,
-            self.lock,
-            self.event,
-            self.stop_event
+            self.receive_queue
         )
-
 # TODO: Test this code and remove the old code if performance is fine and it
 # works as expected
 # class ProcessSafeSharedIterator:

@@ -397,7 +397,7 @@ class Test(ABC):
         """
         with ProcessGeneratorManager(
             generator=self.sim_data_generator
-        ) as process_safe_sim_data_iterator:
+        ) as process_generator_manager:
             time_sync = MultiProcessDateSync(
                 num_processes=self.test_config.num_workers
             )
@@ -407,7 +407,7 @@ class Test(ABC):
                     target=self._sync_send_test_files,
                     args=(
                         results_handler,
-                        process_safe_sim_data_iterator,
+                        process_generator_manager.create_iterator(),
                         self.delay_times[i::self.test_config.num_workers],
                         self.harness_config,
                         self.pbar,
