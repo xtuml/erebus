@@ -16,7 +16,7 @@ import logging
 import math
 from datetime import datetime
 import glob
-from multiprocessing import Process, Queue
+from multiprocessing import Queue, Event
 import queue
 from contextlib import AsyncExitStack
 
@@ -28,6 +28,8 @@ import plotly.express as px
 from plotly.graph_objects import Figure
 import requests
 from aiokafka import AIOKafkaProducer
+# TODO: will use in later versions
+# from kafka3 import KafkaProducer
 from tqdm import tqdm
 
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -64,7 +66,10 @@ from test_harness.reporting import create_report_files
 from test_harness.reporting.report_results import (
     generate_performance_test_reports,
 )
-from test_harness.requests import send_get_request  # , download_file_to_path
+from test_harness.requests import send_get_request
+from test_harness.async_management import (
+    AsyncMPManager, AsyncKillManager, AsyncKillException
+)
 from .pvresults import PVResults
 from .pvresultshandler import (
     PVResultsHandler, PVResultsAdder, PVKafkaMetricsHandler
@@ -194,6 +199,11 @@ class Test(ABC):
             test_graceful_kill_functions
             if test_graceful_kill_functions else []
         )
+        if self.test_config.num_workers >= 1:
+            kill_event = Event()
+        else:
+            kill_event = asyncio.Event()
+        self.kill_manager = AsyncKillManager(kill_event)
 
     def _check_config_test_finish_values(self):
         """Method to check the configs for the test"""
@@ -366,22 +376,18 @@ class Test(ABC):
         if self.test_config.num_workers == 0:
             self.time_start = datetime.now()
             self.results.time_start = self.time_start
-            await self.send_test_files_with_simulator(
+            await self.kill_manager(self.send_test_files_with_simulator(
                 results_handler=results_handler,
                 sim_data_iterator=self.sim_data_generator,
                 delay_times=self.delay_times,
                 harness_config=self.harness_config,
-                pbar=self.pbar
-            )
+                pbar=self.pbar,
+                kill_manager=self.kill_manager,
+            ))
             return
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(
-            None,
-            self._sync_multi_process_send_test_files,
-            results_handler,
-        )
+        await self._async_multi_process_send_test_files(results_handler)
 
-    def _sync_multi_process_send_test_files(
+    async def _async_multi_process_send_test_files(
         self,
         results_handler: PVResultsAdder,
     ) -> None:
@@ -390,34 +396,34 @@ class Test(ABC):
         :param results_handler: The results handler to add results to
         :type results_handler: :class:`PVResultsAdder`
         """
-        processes: list[Process] = []
         with ProcessGeneratorManager(
             generator=self.sim_data_generator
-        ) as process_safe_sim_data_iterator:
+        ) as process_generator_manager:
             time_sync = MultiProcessDateSync(
                 num_processes=self.test_config.num_workers
             )
+            async_mp_manager = AsyncMPManager()
             for i in range(self.test_config.num_workers):
-                process = Process(
+                async_mp_manager.add_process(
                     target=self._sync_send_test_files,
                     args=(
                         results_handler,
-                        process_safe_sim_data_iterator,
+                        process_generator_manager.create_iterator(),
                         self.delay_times[i::self.test_config.num_workers],
                         self.harness_config,
                         self.pbar,
-                        time_sync
-                    )
+                        time_sync,
+                        self.kill_manager,
+                    ),
+                    daemon=True,
                 )
-                processes.append(process)
             self.time_start = datetime.now()
             self.results.time_start = self.time_start
-            for process in processes:
-                process.start()
-            for process in processes:
-                process.join()
-                process.close()
-        self.pbar.n = self.total_number_of_events
+            await async_mp_manager.run_processes()
+            logging.getLogger().info(
+                "All processes have finished"
+            )
+        self.pbar.update(0)
 
     @staticmethod
     def _sync_send_test_files(
@@ -427,6 +433,7 @@ class Test(ABC):
         harness_config: HarnessConfig,
         pbar: tqdm,
         time_sync: MultiProcessDateSync | None = None,
+        kill_manager: AsyncKillManager | None = None,
     ) -> None:
         asyncio.run(Test.send_test_files_with_simulator(
             results_handler=results_handler,
@@ -435,6 +442,7 @@ class Test(ABC):
             harness_config=harness_config,
             pbar=pbar,
             time_sync=time_sync,
+            kill_manager=kill_manager,
         ))
 
     @staticmethod
@@ -445,6 +453,7 @@ class Test(ABC):
         harness_config: HarnessConfig,
         pbar: tqdm,
         time_sync: MultiProcessDateSync | None = None,
+        kill_manager: AsyncKillManager | None = None,
     ) -> None:
         """Asynchronous method to send test data
 
@@ -467,6 +476,10 @@ class Test(ABC):
                 bootstrap_servers=harness_config.kafka_message_bus_host
             )
             await kafka_producer.start()
+            # TODO: use for later versions
+            # kafka_producer = KafkaProducer(
+            #     bootstrap_servers=harness_config.kafka_message_bus_host
+            # )
             simulator = Simulator(
                 delays=delay_times,
                 simulation_data=sim_data_iterator,
@@ -479,9 +492,18 @@ class Test(ABC):
                 results_handler=results_handler,
                 pbar=pbar,
                 time_sync=time_sync,
+                kill_manager=kill_manager,
             )
             await simulator.simulate()
-            await kafka_producer.stop()
+            logging.getLogger().info(
+                "Stopping Kafka Producer"
+            )
+            await asyncio.wait_for(kafka_producer.stop(), timeout=30)
+            # TODO: use for later versions
+            # kafka_producer.close(timeout=10)
+            logging.getLogger().info(
+                "Kafka Producer stopped"
+            )
         else:
             connector = aiohttp.TCPConnector(limit=2000)
             async with aiohttp.ClientSession(connector=connector) as session:
@@ -501,6 +523,7 @@ class Test(ABC):
                     results_handler=results_handler,
                     pbar=pbar,
                     time_sync=time_sync,
+                    kill_manager=kill_manager,
                 )
                 await simulator.simulate()
 
@@ -514,7 +537,13 @@ class Test(ABC):
         await asyncio.sleep(
             self.test_config.test_finish["timeout"] + self.delay_times[-1]
         )
-        raise RuntimeError(
+        logging.getLogger().info(
+            "Protocol Verifier failed to finish within the test timeout of "
+            f"{self.harness_config.pv_test_timeout} seconds.\nResults will "
+            "be calculated at this point"
+        )
+
+        raise AsyncKillException(
             "Protocol Verifier failed to finish within the test timeout of "
             f"{self.test_config.test_finish['timeout']} seconds.\nResults will"
             " be calculated at this point"
@@ -573,13 +602,22 @@ class Test(ABC):
                         self.send_test_files(
                             pv_results_handler
                         ),
-                        self.pv_file_inspector.run_pv_file_inspector(),
-                        self.stop_test(),
-                        *metrics_retrievers_awaitables,
+                        self.kill_manager(
+                            self.pv_file_inspector.run_pv_file_inspector()
+                        ),
+                        self.kill_manager(self.stop_test()),
+                        *[
+                            self.kill_manager(metrics_retrievers_awaitable)
+                            for metrics_retrievers_awaitable
+                            in metrics_retrievers_awaitables
+                        ],
                     )
                 except RuntimeError as error:
                     logging.getLogger().info(msg=str(error))
                 self.time_end = datetime.now()
+                logging.getLogger().info(
+                    "Sending test files has completed"
+                )
 
     @abstractmethod
     def calc_results(self) -> None:
@@ -634,24 +672,31 @@ class Test(ABC):
             ]
         )
         try:
-            response_tuple = send_get_request(
-                url=self.harness_config.pv_clean_folders_url,
-                max_retries=self.harness_config.requests_max_retries,
-                timeout=(
-                    self.harness_config.requests_timeout,
-                    self.harness_config.pv_clean_folders_read_timeout,
-                ),
-            )
-            if not response_tuple[0]:
-                logging.getLogger().warning(
-                    (
-                        "There was an error with the request to clean up PV"
-                        "folders"
-                        " for next test with request response: %s"
+            try:
+                response_tuple = send_get_request(
+                    url=self.harness_config.pv_clean_folders_url,
+                    max_retries=self.harness_config.requests_max_retries,
+                    timeout=(
+                        self.harness_config.requests_timeout,
+                        self.harness_config.pv_clean_folders_read_timeout,
                     ),
-                    response_tuple[2].text,
                 )
-        except requests.ReadTimeout:
+                if not response_tuple[0]:
+                    logging.getLogger().warning(
+                        (
+                            "There was an error with the request to clean up "
+                            "PV folders"
+                            " for next test with request response: %s"
+                        ),
+                        response_tuple[2].text,
+                    )
+            except (requests.ConnectionError, requests.ConnectTimeout):
+                logging.getLogger().warning(
+                    "There was an error with the request to clean up PV"
+                    "folders"
+                    " for next test"
+                )
+        except (requests.ReadTimeout, requests.ConnectionError):
             logging.getLogger().warning(
                 "The read time out limit of %s was reached. Not all PV folders"
                 "will be empty. It is suggested the harness config "

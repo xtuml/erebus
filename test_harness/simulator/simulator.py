@@ -4,7 +4,8 @@
 """
 from abc import ABC, abstractmethod
 from typing import (
-    Callable, Awaitable, Any, NamedTuple, Iterator, Generator, Type, Self
+    Callable, Awaitable, Any, NamedTuple, Iterator, Generator, Type, Self,
+    Coroutine
 )
 import asyncio
 from datetime import datetime
@@ -16,6 +17,7 @@ from threading import Thread
 
 from tqdm import tqdm
 from test_harness.utils import delayed_async_func
+from test_harness.async_management import AsyncKillManager
 
 
 class SimDatum(NamedTuple):
@@ -299,6 +301,7 @@ class Simulator:
         schedule_ahead_time=10,
         pbar: tqdm | None = None,
         time_sync: MultiProcessDateSync | None = None,
+        kill_manager: AsyncKillManager | None = None,
     ) -> None:
         """Constructor method"""
         self.delays = delays
@@ -315,6 +318,9 @@ class Simulator:
             )
         self.pbar = pbar
         self.time_sync = time_sync
+        self.kill_manager = (
+            kill_manager if kill_manager is not None else SimMockKillManager()
+        )
 
     async def _execute_simulation_data(self) -> Any:
         """Asynchronous method to execute the next :class:`SimDatum` in the
@@ -386,6 +392,22 @@ class Simulator:
         """Method to simulate the instances simulation data"""
         if self.pbar is None:
             with tqdm(total=len(self.delays)) as pbar:
-                await self.run_simulation(pbar)
+                await self.kill_manager(self.run_simulation(pbar))
         else:
-            await self.run_simulation(self.pbar)
+            await self.kill_manager(self.run_simulation(self.pbar))
+
+
+class SimMockKillManager:
+    """Mock class to replace the :class:`AsyncKillManager` class in the
+    simulator
+    """
+    async def __call__(
+        self,
+        coro: Coroutine[Any, Any, Any],
+    ) -> Any:
+        """Method to run the coroutine
+
+        :param coro: The coroutine to run
+        :type coro: :class:`Coroutine`[`Any`, `Any`, `Any`]
+        """
+        await coro

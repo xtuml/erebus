@@ -1254,6 +1254,62 @@ def test_run_test_performance() -> None:
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
 
 
+@responses.activate
+def test_run_test_performance_multi_process() -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` when performing a stop in
+    the middle of a multi process test
+
+    :param caplog: Fixture to capture logs
+    :type caplog: :class:`pytest.LogCaptureFixture`
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
+            "num_workers": 2
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    with aioresponses() as mock:
+        mock.post(url=harness_config.pv_send_url, repeat=True)
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={"fileNames": ["Reception.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b"test log",
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={"fileNames": ["Verifier.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b"test log",
+        )
+        test_stopper = AsyncTestStopper()
+        with TestHarnessPbar() as pbar:
+            test = PerformanceTest(
+                test_file_generators=test_events,
+                test_config=test_config,
+                harness_config=harness_config,
+                test_graceful_kill_functions=[test_stopper.stop],
+                pbar=pbar
+            )
+            asyncio.run(test.run_test())
+        assert len(test.results) == 6
+        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+        assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
+        clean_directories(
+            [harness_config.report_file_store, harness_config.log_file_store]
+        )
+
+
 @pytest.mark.skip(
     reason="Will implement when functionality is working correctly"
 )
@@ -1701,6 +1757,83 @@ def test_run_test_performance_stop_test_async_test_stopper(
         )
         t1 = time.time()
         asyncio.run(asyncio.wait_for(test.run_test(), 10))
+        t2 = time.time()
+        assert (
+            "Test stopped"
+            in caplog.text
+        )
+        assert t2 - t1 < 10
+        clean_directories(
+            [harness_config.report_file_store, harness_config.log_file_store]
+        )
+
+
+@responses.activate
+@pytest.mark.asyncio
+async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` when performing a stop in
+    the middle of a multi process test
+
+    :param caplog: Fixture to capture logs
+    :type caplog: :class:`pytest.LogCaptureFixture`
+    """
+    harness_config = HarnessConfig(test_config_path)
+    # make stop test timeout 1 second
+    harness_config.pv_test_timeout = 100000
+    harness_config.pv_finish_interval = 10000
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 50},
+            "num_workers": 2
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    caplog.set_level(logging.INFO)
+    with aioresponses() as mock:
+        mock.post(url=harness_config.pv_send_url, repeat=True)
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={"fileNames": ["Reception.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b"test log",
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={"fileNames": ["Verifier.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b"test log",
+        )
+        test_stopper = AsyncTestStopper()
+        with TestHarnessPbar() as pbar:
+            test = PerformanceTest(
+                test_file_generators=test_events,
+                test_config=test_config,
+                harness_config=harness_config,
+                test_graceful_kill_functions=[test_stopper.stop],
+                pbar=pbar
+            )
+
+            async def async_wait_stop():
+                await asyncio.sleep(2)
+                test_stopper.set()
+
+            t1 = time.time()
+            await asyncio.gather(
+                asyncio.wait_for(
+                    test.run_test(), 10
+                ),
+                async_wait_stop()
+            )
         t2 = time.time()
         assert (
             "Test stopped"

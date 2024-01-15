@@ -24,6 +24,7 @@ from tqdm import tqdm
 import yaml
 
 from test_harness.config.config import HarnessConfig, TestConfig
+from test_harness.async_management import AsyncKillException
 from test_harness.utils import create_zip_file_from_folder
 
 
@@ -848,7 +849,8 @@ class AsyncTestStopper:
             with self.lock:
                 if self.stop_test:
                     self.is_stopped = True
-                    raise RuntimeError("Test stopped")
+                    logging.getLogger().info("Test stopped")
+                    raise AsyncKillException("Test stopped")
 
     def reset(self) -> None:
         """Method to reset the test"""

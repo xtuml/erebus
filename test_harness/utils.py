@@ -10,11 +10,12 @@ import logging
 import asyncio
 import shutil
 from threading import Thread
-from multiprocessing import Queue, Event, Lock
+from multiprocessing import Queue
 
 import flatdict
 from tqdm import tqdm
 import numpy as np
+from kafka3.producer.future import FutureRecordMetadata
 
 
 def create_file_io_file_name_tuple(
@@ -285,26 +286,18 @@ class ProcessSafeSharedIterator:
 
     :param queue: The queue to use
     :type queue: :class:`multiprocessing`.`Queue`
-    :param lock: The lock to use
-    :type lock: :class:`multiprocessing`.`Lock`
-    :param event: The event to use
-    :type event: :class:`multiprocessing`.`Event`
-    :param stop_event: The stop event to use
-    :type stop_event: :class:`multiprocessing`.`Event`
+    :param request_queue: The request queue to use
+    :type request_queue: :class:`multiprocessing`.`Queue`
     """
     def __init__(
         self,
         queue: Queue,
-        lock: Lock,
-        event: Event,
-        stop_event: Event
+        request_queue: Queue
     ) -> None:
         """Constructor method
         """
         self.queue = queue
-        self.lock = lock
-        self.event = event
-        self.stop_event = stop_event
+        self.request_queue = request_queue
 
     def __iter__(self) -> Self:
         """Method to return self as the iterator
@@ -319,11 +312,11 @@ class ProcessSafeSharedIterator:
         :return: Returns the next item from the queue
         :rtype: `Any`
         """
-        if self.stop_event.is_set():
+        self.request_queue.put(True)
+        value = self.queue.get()
+        if value is False:
             raise StopIteration
-        with self.lock:
-            self.event.set()
-            return self.queue.get()
+        return value
 
 
 class ProcessGeneratorManager:
@@ -340,38 +333,38 @@ class ProcessGeneratorManager:
         """
         self.generator = generator
         self.receive_request_daemon = Thread(target=self.serve, daemon=True)
-        self.lock = Lock()
-        self.output_queue = Queue(maxsize=1)
-        self.event = Event()
-        self.event.clear()
-        self.stop_event = Event()
-        self.stop_event.clear()
+        self.output_queue = Queue()
+        self.receive_queue = Queue()
+        self.num_children = 0
+
+    def _update_num_children(self) -> None:
+        """Method to update the number of children
+        """
+        self.num_children += 1
 
     def serve(self) -> None:
         """Method to serve the generator
         """
         while True:
             try:
-                self.event.wait()
+                request = self.receive_queue.get()
+                if request is False:
+                    break
                 self.output_queue.put(next(self.generator))
-                self.event.clear()
             except StopIteration:
-                self.stop_event.set()
                 break
+        # clear up for children
+        for _ in range(max(self.num_children, 1)):
+            self.output_queue.put(False)
 
-    def __enter__(self) -> ProcessSafeSharedIterator:
+    def __enter__(self) -> Self:
         """Method to enter the context manager
 
-        :return: Returns a :class:`ProcessSafeSharedIterator` instance
-        :rtype: :class:`ProcessSafeSharedIterator`
+        :return: Returns a :class:`ProcessGeneratorManager` instance
+        :rtype: :class:`ProcessGeneratorManager`
         """
         self.receive_request_daemon.start()
-        return ProcessSafeSharedIterator(
-            self.output_queue,
-            self.lock,
-            self.event,
-            self.stop_event
-        )
+        return self
 
     def __exit__(
         self,
@@ -389,12 +382,26 @@ class ProcessGeneratorManager:
         :type traceback: `Any`
         :raises exc_value: Raises the exception if any
         """
-        self.stop_event.set()
-        self.event.set()
+        # exhaust generator
+        logging.getLogger().debug("Exhausting generator")
+        self.generator = iter(())
+        logging.getLogger().debug("Generator exhausted")
+        self.receive_queue.put(False)
         self.receive_request_daemon.join()
         if exc_type is not None:
             raise exc_value
 
+    def create_iterator(self) -> ProcessSafeSharedIterator:
+        """Method to create an iterator
+
+        :return: Returns a :class:`ProcessSafeSharedIterator` instance
+        :rtype: :class:`ProcessSafeSharedIterator`
+        """
+        self._update_num_children()
+        return ProcessSafeSharedIterator(
+            self.output_queue,
+            self.receive_queue
+        )
 # TODO: Test this code and remove the old code if performance is fine and it
 # works as expected
 # class ProcessSafeSharedIterator:
@@ -525,6 +532,33 @@ class ProcessGeneratorManager:
 #         self.receive_request_daemon.join()
 #         if exc_type is not None:
 #             raise exc_value
+
+
+def wrap_kafka_future(
+    future: FutureRecordMetadata
+) -> asyncio.Future[Any]:
+    """Method to wrap a kafka future in an asyncio future
+
+    :param future: The kafka future
+    :type future: :class:`FutureRecordMetadata`
+    :return: Returns an asyncio future
+    :rtype: :class:`asyncio`.`Future`[`Any`]
+    """
+    loop = asyncio.get_event_loop()
+    aio_future = loop.create_future()
+
+    def on_err(*_):
+        loop.call_soon_threadsafe(
+            aio_future.set_exception, future.exception
+        )
+
+    def on_success(*_):
+        loop.call_soon_threadsafe(
+            aio_future.set_result, future.value
+        )
+    future.add_callback(on_success)
+    future.add_errback(on_err)
+    return aio_future
 
 
 def create_zip_file_from_folder(

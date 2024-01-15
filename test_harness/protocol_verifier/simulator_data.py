@@ -18,10 +18,14 @@ import asyncio
 
 import aiohttp
 from aiokafka import AIOKafkaProducer
+# TODO: for use in later versions
+# from kafka3 import KafkaProducer
 
 from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
 from test_harness.protocol_verifier.types import TemplateOptions
+# TODO: for use in later versions
+# from test_harness.utils import wrap_kafka_future
 
 
 class PVSimDatumTransformer(ABC):
@@ -465,7 +469,7 @@ def send_list_dict_as_json_wrap_send_function(
 async def send_payload_kafka(
     file: bytes,
     file_name: str,
-    kafka_producer: AIOKafkaProducer,
+    kafka_producer: AIOKafkaProducer,  # KafkaProducer,
     kafka_topic: str,
 ) -> Literal["", "KafkaTimeoutError"]:
     """Async method to send a payload to a kafka producer
@@ -476,6 +480,10 @@ async def send_payload_kafka(
     :type producer: :class:`KafkaProducer`
     """
     try:
+        # TODO: for use in later versions
+        # await wrap_kafka_future(
+        #     kafka_producer.send(topic=kafka_topic, value=file)
+        # )
         await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
         result = ""
         logging.getLogger().debug(
