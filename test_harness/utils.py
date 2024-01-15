@@ -537,6 +537,13 @@ class ProcessGeneratorManager:
 def wrap_kafka_future(
     future: FutureRecordMetadata
 ) -> asyncio.Future[Any]:
+    """Method to wrap a kafka future in an asyncio future
+
+    :param future: The kafka future
+    :type future: :class:`FutureRecordMetadata`
+    :return: Returns an asyncio future
+    :rtype: :class:`asyncio`.`Future`[`Any`]
+    """
     loop = asyncio.get_event_loop()
     aio_future = loop.create_future()
 
