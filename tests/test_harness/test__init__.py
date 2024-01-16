@@ -527,6 +527,50 @@ def test_upload_named_zip_files(
     )
 
 
+def test_upload_named_zip_files_zip_file_no_top_level_dir(
+    client: FlaskClient,
+    test_app: HarnessApp
+):
+    """Test that the upload zip files endpoint works when the zip file has
+    been created without a top level directory
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    """
+    data = get_multi_file_data(
+        [
+            ("test_1", "test_zip_file_2.zip", "test_zip_file_2.zip"),
+        ]
+    )
+    response = post_multi_form_data(
+        client,
+        data,
+        "/upload/named-zip-files"
+    )
+    assert response.data == b"Zip archives uploaded successfully\n"
+    assert response.status_code == 200
+
+    test_1_path = os.path.join(
+        test_app.harness_config.report_file_store,
+        "test_1"
+    )
+    assert os.path.exists(test_1_path)
+
+    for test_output_path in [test_1_path]:
+        for folder, file in zip(
+            ["uml_file_store", "test_file_store", "profile_store"],
+            ["test_uml_1.puml", "test_uml_1_events.json", "test_profile.csv"]
+        ):
+            path = os.path.join(test_output_path, folder, file)
+            assert os.path.exists(path)
+        assert os.path.exists(
+            os.path.join(test_output_path, "test_config.yaml")
+        )
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
+
+
 def test_start_test_with_uploaded_zip_files(
     client: FlaskClient,
     test_app: HarnessApp
