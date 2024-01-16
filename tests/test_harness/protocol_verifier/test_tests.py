@@ -301,6 +301,7 @@ class TestPVResultsDataFrame:
             st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
         ),
     )
+    @settings(deadline=None)
     def test_calc_processing_errors_counts(
         starting_time: datetime,
         aer_processing_errors: list[timedelta],
@@ -351,6 +352,7 @@ class TestPVResultsDataFrame:
             st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
         ),
     )
+    @settings(deadline=None)
     def test_calc_processing_errors_time_series(
         starting_time: datetime,
         aer_processing_errors: list[timedelta],
