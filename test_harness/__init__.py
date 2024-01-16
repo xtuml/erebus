@@ -568,6 +568,8 @@ def handle_uploaded_zip_file(
             (member.filename for member in zip_file.infolist())
         )
         zip_file.extractall(test_output_directory_path)
+        if common_path == "":
+            return
         extracted_path = os.path.join(
             test_output_directory_path, common_path
         )
