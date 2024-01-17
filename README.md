@@ -350,10 +350,29 @@ A test can be run with the four following stages (`/startTest` endpoint must be 
     curl --location --request POST 'http://127.0.0.1:8800/upload/test-files' --form 'file1=@"test_uml_1_events.json"'
     ``` 
 
+* (RECOMMENDED) (OPTIONAL) This is the recommed way of gettingTest Case zip files may be uploaded to the Test Harness. These can include all the test data required to run the specific test. The zip file structure can vary based on the specific system tested but the basic implementation of the zip file would have the following structure unzipped
+    ```
+    TCASE
+    ├── profile_store (optional)
+    │   └── test_profile.csv (optional)
+    ├── test_config.yaml (optional)
+    └── test_file_store (optional)
+        ├── test_data_1 (optional)
+        └── test_data_2 (optional)
+    ```
+    Note that all folders and files are optional in general within the zip file (this may not be the case for specific systems for example the `test_file_store` may need to be populated with template test data if the test for the specific system in question does not have a generator of test data). The folder can include:
+    * `profile_store` - (OPTIONAL) This can be populated with a single profile for the test case detailing the time dependent rate at which single instances of test data will be sent.
+    * `test_file_store` - (OPTIONAL) This can be populted with arbitary template (or otherwise) test data that will be used in the test
+    * `test_config.yaml` - (OPTIONAL) This yaml file includes the test config used for the particular test case. If not present the test config in the JSON body of the `startTest` endpoint will be used (along with any defaults not set in the input config)
+    
+    The endpoint `/upload/named-zip-files` allows the upload of multiple test case zip file and is of mime type `multipart/form`. The file object name of the zip file in the form will be used to create the `TestName` (this is the name that needs to be input in the JSON body under the `TestName` field used with the `startTest` endpoint to run the test case) and will create a folder in the `report_output` folder under which all test data will be saved (WARNING: if the test name already exists this will overwrite all previous data within the output folder) An example curl request to upload a single test case zip file is shown below:
+    ```
+    curl --location --request POST 'http://127.0.0.1:8800/upload/named-zip-files' --form '<TestName here>=@"<Test zip file path>"'
+    ``` 
 * Start Tests Once all files required for the test have been uploaded to the harness the test can be started by sending a POST request with the JSON test data attached (must use header `'Content-Type: application/json'`) to the endpoint `/startTest`.
 
     The JSON can contain (but does not have to) the following fields:
-    * `"TestName"`: `str` - A string representing the name of the test. If not provided a random uuid test name will be provided. Once a test is complete a directory will be created with the name given to the test and all report files relating to the test will be found within that directory.
+    * `"TestName"`: `str` - A string representing the name of the test. If not provided a random uuid test name will be provided. Once a test is complete a directory will be created with the name given to the test and all report files relating to the test will be found within that directory. If a user would like to run a test case that has been uploaded using the `/upload/named-zip-files` endpoint then this field should refer to the file object name part of the form in that previous request.
     * `"TestConfig"`: `dict` - A JSON object like that given in <b>Example Json test config</b> above that provides the configuration for the test
 
     An example of a POST request using curl is provided below:
