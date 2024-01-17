@@ -11,7 +11,7 @@ Intra job invariants are named invariants that are shared within the same job.
 
 An example of an intra job invariant puml is shown below:
 
-![Alt text](diagrams/Invariants/Intra.png)
+![Alt text](../diagrams/Invariants/Intra.png)
 
 An example of the intra job invariant audit event stream for a single job is shown below:
 ```json
@@ -45,8 +45,8 @@ Extra-job invariants are named invariants that are shared across multiple jobs.
 
 They are defined in the job definition pumls and have a source in one job and a user (or multiple users) in another job. An example of two job definitions sharing an extra-job invariant are shown below:
 
-![Alt text](diagrams/Invariants/Extra_1.png)
-![Alt text](diagrams/Invariants/Extra_2.png)
+![Alt text](../diagrams/Invariants/Extra_1.png)
+![Alt text](../diagrams/Invariants/Extra_2.png)
 
 An example of an extra job invariant audit event stream for two jobs is shown below:
 ```json
