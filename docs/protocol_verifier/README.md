@@ -37,7 +37,7 @@ The Test Harness can be built and deployed as suggested in the main README.md fi
 
 It is recommended to deploy the test harness in the same VPC (or private network) as the machine containing the  Protocol Verifier and HTTP Server (see figure below of an example deployment) to avoid exposing the machine to public internet. 
 
-![](../../docs/diagrams/deployment/deployment.png)
+![](./diagrams/deployment/deployment.png)
 
 ### <b>HTTP Server</b>
 The HTTP server is an intermediary device to allow the test harness to be separated from the PV machine and allows the http requests to upload files and download files (https://gitlab.com/smartdcs1/cdsdt/protocol-verifier-http-server). This can however be replaced by any intermediary as long as the end points server exactly the same purpose.

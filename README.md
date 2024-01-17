@@ -35,7 +35,6 @@ To build the docker image you must first be located in the project root director
 ## Deployment
 It is recommended to deploy the test harness in the same VPC (or private network) as the machine containing the system to be tested to avoid exposure to the public internet. 
 
-TODO: add image of general deployment
 ![](./docs/diagrams/deployment/deployment.png)
 
 ### <b>Test Harness</b>
