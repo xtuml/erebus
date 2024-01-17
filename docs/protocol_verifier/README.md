@@ -461,7 +461,7 @@ python -m test_harness \
     --test_conifg <path to custom test config yaml> \
     <path to puml job def 1> ... <path to puml job def n>`
 ```
-### <b>Test reports</b>
+### <b>Test reports and output</b>
 Test reports can be found in a directory named after the `"TestName"` field sent in the POST request to `/startTest` endpoint. These directories are located in the `report_output` directory.
 * For a run using the instructions in <b>Deployment</b>:<b>Test Harness</b>:<b>Deploy</b> the report output folder is located at `deployment/report_output` relative to the project root directory
 * For a run using the command
@@ -474,8 +474,27 @@ Within the directory of the specific test a Functional test will produce the fol
 * `Results.xml` - A junit representation of the test results
 * `Results.html` - An html representation of the test results
 * `Results.csv` - A csv representation of the test results
-TODO: Add figures
+* `Results_Aggregated.html` - An interactive Stacked bar plot of HTML plot of results of successes, failures and unknowns categorised into type of test data
 
 All of the job files of the test will also be saved within this folder so that if failures have occurred the user is able to pinpoint why the test may have failed.
 #### <b>Performance</b>
 Within the directory of the specific test a Performance test will produce the following files:
+* `Report.xml` - XML file with JUNIT report of general results
+* `Report.html` - HTML report of general results
+* `AggregatedResults.csv` - CSV file containing all the aggregated results for each bin of a second
+* `CumulativeEventsSentVSProcessed.html` - Interactive HTML plot of cumulative events (data points every second):
+    * sent by test harness
+    * processed by AER
+    * fully process by the PV
+* `EventsSentVSProcessed.html` - Interactive HTML plot of events/s (data points every second)
+    * sent by test harness
+    * processed by AER
+    * fully processed by the PV   
+* `ResponseAndQueueTime.html` - Interactive plot of (data points binned and averaged for every second)
+    * Response times - average time taken for the PV to full process an event
+    * Queue times - average time taken for an event to be picked up by AER
+
+    Note that this will be an empty plot if `low_memory` option is used in test config
+* `AggregatedErrors.csv` - (DEPRECATED) not useful since Kafka message bus
+* `ProcessingErros.hmtl` - (DEPRECATED) not useful since Kafka message bus
+
