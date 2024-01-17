@@ -237,7 +237,7 @@ Examples of JSONs and YAMLs that could be used for the Protocol Verifier are giv
     "max_different_sequences": 100,
     "event_gen_options": {
         "solution_limit": 100,
-        "max_sol_time": 120 
+        "max_sol_time": 120, 
         "invalid": true,
         "invalid_types": [
             "StackedSolutions", "MissingEvents"
@@ -251,7 +251,7 @@ Examples of JSONs and YAMLs that could be used for the Protocol Verifier are giv
     },
     "functional_options": {
         "log_domain": "ver"
-    }
+    },
     "num_workers": 0,
     "aggregate_during": false,
     "sample_rate": 0,
@@ -335,7 +335,7 @@ A test for the PV can be run by using any of the four following stages (UML uplo
     ```
     This should receive a 200 OK response with the following body text `Files uploaded successfully`
 
-* (OPTIONAL) A profile for a performance test can be uploaded as well in the form of a CSV file. The profile provides specific points (given in seconds) in simulation time where the number of test files sent per second is described. The csv must have the following headers in the following order: "Time", "Number". The Test Harness will linearly interpolate between these times to a discretisation of 1 second and will calculate how many test files are sent within that second. The end-point is called `/upload/profile` and is of mime type `multipart/form`. However only one file can be uploaded toherwise the Test Harness will raise an error and not run. An example usage is shown below:
+* (OPTIONAL) A profile for a performance test can be uploaded as well in the form of a CSV file. The profile provides specific points (given in seconds) in simulation time where the number of test files sent per second is described. The csv must have the following headers in the following order: "Time", "Number". The Test Harness will linearly interpolate between these times to a discretisation of 1 second and will calculate how many test files are sent within that second (more info can be found in `docs/TestProfiles.md`). The end-point is called `/upload/profile` and is of mime type `multipart/form`. However only one file can be uploaded toherwise the Test Harness will raise an error and not run. An example usage is shown below:
     ```sh
     curl --location --request POST 'http://127.0.0.1:8800/upload/profile' --form 'file1=@"test_profile.csv"'
     ```
