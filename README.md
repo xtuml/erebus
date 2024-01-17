@@ -104,27 +104,12 @@ The fields within the json and yaml file are as follows:
    * `timeout`: `int` => 0, defaults to 120 - Time to wait before ending the test after all test data has been sent.
 
 #### <b>Example Json test config</b>
-```
+```json
 {
     "type":"Performance",
-    "max_different_sequences": 100,
-    "event_gen_options": {
-        "solution_limit": 100,
-        "max_sol_time": 120 
-        "invalid": true,
-        "invalid_types": [
-            "StackedSolutions", "MissingEvents"
-        ]
-    },
     "performance_options": {
         "num_files_per_sec": 10,
-        "total_jobs": 100,
-        "shard": false,
-        "save_logs": true
     },
-    "functional_options": {
-        "log_domain": "ver"
-    }
     "num_workers": 0,
     "aggregate_during": false,
     "sample_rate": 0,
@@ -133,33 +118,13 @@ The fields within the json and yaml file are as follows:
 ```
 
 #### <b>Exmaple YAML test config</b>
-```
+```yaml
 type: "Functional"
-max_different_sequences: 200
-event_gen_options: 
-  solution_limit: 100
-  max_sol_time: 120
-  invalid: False
-  invalid_types: [
-    "StackedSolutions", "MissingEvents", "MissingEdges",
-    "GhostEvents", "SpyEvents", "XORConstraintBreaks",
-    "ANDConstraintBreaks"
-  ]
 performance_options:
   num_files_per_sec: 10
-  shard: False
-  total_jobs: 100
-  save_logs: True
-
-functional_options:
-  log_domain: "ver"
-
 num_workers: 0
-
 aggregate_during: False
-
 sample_rate: 0
-
 low_memory: False
 ```
 
@@ -167,7 +132,7 @@ low_memory: False
 #### <b>Running the Service</b>
 The flask service can be run in two ways:
 * Following the instructions in <b>Deployment</b>:<b>Test Harness</b>:<b>Deploy</b> above. The following should then appear in stdout:
-    ```
+    ```sh
     [+] Building 0.0s (0/0)                                                             
     [+] Running 2/2
      ✔ Network test-harness_default           Cr...                                0.1s 
@@ -188,7 +153,7 @@ The flask service can be run in two ways:
     `python -m test_harness.run_app --harness-config-path <path to harness config file>`
 
     Once one of this has been followed the following should appear in stdout of the terminal:
-    ```
+    ```sh
     INFO:root:Test Harness Listener started
      * Serving Flask app 'test_harness'
      * Debug mode: off
@@ -201,17 +166,17 @@ The flask service can be run in two ways:
 #### <b>Running a Test</b>
 An arbitrary test can be run with the any of the three following stages before running the `/startTest` endpoint,  once the Flask service is running:
 * (OPTIONAL) A profile for a performance test can be uploaded as well in the form of a CSV file. The profile provides specific points (given in seconds) in simulation time where the number of test files sent per second is described. The csv must have the following headers in the following order: "Time", "Number". The Test Harness will linearly interpolate between these times to a discretisation of 1 second and will calculate how many test files are sent within that second. The end-point is called `/upload/profile` and is of mime type `multipart/form`. However only one file can be uploaded toherwise the Test Harness will raise an error and not run. An example usage is shown below:
-    ```
+    ```sh
     curl --location --request POST 'http://127.0.0.1:8800/upload/profile' --form 'file1=@"test_profile.csv"'
     ```
 
 * (OPTIONAL) Test job files can be uploaded that suit the specific system being tested The endpoint `/upload/test-files` allows the upload of multiple test files and is of mime type `multipart/form`. An example curl request is shown below:
-    ```
+    ```sh
     curl --location --request POST 'http://127.0.0.1:8800/upload/test-files' --form 'file1=@"test_file"'
     ``` 
 
 * (RECOMMENDED) (OPTIONAL) This is the recommed way of gettingTest Case zip files may be uploaded to the Test Harness. These can include all the test data required to run the specific test. The zip file structure can vary based on the specific system tested but the basic implementation of the zip file would have the following structure unzipped
-    ```
+    ```sh
     TCASE
     ├── profile_store (optional)
     │   └── test_profile.csv (optional)
@@ -226,7 +191,7 @@ An arbitrary test can be run with the any of the three following stages before r
     * `test_config.yaml` - (OPTIONAL) This yaml file includes the test config used for the particular test case. If not present the test config in the JSON body of the `startTest` endpoint will be used (along with any defaults not set in the input config)
     
     The endpoint `/upload/named-zip-files` allows the upload of multiple test case zip file and is of mime type `multipart/form`. The file object name of the zip file in the form will be used to create the `TestName` (this is the name that needs to be input in the JSON body under the `TestName` field used with the `startTest` endpoint to run the test case) and will create a folder in the `report_output` folder under which all test data will be saved (WARNING: if the test name already exists this will overwrite all previous data within the output folder) An example curl request to upload a single test case zip file is shown below:
-    ```
+    ```sh
     curl --location --request POST 'http://127.0.0.1:8800/upload/named-zip-files' --form '<TestName here>=@"<Test zip file path>"'
     ``` 
 * Start Tests Once all files required for the test have been uploaded to the harness the test can be started by sending a POST request with the JSON test data attached (must use header `'Content-Type: application/json'`) to the endpoint `/startTest`.
@@ -236,27 +201,29 @@ An arbitrary test can be run with the any of the three following stages before r
     * `"TestConfig"`: `dict` - A JSON object like that given in <b>Example Json test config</b> above that provides the configuration for the test
 
     An example of a POST request using curl is provided below:
-    ```
+    ```sh
     curl -X POST -d '{"TestName": "A_perfomance_test", "TestConfig":{"type":"Performance", "performance_options": {"num_files_per_sec":10}}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
     ```
 #### <b>Stopping a Test</b>
 To stop a test gracefully once it is running one must send a POST request with a JSON body (must use header `'Content-Type: application/json'`) to the endpoint `/stopTest`. Currently the JSON accepted is empty. If succesful the response will be a `200 OK` and `400` if not. An example request is provided below:
-```
+```sh
 curl -X POST -d '{}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/stopTest'
 ```
 #### <b>Retrieving Output Data</b>
 To retrieve output data from a finished test a POST request can be sent to the endpoint `/getTestOutputFolder` with a JSON body (must use header 'Content-Type: application/json'). The JSON body should specify the `TestName` given in the `/startTest` endpoint requets used to start the test. The JSON body should have the following form
-```
+```json
 {
     "TestName": <name of test as string>
 }
 ```
 A correctly formed request will receive a response of a zip file (mime type `application/zip`) containing all the test output data within the folder at that time.
-```
+```sh
 curl -X POST -d '{"TestName": "test_1"}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/getTestOutputFolder'
 ```
 An example curl request to this endpoint is as follows 
 ### <b>CLI Tool</b>
+**WARNING this functionality is currently not working and will be updated **
+
 Functionality has been provided to use the Test Harness as a CLI tool.
 
 The test harness CLI can be run from the project root directory using the following command (this will run with default harness config, test config and output report directories):
@@ -269,7 +236,7 @@ Currently the following extra arguments are supported:
 * `--test_config` - Path to a test config yaml file like the example outlined in <b>Exmaple YAML test config</b>
 
 An example of using the CLI tool with all of the options would be
-```
+```sh
 python -m test_harness \
     --outdir <path to report output directory> \
     --harnes_config <path to custom harness config> \ 
