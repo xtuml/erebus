@@ -51,20 +51,19 @@ The deployment of the Test Harness must be used in conjuction with an HTTP serve
     * `/download/aer-log-file-names` - End point to receive the names of the files within <b>Logs Reception</b> folder that contain the prefix <b>Reception.log</b> 
     * `/download/verifierlog` - End point to download <b>Verifier.log</b> (or similar name) from the folder <b>Logs Verifier</b>
     * `/download/aerlog` - End point to download <b>Reception.log</b> (or similar name) from the folder <b>Logs Reception</b>
+    * `/download/log-file` - End point to download named log files from the PV
+    * `/download/log-file-names` - End point to get log file names from the PV
 * folder clean up
     * `/io/cleanup-test` - Endpoint to remove all non hidden files from the folder mounted to the HTTP server
 #### <b>Deploy</b>
-A pre-built tagged version of the HTTP server compatible with this version of the Test Harness can be found in SmartDCS's GitLab container registry at - `registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-http-server:0.1.4`.
+The HTTP server is contained in the following repository (https://github.com/SmartDCSITlimited/protocol-verifier-http-server) and an image can be built by following instructions within that repository.
 
-To deploy the HTTP server the following folders must be mounted (PV folder -> HTTP server):
-* `./aeo_svdc_config -> /data/aeo_svdc_config` - AEO SVDC CONFIG Folder mapping
-* `./aeo_svdc_config/job_definitions -> /data/aeo_svdc_config/job_definitions` - Job Definitions Folder Mapping
-* `./aerconfig -> /data/aerconfig` - AER CONFIG Folder Mapping
-* `./aerincoming -> /data/events` - AER Incoming Folder mapping
+To deploy the HTTP server the following folders must be mounted (PV folder relative to cwd in deploy directory -> HTTP server):
+* `./config -> /data/aeo_svdc_config` - CONFIG Folder mapping
+* `./config/job_definitions -> /data/aeo_svdc_config/job_definitions` - Job Definitions Folder Mapping
+* `./reception-incoming -> /data/events` - AER Incoming Folder mapping
 * `./logs/verifier -> /data/logs/verifier` - Verifier Logs Folder mapping
 * `./logs/reception -> /data/logs/reception` - Reception Logs mapping
-* `./verifier-processed -> /data/verifier_processed` - Verifier Processed Folder mapping
-* `./verifier-incoming -> /data/verifier_incoming` - Verifier Incoming Folder mapping
 * `./JobIdStore -> /data/job_id_store` - Job ID Store Folder mapping
 * `./InvariantStore -> /data/invariant_store` - Invariant Store Folder mapping
 
@@ -77,6 +76,25 @@ The following ports must be forwarded (HTTP -> machine):
 The following extra arguments to the `docker run` command must be provided:
 * `-path=/data`
 
+The following docker compose file snippet added to the PV docker compose file will run the HTTP server (from inside the `munin/deploy` directory). One could also run this in a separate docker compose file.
+```yaml
+version: "3.9"
+services:
+  http_server:
+    image: "http-server:latest"
+    environment:
+      - GIN_MODE=release
+    volumes:
+      - "./config/job_definitions:/data/aeo_svdc_config/job_definitions"
+      - "./logs/verifier:/data/logs/verifier"
+      - "./logs/reception:/data/logs/reception"
+      - "./reception-incoming":"/data/events"
+      - "./JobIdStore":"/data/job_id_store"
+      - "./InvariantStore":"/data/invariant_store"
+    ports:
+      - 9000:9000
+    command: "-path=/data"
+```
 #### <b>Configuration</b>
 Default configuration for running the Test Harness can be found in the file `test_harness/config/default_config.config` (relative to the project root directory). This file contains default values for parameters that control the Test Harness. When deploying a bespoke Test Harness config the file must be placed in `deployment/config` and must have the name `config.config`.
 
@@ -134,7 +152,7 @@ To change default values of these files a parameter can be copied under the `[no
 * `pv_grok_exporter_url` (deprecated and will be removed) - The url of the endpoint that a request is sent to to obtain the grok parsed output of the PV log files. `http://host.docker.internal:9144/metrics`
 
 The example harness config for the PV is shown below
-```
+```sh
 [DEFAULT]
 requests_max_retries = 5
 requests_timeout = 10
@@ -213,7 +231,7 @@ The fields within the json and yaml file are as follows:
 
 Examples of JSONs and YAMLs that could be used for the Protocol Verifier are given below
 #### <b>Example Json test config</b>
-```
+```json
 {
     "type":"Performance",
     "max_different_sequences": 100,
@@ -242,7 +260,7 @@ Examples of JSONs and YAMLs that could be used for the Protocol Verifier are giv
 ```
 
 #### <b>Exmaple YAML test config</b>
-```
+```yml
 type: "Functional"
 max_different_sequences: 200
 event_gen_options: 
@@ -276,7 +294,7 @@ low_memory: False
 #### <b>Running the Service</b>
 The flask service can be run in two ways:
 * Following the instructions in <b>Deployment</b>:<b>Test Harness</b>:<b>Deploy</b> above. The following should then appear in stdout:
-    ```
+    ```sh
     [+] Building 0.0s (0/0)                                                             
     [+] Running 2/2
      ✔ Network test-harness_default           Cr...                                0.1s 
@@ -297,7 +315,7 @@ The flask service can be run in two ways:
     `python -m test_harness.run_app --harness-config-path <path to harness config file>`
 
     Once one of this has been followed the following should appear in stdout of the terminal:
-    ```
+    ```sh
     INFO:root:Test Harness Listener started
      * Serving Flask app 'test_harness'
      * Debug mode: off
@@ -312,23 +330,23 @@ The flask service can be run in two ways:
 A test for the PV can be run by using any of the four following stages (UML upload or zip upload containing a UML file must be run at a minimum however) and then running the `/startTest` endpoint, once the Flask service is running.:
 * Upload of UML files (OPTIONAL) - PUML files that are the graphical representation of a Job Definition must be uploaded before a test can begin. This can be done by sending a POST request with the PUML file/s attached that are needed for the test to the endpoint `/uploadUML`. An example using `curl` is given below:
     
-    ```
+    ```sh
     curl --location --request POST 'http://127.0.0.1:8800/uploadUML' --form 'file1=@"ANDFork_ANDFork_a.puml"'
     ```
     This should receive a 200 OK response with the following body text `Files uploaded successfully`
 
 * (OPTIONAL) A profile for a performance test can be uploaded as well in the form of a CSV file. The profile provides specific points (given in seconds) in simulation time where the number of test files sent per second is described. The csv must have the following headers in the following order: "Time", "Number". The Test Harness will linearly interpolate between these times to a discretisation of 1 second and will calculate how many test files are sent within that second. The end-point is called `/upload/profile` and is of mime type `multipart/form`. However only one file can be uploaded toherwise the Test Harness will raise an error and not run. An example usage is shown below:
-    ```
+    ```sh
     curl --location --request POST 'http://127.0.0.1:8800/upload/profile' --form 'file1=@"test_profile.csv"'
     ```
 
 * (OPTIONAL) Test job event files can also be uploaded rather than producing them from the puml file given (note the test files uploaded must correspond to the PUML uploaded otherwise failures of the PV are guarenteed). A test file uploaded must have the following form:
-    ```
+    ```json
     {
         "job_file": <list of jsons of PV events>,
         "job_name": <string denoting name of job>,
         "SequenceType": <string denoting the type of sequence for functional tests>,
-        "validity": <boolean indicating if the job file is should pass or fail in the PV>
+        "validity": <boolean indicating if the job file is should pass or fail in the PV>,
         "options" : <json of options>
     }
     ```
@@ -336,7 +354,7 @@ A test for the PV can be run by using any of the four following stages (UML uplo
         * `invariant_matched` - Boolean indicating whether invariants that have the same name should match at runtime for a test event sequence
         * `invariant_length` - Integer value greater than or equal to 1 that specifies the length multiples of a 36 character length uuid that is produced for invariants
     An example file is shown below:
-    ```
+    ```json
     {
         "job_file": [
             {
@@ -369,12 +387,12 @@ A test for the PV can be run by using any of the four following stages (UML uplo
     }    
     ```
     The endpoint `/upload/test-files` allows the upload of multiple test files and is of mime type `multipart/form`. An example curl request is shown below:
-    ```
+    ```sh
     curl --location --request POST 'http://127.0.0.1:8800/upload/test-files' --form 'file1=@"test_uml_1_events.json"'
     ``` 
 
 * (RECOMMENDED) (OPTIONAL) This is the recommed way of gettingTest Case zip files may be uploaded to the Test Harness. These can include all the test data required to run the specific test. The zip file structure can vary based on the specific system tested but the basic implementation of the zip file would have the following structure unzipped
-    ```
+    ```sh
     TCASE
     ├── profile_store (optional)
     │   └── test_profile.csv (optional)
@@ -391,7 +409,7 @@ A test for the PV can be run by using any of the four following stages (UML uplo
     * `test_config.yaml` - (OPTIONAL) This yaml file includes the test config used for the particular test case. If not present the test config in the JSON body of the `startTest` endpoint will be used (along with any defaults not set in the input config)
     
     The endpoint `/upload/named-zip-files` allows the upload of multiple test case zip file and is of mime type `multipart/form`. The file object name of the zip file in the form will be used to create the `TestName` (this is the name that needs to be input in the JSON body under the `TestName` field used with the `startTest` endpoint to run the test case) and will create a folder in the `report_output` folder under which all test data will be saved (WARNING: if the test name already exists this will overwrite all previous data within the output folder) An example curl request to upload a single test case zip file is shown below:
-    ```
+    ```sh
     curl --location --request POST 'http://127.0.0.1:8800/upload/named-zip-files' --form '<TestName here>=@"<Test zip file path>"'
     ``` 
 * Start Tests Once all files required for the test have been uploaded to the harness the test can be started by sending a POST request with the JSON test data attached (must use header `'Content-Type: application/json'`) to the endpoint `/startTest`.
@@ -401,27 +419,29 @@ A test for the PV can be run by using any of the four following stages (UML uplo
     * `"TestConfig"`: `dict` - A JSON object like that given in <b>Example Json test config</b> above that provides the configuration for the test
 
     An example of a POST request using curl is provided below:
-    ```
+    ```sh
     curl -X POST -d '{"TestName": "A_perfomance_test", "TestConfig":{"event_gen_options":{"invalid":false}, "type":"Performance", "performance_options": {"num_files_per_sec":10, "total_jobs":100}}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
     ```
 
 #### <b>Stopping a Test</b>
 To stop a test gracefully once it is running one must send a POST request with a JSON body (must use header `'Content-Type: application/json'`) to the endpoint `/stopTest`. Currently the JSON accepted is empty. If succesful the response will be a `200 OK` and `400` if not. An example request is provided below:
-```
+```sh
 curl -X POST -d '{}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/stopTest'
 ```
 #### <b>Retrieving Output Data</b>
 To retrieve output data from a finished test a POST request can be sent to the endpoint `/getTestOutputFolder` with a JSON body (must use header 'Content-Type: application/json'). The JSON body should specify the `TestName` given in the `/startTest` endpoint requets used to start the test. The JSON body should have the following form
-```
+```json
 {
     "TestName": <name of test as string>
 }
 ```
 A correctly formed request will receive a response of a zip file (mime type `application/zip`) containing all the test output data within the folder at that time.
-```
+```sh
 curl -X POST -d '{"TestName": "test_1"}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/getTestOutputFolder'
 ```
 ### <b>CLI Tool</b>
+**WARNING this functionality is currently not working and will be updated **
+
 Functionality has been provided to use the Test Harness as a CLI tool.
 
 The test harness CLI can be run from the project root directory using the following command (this will run with default harness config, test config and output report directories):
@@ -434,7 +454,7 @@ As is clear from the above one can use multiple puml files in a test harness run
 * `--test_config` - Path to a test config yaml file like the example outlined in <b>Exmaple YAML test config</b>
 
 An example of using the CLI tool with all of the options would be
-```
+```sh
 python -m test_harness \
     --outdir <path to report output directory> \
     --harnes_config <path to custom harness config> \ 
