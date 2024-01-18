@@ -6,6 +6,7 @@ import asyncio
 
 from aiokafka import AIOKafkaProducer
 from kafka import KafkaProducer
+import aiohttp
 
 from test_harness.utils import wrap_kafka_future
 
@@ -307,3 +308,99 @@ class Kafka3MessageBus(KafkaMessageBus):
         return await wrap_kafka_future(
             self.producer.send(topic=topic, value=data)
         )
+
+
+class HTTPMessageProducer(MessageProducer):
+    """HTTP message producer.
+    """
+    def __init__(
+        self,
+        url: str,
+        message_bus: "HTTPMessageBus",
+        message_converter: MessageConverter | None = None,
+        response_converter: ResponseConverter | None = None,
+    ) -> None:
+        """Constructor method
+        """
+        self.url = url
+        super().__init__(
+            message_bus=message_bus,
+            message_converter=message_converter,
+            response_converter=response_converter,
+        )
+
+    async def _send(self, converted_message: bytes) -> bytes:
+        """Send a converted message.
+        """
+        return await self.message_bus.send(
+            data=converted_message,
+            url=self.url,
+        )
+
+
+class HTTPMessageBus(MessageBusSendingController):
+    """HTTP message bus.
+    """
+    def __init__(
+        self,
+        max_connections: int = 2000,
+    ) -> None:
+        """Constructor method
+        """
+        self.max_connections = max_connections
+        super().__init__()
+
+    @property
+    def session(self) -> aiohttp.ClientSession:
+        """Property to get a session.
+        """
+        if not hasattr(self, "_session"):
+            self._set_session()
+        return self._session
+
+    def _set_session(self) -> None:
+        """Get a session.
+        """
+        self._session = aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(
+                limit=self.max_connections,
+            ),
+        )
+
+    def get_message_producer(
+        self,
+        url: str,
+        *,
+        message_converter: MessageConverter | None = None,
+        response_converter: ResponseConverter | None = None,
+    ) -> "MessageProducer":
+        """Get a message producer.
+        """
+        return HTTPMessageProducer(
+            url=url,
+            message_bus=self,
+            message_converter=message_converter,
+            response_converter=response_converter,
+        )
+
+    async def send(self, data: bytes, url: str) -> bytes:
+        """Send a message to a url.
+        """
+        return await self._send_post_to_url(data=data, url=url)
+
+    async def _send_post_to_url(self, data: bytes, url: str) -> bytes:
+        """Abstract method to send a message to a url.
+        """
+        async with self.session.post(url=url, data=data) as response:
+            return await response.read()
+
+    async def __aenter__(self) -> Self:
+        """Enter the context.
+        """
+        await self.session.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        """Exit the context.
+        """
+        await self.session.__aexit__(exc_type, exc, tb)
