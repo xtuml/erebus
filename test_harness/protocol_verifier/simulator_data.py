@@ -26,6 +26,9 @@ from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
 from test_harness.protocol_verifier.types import TemplateOptions
 # TODO: for use in later versions
 # from test_harness.utils import wrap_kafka_future
+from test_harness.message_buses.message_buses import (
+    MessageProducer, MessageSender, InputConverter, ResponseConverter
+)
 
 
 class PVSimDatumTransformer(ABC):
@@ -495,6 +498,76 @@ async def send_payload_kafka(
         )
         result = str(error)
     return result
+
+
+class PVMessageSender(MessageSender):
+    def __init__(
+        self,
+        producer: MessageProducer,
+        input_converter: PVInputConverter | None = None,
+        response_converter: PVResponseConverter | None = None
+    ) -> None:
+        super().__init__(producer, input_converter, response_converter)
+
+    async def _sender(self, converted_data: list[Any]) -> Any:
+        return await asyncio.gather(
+            *[
+                self._producer.send_message(
+                    message=message
+                )
+                for message in converted_data
+            ]
+        )
+
+
+class PVInputConverter(InputConverter):
+    def __init__(
+        self,
+        data_conversion_function: Callable[
+            [list[dict[str, Any]]], list[Any]
+        ]
+    ) -> None:
+        super().__init__()
+        self._data_conversion_function = data_conversion_function
+
+    def convert(
+        self,
+        message: list[dict[str, Any]],
+        job_id: str,
+        job_info: dict[str, str | None]
+    ) -> tuple[list[Any], tuple[()], dict, tuple[()], dict[str, Any]]:
+        output_data = self._data_conversion_function(message)
+        return output_data, (), {}, (), {
+            "list_dict": message, "job_id": job_id, "job_info": job_info
+        }
+
+
+class PVResponseConverter(ResponseConverter):
+    def __init__(
+        self,
+        data_conversion_function: Callable[
+            [list[Any]], str
+        ]
+    ) -> None:
+        super().__init__()
+        self._data_conversion_function = data_conversion_function
+
+    def convert(
+        self,
+        responses: list[Any],
+        list_dict: list[dict[str, Any]],
+        job_id: str,
+        job_info: dict[str, str | None]
+    ) -> tuple[
+        list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
+    ]:
+        time_completed = datetime.now()
+        file_name = str(uuid4()) + ".json"
+        converted_result = self._data_conversion_function(responses)
+        return (
+            list_dict, file_name, job_id, job_info, converted_result,
+            time_completed
+        )
 
 
 class MetaDataCategory(TypedDict):
