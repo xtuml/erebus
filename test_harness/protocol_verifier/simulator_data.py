@@ -27,7 +27,8 @@ from test_harness.protocol_verifier.types import TemplateOptions
 # TODO: for use in later versions
 # from test_harness.utils import wrap_kafka_future
 from test_harness.message_buses.message_buses import (
-    MessageProducer, MessageSender, InputConverter, ResponseConverter
+    MessageProducer, MessageSender, InputConverter, ResponseConverter,
+    MessageExceptionHandler
 )
 
 
@@ -568,6 +569,18 @@ class PVResponseConverter(ResponseConverter):
             list_dict, file_name, job_id, job_info, converted_result,
             time_completed
         )
+
+
+class PVMessageExceptionHandler(MessageExceptionHandler):
+    def __init__(
+        self,
+        exception_handler: Callable[[Exception], str]
+    ) -> None:
+        super().__init__()
+        self._exception_handler = exception_handler
+
+    def handle_exception(self, exception: Exception) -> str:
+        return self._exception_handler(exception)
 
 
 class MetaDataCategory(TypedDict):

@@ -59,6 +59,25 @@ class SimpleResponseConverter(ResponseConverter):
         return response
 
 
+class MessageExceptionHandler(ABC):
+    """Abstract class for message exception handler.
+    """
+    @abstractmethod
+    def handle_exception(self, exception: Exception, *args, **kwargs) -> Any:
+        """Abstract method to handle an exception.
+        """
+        pass
+
+
+class SimpleMessageExceptionHandler(MessageExceptionHandler):
+    """Simple message exception handler.
+    """
+    def handle_exception(self, exception: Exception) -> Any:
+        """Handle an exception.
+        """
+        raise exception
+
+
 class MessageProducer(ABC):
     """Abstract class for message sender.
     """
@@ -388,7 +407,8 @@ class MessageSender(ABC):
         self,
         producer: MessageProducer,
         input_converter: InputConverter | None = None,
-        response_converter: ResponseConverter | None = None
+        response_converter: ResponseConverter | None = None,
+        exception_handler: MessageExceptionHandler | None = None
     ) -> None:
         self._producer = producer
         self._input_converter = (
@@ -401,6 +421,11 @@ class MessageSender(ABC):
             if response_converter is not None
             else SimpleResponseConverter()
         )
+        self._exception_handler = (
+            exception_handler
+            if exception_handler is not None
+            else SimpleMessageExceptionHandler()
+        )
 
     async def send(self, message: Any, *args, **kwargs) -> Any:
         (
@@ -410,9 +435,14 @@ class MessageSender(ABC):
             response_args,
             response_kwargs
         ) = self._input_converter.convert_input(message, *args, **kwargs)
-        response = await self._sender(
-            convert_data, *convert_args, **convert_kwargs
-        )
+        try:
+            response = await self._sender(
+                convert_data, *convert_args, **convert_kwargs
+            )
+        except Exception as exception:
+            response = self._exception_handler.handle_exception(
+                exception=exception
+            )
         return self._response_converter.convert_response(
             response=response,
             *response_args,
