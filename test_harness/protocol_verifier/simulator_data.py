@@ -15,6 +15,7 @@ import logging
 import itertools
 from abc import ABC, abstractmethod
 import asyncio
+from io import BytesIO
 
 import aiohttp
 from aiokafka import AIOKafkaProducer
@@ -524,12 +525,13 @@ class PVMessageSender(MessageSender):
 class PVInputConverter(InputConverter):
     def __init__(
         self,
-        data_conversion_function: Callable[
-            [list[dict[str, Any]]], list[Any]
-        ]
+        message_bus: Literal["kafka", "http"],
+        send_as_pv_bytes: bool = False,
     ) -> None:
         super().__init__()
-        self._data_conversion_function = data_conversion_function
+        self._message_bus = message_bus
+        self._send_as_pv_bytes = send_as_pv_bytes
+        self._data_conversion_function = None
 
     def convert(
         self,
@@ -537,10 +539,111 @@ class PVInputConverter(InputConverter):
         job_id: str,
         job_info: dict[str, str | None]
     ) -> tuple[list[Any], tuple[()], dict, tuple[()], dict[str, Any]]:
-        output_data = self._data_conversion_function(message)
+        output_data = self.data_conversion_function(message)
         return output_data, (), {}, (), {
             "list_dict": message, "job_id": job_id, "job_info": job_info
         }
+
+    @property
+    def data_conversion_function(self) -> Callable[
+        [list[dict[str, Any]]], list[Any]
+    ]:
+        return self._data_conversion_function
+
+    @staticmethod
+    def convert_list_dict_to_json_io_bytes(
+        list_dict: list[dict[str, Any]]
+    ) -> list[bytes]:
+        """Method to convert a list of dicts into list with containing a single
+        :class:`bytes`
+
+        :param list_dict: The list of dictionaries
+        :type list_dict: `list`[`dict`[`str`, `Any`]]
+        :return: Returns the :class:`bytes` instance
+        :rtype: `list`[:class:`bytes`]
+        """
+        io_bytes = json.dumps(list_dict, indent=4).encode("utf8")
+        return [io_bytes]
+
+    @staticmethod
+    def convert_list_dict_to_pv_json_io_bytes(
+        list_dict: list[dict[str, Any]]
+    ) -> list[bytes]:
+        """Method to convert a list of dicts into a list of :class:`bytes` for
+        each event suitable for ingestion directly by the PV
+
+        :param list_dict: The list of dictionaries
+        :type list_dict: `list`[`dict`[`str`, `Any`]]
+        :return: Returns the :class:`bytes` instance
+        :rtype: `list`[:class:`bytes`]
+        """
+        io_bytes_list = []
+        for event in list_dict:
+            pay_load = json.dumps(event).encode("utf8")
+            msg_len = len(pay_load).to_bytes(4, byteorder="big")
+            io_bytes = msg_len + pay_load
+            io_bytes_list.append(io_bytes)
+        return io_bytes_list
+
+    def _set_data_conversion_function(
+        self
+    ) -> None:
+        """Private method to set the data conversion function
+        """
+        match self._message_bus:
+            case "kafka":
+                self._data_conversion_function = (
+                    convert_list_dict_to_pv_json_io_bytes
+                )
+            case "http":
+                self._data_conversion_function = (
+                    self._get_http_conversion_function()
+                )
+            case _:
+                raise ValueError(
+                    f"Message bus {self._message_bus} not recognised"
+                )
+
+    def _get_http_conversion_function(
+        self,
+    ) -> Callable[[list[dict[str, Any]]], list[aiohttp.Payload]]:
+        """Closure to convert a list of dicts to a list of aiohttp form data
+
+        :return: Returns a function that converts a list of dicts to a list of
+        aiohttp form data
+        :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
+        `list`[:class:`aiohttp`.`FormData`] ]
+        """
+        convert_to_bytes_function = (
+            self.convert_list_dict_to_pv_json_io_bytes
+            if self._send_as_pv_bytes
+            else self.convert_list_dict_to_json_io_bytes
+        )
+
+        def convert_to_form_data(
+            list_dict: list[dict[str, Any]]
+        ) -> list[aiohttp.Payload]:
+            """Method to convert a list of dicts to a list of aiohttp form data
+            using the given function
+
+            :param list_dict: The list of dictionaries
+            :type list_dict: `list`[`dict`[`str`, `Any`]]
+            :return: Returns the :class:`aiohttp`.`FormData` instance
+            :rtype: `list`[:class:`aiohttp`.`FormData`]
+            """
+            form_bytes_list = convert_to_bytes_function(list_dict)
+            form_data_list = []
+            for form_bytes in form_bytes_list:
+                form_data = aiohttp.FormData()
+                form_data.add_field(
+                    name="upload",
+                    value=BytesIO(form_bytes),
+                    filename=str(uuid4),
+                    content_type='application/octet-stream',
+                )
+                form_data_list.append(form_data())
+            return form_data_list
+        return convert_to_form_data
 
 
 class PVResponseConverter(ResponseConverter):
@@ -581,6 +684,26 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
 
     def handle_exception(self, exception: Exception) -> str:
         return self._exception_handler(exception)
+
+
+def kafka_input_data_converter(
+    list_dict: list[dict[str, Any]]
+) -> list[bytes]:
+    """Method to convert a list of dicts into a list of :class:`bytes` for
+    each event suitable for ingestion directly by the PV
+
+    :param list_dict: The list of dictionaries
+    :type list_dict: `list`[`dict`[`str`, `Any`]]
+    :return: Returns the :class:`bytes` instance
+    :rtype: `list`[:class:`bytes`]
+    """
+    io_bytes_list = []
+    for event in list_dict:
+        pay_load = json.dumps(event).encode("utf8")
+        msg_len = len(pay_load).to_bytes(4, byteorder="big")
+        io_bytes = msg_len + pay_load
+        io_bytes_list.append(io_bytes)
+    return io_bytes_list
 
 
 class MetaDataCategory(TypedDict):
