@@ -19,16 +19,14 @@ from io import BytesIO
 
 import aiohttp
 from aiokafka import AIOKafkaProducer
-# TODO: for use in later versions
-# from kafka3 import KafkaProducer
+from aiokafka.errors import KafkaTimeoutError as AIOKafkaTimeoutError
+from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
 
 from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
 from test_harness.protocol_verifier.types import TemplateOptions
-# TODO: for use in later versions
-# from test_harness.utils import wrap_kafka_future
 from test_harness.message_buses.message_buses import (
-    MessageProducer, MessageSender, InputConverter, ResponseConverter,
+    MessageProducer, InputConverter, ResponseConverter,
     MessageExceptionHandler
 )
 
@@ -502,14 +500,54 @@ async def send_payload_kafka(
     return result
 
 
-class PVMessageSender(MessageSender):
+class PVMessageSender:
     def __init__(
         self,
         producer: MessageProducer,
-        input_converter: PVInputConverter | None = None,
-        response_converter: PVResponseConverter | None = None
+        message_bus: Literal["kafka", "http"],
+        send_as_pv_bytes: bool = False,
     ) -> None:
-        super().__init__(producer, input_converter, response_converter)
+        self._producer = producer
+        self._input_converter = PVInputConverter(
+            message_bus=message_bus, send_as_pv_bytes=send_as_pv_bytes
+        )
+        self._response_converter = PVResponseConverter()
+
+    async def send(
+        self,
+        message: list[dict[str, Any]],
+        job_id: str,
+        job_info: dict[str, str | None],
+    ) -> tuple[
+        list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
+    ]:
+        """Async method to send a list of dicts as a json payload
+
+        :param message: The list of dictionaries
+        :type message: `list`[`dict`[`str`, `Any`]]
+        :param job_id: The job id
+        :type job_id: `str`
+        :param job_info: The job info
+        :type job_info: `dict`[`str`, `str` | `None`]
+        :return: Returns a tuple of:
+        * the list of dicts sent
+        * the file name given
+        * the result of the request
+        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
+        :class:`datetime`]
+        """
+        converted_data, _, _, _, _ = self._input_converter(
+            message=message, job_id=job_id, job_info=job_info
+        )
+        responses = await self._producer.send_message(
+            message=converted_data
+        )
+        return self._response_converter(
+            responses=responses,
+            list_dict=message,
+            job_id=job_id,
+            job_info=job_info,
+        )
 
     async def _sender(self, converted_data: list[Any]) -> Any:
         return await asyncio.gather(
@@ -531,18 +569,14 @@ class PVInputConverter(InputConverter):
         super().__init__()
         self._message_bus = message_bus
         self._send_as_pv_bytes = send_as_pv_bytes
-        self._data_conversion_function = None
+        self._set_data_conversion_function()
 
     def convert(
         self,
         message: list[dict[str, Any]],
-        job_id: str,
-        job_info: dict[str, str | None]
     ) -> tuple[list[Any], tuple[()], dict, tuple[()], dict[str, Any]]:
         output_data = self.data_conversion_function(message)
-        return output_data, (), {}, (), {
-            "list_dict": message, "job_id": job_id, "job_info": job_info
-        }
+        return output_data, (), {}, (), {}
 
     @property
     def data_conversion_function(self) -> Callable[
@@ -649,16 +683,12 @@ class PVInputConverter(InputConverter):
 class PVResponseConverter(ResponseConverter):
     def __init__(
         self,
-        data_conversion_function: Callable[
-            [list[Any]], str
-        ]
     ) -> None:
         super().__init__()
-        self._data_conversion_function = data_conversion_function
 
     def convert(
         self,
-        responses: list[Any],
+        responses: list[str],
         list_dict: list[dict[str, Any]],
         job_id: str,
         job_info: dict[str, str | None]
@@ -667,43 +697,123 @@ class PVResponseConverter(ResponseConverter):
     ]:
         time_completed = datetime.now()
         file_name = str(uuid4()) + ".json"
-        converted_result = self._data_conversion_function(responses)
+        result = "".join(responses)
         return (
-            list_dict, file_name, job_id, job_info, converted_result,
+            list_dict, file_name, job_id, job_info, result,
             time_completed
         )
+
+
+class PVMessageResponseConverter(ResponseConverter):
+    def __init__(
+        self,
+        message_bus: Literal["kafka", "http"],
+    ) -> None:
+        super().__init__()
+        self._message_bus = message_bus
+
+    @property
+    def data_conversion_function(self) -> Callable[
+        [Any], str
+    ]:
+        return self._data_conversion_function
+
+    def convert(
+        self,
+        response: Any
+    ) -> str:
+        return self._data_conversion_function(response)
+
+    def _set_data_conversion_function(
+        self
+    ) -> None:
+        """Private method to set the data conversion function
+        """
+        match self._message_bus:
+            case "kafka":
+                self._data_conversion_function = (
+                    self._kafka_conversion_function
+                )
+            case "http":
+                self._data_conversion_function = (
+                    self._http_conversion_function
+                )
+            case _:
+                raise ValueError(
+                    f"Message bus {self._message_bus} not recognised"
+                )
+
+    @staticmethod
+    def _http_conversion_function(
+        response: aiohttp.ClientResponse
+    ) -> str:
+        if response.status == 200:
+            return ""
+        logging.getLogger().warning(
+            "Error sending http payload: %s", response.reason
+        )
+        return response.reason
+
+    @staticmethod
+    def _kafka_conversion_function(
+        response: Any
+    ) -> str:
+        return ""
 
 
 class PVMessageExceptionHandler(MessageExceptionHandler):
     def __init__(
         self,
-        exception_handler: Callable[[Exception], str]
+        message_bus: Literal["kafka", "http"],
     ) -> None:
         super().__init__()
-        self._exception_handler = exception_handler
+        self._message_bus = message_bus
+
+    @property
+    def exception_handler(self) -> Callable[[Exception], str]:
+        return self._exception_handler
 
     def handle_exception(self, exception: Exception) -> str:
         return self._exception_handler(exception)
 
+    def _set_exception_handler(self) -> None:
+        """Private method to set the exception handler
+        """
+        match self._message_bus:
+            case "kafka":
+                self._exception_handler = self._kafka_exception_handler
+            case "http":
+                self._exception_handler = self._http_exception_handler
+            case _:
+                raise ValueError(
+                    f"Message bus {self._message_bus} not recognised"
+                )
 
-def kafka_input_data_converter(
-    list_dict: list[dict[str, Any]]
-) -> list[bytes]:
-    """Method to convert a list of dicts into a list of :class:`bytes` for
-    each event suitable for ingestion directly by the PV
+    @staticmethod
+    def _kafka_exception_handler(
+        exception: Exception
+    ) -> str:
+        if isinstance(exception, (
+            AIOKafkaTimeoutError, KafkaTimeoutError3
+        )):
+            logging.getLogger().warning(
+                "Error sending payload to kafka: %s", exception
+            )
+            return str(exception)
+        raise exception
 
-    :param list_dict: The list of dictionaries
-    :type list_dict: `list`[`dict`[`str`, `Any`]]
-    :return: Returns the :class:`bytes` instance
-    :rtype: `list`[:class:`bytes`]
-    """
-    io_bytes_list = []
-    for event in list_dict:
-        pay_load = json.dumps(event).encode("utf8")
-        msg_len = len(pay_load).to_bytes(4, byteorder="big")
-        io_bytes = msg_len + pay_load
-        io_bytes_list.append(io_bytes)
-    return io_bytes_list
+    def _http_exception_handler(
+        self,
+        exception: Exception
+    ) -> str:
+        logging.getLogger().warning(
+            "Error sending http payload: %s", exception
+        )
+        if isinstance(exception, asyncio.TimeoutError):
+            return "timed out"
+        if isinstance(exception, aiohttp.ClientConnectionError):
+            return "Connection Error"
+        raise exception
 
 
 class MetaDataCategory(TypedDict):
