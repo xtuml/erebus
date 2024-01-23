@@ -58,7 +58,7 @@ class PVMessageSender:
         :class:`datetime`]
         """
         converted_data, _, _, _, _ = self._input_converter(
-            message=message, job_id=job_id, job_info=job_info
+            message=message
         )
         responses = await self._producer.send_message(
             message=converted_data
@@ -85,11 +85,9 @@ class PVInputConverter(InputConverter):
     def __init__(
         self,
         message_bus: Literal["kafka", "http"],
-        send_as_pv_bytes: bool = False,
     ) -> None:
         super().__init__()
         self._message_bus = message_bus
-        self._send_as_pv_bytes = send_as_pv_bytes
         self._set_data_conversion_function()
 
     def convert(
@@ -117,53 +115,37 @@ class PVInputConverter(InputConverter):
                 )
             case "http":
                 self._data_conversion_function = (
-                    self._get_http_conversion_function()
+                    self._http_conversion_function
                 )
             case _:
                 raise ValueError(
                     f"Message bus {self._message_bus} not recognised"
                 )
 
-    def _get_http_conversion_function(
-        self,
-    ) -> Callable[[list[dict[str, Any]]], list[aiohttp.Payload]]:
-        """Closure to convert a list of dicts to a list of aiohttp form data
+    @staticmethod
+    def _http_conversion_function(
+        list_dict: list[dict[str, Any]]
+    ) -> list[aiohttp.Payload]:
+        """Method to convert a list of dicts to a list of aiohttp form data
+        using the given function
 
-        :return: Returns a function that converts a list of dicts to a list of
-        aiohttp form data
-        :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
-        `list`[:class:`aiohttp`.`FormData`] ]
+        :param list_dict: The list of dictionaries
+        :type list_dict: `list`[`dict`[`str`, `Any`]]
+        :return: Returns the :class:`aiohttp`.`FormData` instance
+        :rtype: `list`[:class:`aiohttp`.`FormData`]
         """
-        convert_to_bytes_function = (
-            convert_list_dict_to_pv_json_io_bytes
-            if self._send_as_pv_bytes
-            else convert_list_dict_to_json_io_bytes
-        )
-
-        def convert_to_form_data(
-            list_dict: list[dict[str, Any]]
-        ) -> list[aiohttp.Payload]:
-            """Method to convert a list of dicts to a list of aiohttp form data
-            using the given function
-
-            :param list_dict: The list of dictionaries
-            :type list_dict: `list`[`dict`[`str`, `Any`]]
-            :return: Returns the :class:`aiohttp`.`FormData` instance
-            :rtype: `list`[:class:`aiohttp`.`FormData`]
-            """
-            form_bytes_list = convert_to_bytes_function(list_dict)
-            form_data_list = []
-            for form_bytes in form_bytes_list:
-                form_data = aiohttp.FormData()
-                form_data.add_field(
-                    name="upload",
-                    value=BytesIO(form_bytes),
-                    filename=str(uuid4),
-                    content_type='application/octet-stream',
-                )
-                form_data_list.append(form_data())
-            return form_data_list
-        return convert_to_form_data
+        form_bytes_list = convert_list_dict_to_json_io_bytes(list_dict)
+        form_data_list = []
+        for form_bytes in form_bytes_list:
+            form_data = aiohttp.FormData()
+            form_data.add_field(
+                name="upload",
+                value=BytesIO(form_bytes),
+                filename=str(uuid4) + ".json",
+                content_type='application/octet-stream',
+            )
+            form_data_list.append(form_data())
+        return form_data_list
 
 
 class PVResponseConverter(ResponseConverter):
@@ -197,6 +179,7 @@ class PVMessageResponseConverter(ResponseConverter):
     ) -> None:
         super().__init__()
         self._message_bus = message_bus
+        self._set_data_conversion_function()
 
     @property
     def data_conversion_function(self) -> Callable[
@@ -208,7 +191,7 @@ class PVMessageResponseConverter(ResponseConverter):
         self,
         response: Any
     ) -> str:
-        return self._data_conversion_function(response)
+        return self.data_conversion_function(response)
 
     def _set_data_conversion_function(
         self
@@ -233,7 +216,7 @@ class PVMessageResponseConverter(ResponseConverter):
     def _http_conversion_function(
         response: aiohttp.ClientResponse
     ) -> str:
-        if response.status == 200:
+        if response.ok:
             return ""
         logging.getLogger().warning(
             "Error sending http payload: %s", response.reason
@@ -254,6 +237,7 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
     ) -> None:
         super().__init__()
         self._message_bus = message_bus
+        self._set_exception_handler()
 
     @property
     def exception_handler(self) -> Callable[[Exception], str]:
