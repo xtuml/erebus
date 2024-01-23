@@ -16,7 +16,7 @@ class InputConverter(ABC):
     """Abstract class for message converter."""
 
     @abstractmethod
-    def convert_input(
+    def convert(
         self, message: Any, *args, **kwargs
     ) -> tuple[Any, tuple, dict, tuple, dict]:
         """Abstract method to convert a message."""
@@ -26,7 +26,7 @@ class InputConverter(ABC):
 class SimpleInputConverter(InputConverter):
     """Simple message converter."""
 
-    def convert_input(
+    def convert(
         self, message: Any
     ) -> tuple[Any, tuple, dict, tuple, dict]:
         """Convert a message."""
@@ -37,7 +37,7 @@ class ResponseConverter(ABC):
     """Abstract class for response converter."""
 
     @abstractmethod
-    def convert_response(self, response: Any, *args, **kwargs) -> Any:
+    def convert(self, response: Any, *args, **kwargs) -> Any:
         """Abstract method to convert a response."""
         pass
 
@@ -45,7 +45,7 @@ class ResponseConverter(ABC):
 class SimpleResponseConverter(ResponseConverter):
     """Simple response converter."""
 
-    def convert_response(self, response: Any) -> Any:
+    def convert(self, response: Any) -> Any:
         """Convert a response."""
         return response
 
@@ -103,12 +103,12 @@ class MessageProducer(ABC):
             send_kwargs,
             output_args,
             output_kwargs,
-        ) = self._input_converter.convert_input(message, *args, **kwargs)
+        ) = self._input_converter.convert(message, *args, **kwargs)
         try:
             response = await self._send(
                 converted_message, *send_args, **send_kwargs
             )
-            return self._response_converter.convert_response(
+            return self._response_converter.convert(
                 response=response, *output_args, **output_kwargs
             )
         except Exception as exception:
