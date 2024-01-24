@@ -17,8 +17,66 @@ from test_harness.protocol_verifier.simulator_data import (
 )
 from test_harness.message_buses.message_buses import (
     MessageProducer, InputConverter, ResponseConverter,
-    MessageExceptionHandler
+    MessageExceptionHandler, Kafka3MessageBus, KafkaMessageProducer,
+    HTTPMessageBus, HTTPMessageProducer
 )
+
+
+def get_pv_sender(
+    message_bus: Literal["kafka", "http"],
+    **kwargs: Any
+) -> "PVMessageSender":
+    """Function to get a PVMessageSender instance
+
+    :param producer: The message producer
+    :type producer: :class:`MessageProducer`
+    :param message_bus: The message bus
+    :type message_bus: `Literal`["kafka", "http"]
+    :return: Returns a :class:`PVMessageSender` instance
+    :rtype: :class:`PVMessageSender`
+    """
+    response_converter = PVMessageResponseConverter(
+        message_bus=message_bus
+    )
+    exception_handler = PVMessageExceptionHandler(
+        message_bus=message_bus
+    )
+    match message_bus:
+        case "kafka":
+            producer = KafkaMessageProducer(
+                topic=kwargs["topic"],
+                message_bus=Kafka3MessageBus(
+                    bootstrap_servers=kwargs["bootstrap_servers"],
+                    stop_timeout=(
+                        kwargs["stop_timeout"]
+                        if "stop_timeout" in kwargs
+                        else 10,
+                    )
+                ),
+                response_converter=response_converter,
+                exception_handler=exception_handler,
+            )
+        case "http":
+            producer = HTTPMessageProducer(
+                url=kwargs["url"],
+                message_bus=HTTPMessageBus(
+                    max_connections=(
+                        kwargs["max_connections"]
+                        if "max_connections" in kwargs
+                        else 2000
+                    ),
+                ),
+                response_converter=response_converter,
+                exception_handler=exception_handler,
+            )
+        case _:
+            raise ValueError(
+                f"Message bus {message_bus} not recognised"
+            )
+    return PVMessageSender(
+        producer=producer,
+        message_bus=message_bus,
+    )
 
 
 class PVMessageSender:
@@ -26,11 +84,10 @@ class PVMessageSender:
         self,
         producer: MessageProducer,
         message_bus: Literal["kafka", "http"],
-        send_as_pv_bytes: bool = False,
     ) -> None:
         self._producer = producer
         self._input_converter = PVInputConverter(
-            message_bus=message_bus, send_as_pv_bytes=send_as_pv_bytes
+            message_bus=message_bus
         )
         self._response_converter = PVResponseConverter()
 
@@ -60,8 +117,8 @@ class PVMessageSender:
         converted_data, _, _, _, _ = self._input_converter(
             message=message
         )
-        responses = await self._producer.send_message(
-            message=converted_data
+        responses = await self._sender(
+            converted_data=converted_data
         )
         return self._response_converter(
             responses=responses,

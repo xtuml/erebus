@@ -260,7 +260,9 @@ class AIOKafkaMessageBus(KafkaMessageBus):
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
         """Exit the context."""
-        await asyncio.wait_for(self.producer.stop())
+        await asyncio.wait_for(self.producer.stop(), timeout=self.stop_timeout)
+        if exc is not None:
+            raise exc
 
     async def _send_to_topic(self, message: bytes, topic: str) -> bytes:
         """Send a message to a topic."""
@@ -302,6 +304,8 @@ class Kafka3MessageBus(KafkaMessageBus):
     async def __aexit__(self, exc_type, exc, tb) -> None:
         """Exit the context."""
         self.producer.close(timeout=self.stop_timeout)
+        if exc is not None:
+            raise exc
 
     async def _send_to_topic(self, data: bytes, topic: str) -> bytes:
         """Send a message to a topic."""
