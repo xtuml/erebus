@@ -1,0 +1,178 @@
+"""Tests for message buses module
+"""
+import pytest
+import aioresponses
+
+from test_harness.message_buses.message_buses import (
+    Kafka3MessageBus, AIOKafkaMessageBus, HTTPMessageBus
+)
+
+
+class TestAIOKafkaMessageBus:
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_context_manager(
+        aio_kafka_producer_mock: list[str]
+    ) -> None:
+        """Tests `send` for kafka message bus
+
+        :param aio_kafka_producer_mock: Mock kafka producer
+        :type aio_kafka_producer_mock: `list`[`str`]
+        """
+        async with AIOKafkaMessageBus(
+            bootstrap_servers="localhost:9092",
+        ) as message_bus:
+            message = b"message"
+            result = await message_bus.send(
+                message=message,
+                topic="test_topic"
+            )
+        assert len(aio_kafka_producer_mock) == 3
+        assert result == ""
+        assert aio_kafka_producer_mock[0] == "start"
+        assert aio_kafka_producer_mock[1] == "send"
+        assert aio_kafka_producer_mock[2] == "stop"
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_context_manager_error(
+        aio_kafka_producer_mock: list
+    ) -> None:
+        """Tests `send` for kafka message bus
+        """
+        with pytest.raises(ValueError) as error:
+            async with AIOKafkaMessageBus(
+                bootstrap_servers="localhost:9092",
+            ) as _:
+                raise ValueError("An error")
+        assert str(error.value) == "An error"
+        assert len(aio_kafka_producer_mock) == 2
+        assert aio_kafka_producer_mock[0] == "start"
+        assert aio_kafka_producer_mock[1] == "stop"
+
+
+class TestKafka3MessageBus:
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_context_manager(
+        sync_kafka_producer_mock: list[str]
+    ) -> None:
+        """Tests `send` for kafka message bus
+
+        :param kafka_producer_mock: Mock kafka producer
+        :type kafka_producer_mock: `list`[`str`]
+        """
+        async with Kafka3MessageBus(
+            bootstrap_servers="localhost:9092",
+        ) as message_bus:
+            message = b"message"
+            result = await message_bus.send(
+                message=message,
+                topic="test_topic"
+            )
+        assert len(sync_kafka_producer_mock) == 3
+        assert result == ""
+        assert sync_kafka_producer_mock[0] == "start"
+        assert sync_kafka_producer_mock[1] == "send"
+        assert sync_kafka_producer_mock[2] == "stop"
+
+
+class TestHTTPMessageBus:
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_context_manager_send() -> None:
+        """Tests `send` for kafka message bus
+
+        :param http_client_mock: Mock http client
+        :type http_client_mock: `list`[`str`]
+        """
+        with aioresponses.aioresponses() as mock:
+            mock.post(
+                "http://localhost:8080/topics/test_topic",
+                status=200,
+                body="test response"
+            )
+            async with HTTPMessageBus(
+            ) as message_bus:
+                message = b"message"
+                result = await message_bus.send(
+                    message=message,
+                    url="http://localhost:8080/topics/test_topic"
+                )
+        text = await result.text()
+        assert text == "test response"
+
+
+class TestMessageProducer:
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_send_message_aio(
+        aio_kafka_producer_mock: list[str]
+    ) -> None:
+        """Tests `send` for kafka message bus
+
+        :param kafka_producer_mock: Mock kafka producer
+        :type kafka_producer_mock: `list`[`str`]
+        """
+        async with AIOKafkaMessageBus(
+            bootstrap_servers="localhost:9092",
+        ) as message_bus:
+            kafka_message_producer = message_bus.get_message_producer(
+                topic="test_topic"
+            )
+            result = await kafka_message_producer.send_message(
+                message=b"message"
+            )
+        assert result == ""
+        assert aio_kafka_producer_mock[0] == "start"
+        assert aio_kafka_producer_mock[1] == "send"
+        assert aio_kafka_producer_mock[2] == "stop"
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_send_message_sync(
+        sync_kafka_producer_mock: list[str]
+    ) -> None:
+        """Tests `send` for kafka message bus
+
+        :param kafka_producer_mock: Mock kafka producer
+        :type kafka_producer_mock: `list`[`str`]
+        """
+        async with Kafka3MessageBus(
+            bootstrap_servers="localhost:9092",
+        ) as message_bus:
+            kafka_message_producer = message_bus.get_message_producer(
+                topic="test_topic"
+            )
+            result = await kafka_message_producer.send_message(
+                message=b"message"
+            )
+        assert result == ""
+        assert sync_kafka_producer_mock[0] == "start"
+        assert sync_kafka_producer_mock[1] == "send"
+        assert sync_kafka_producer_mock[2] == "stop"
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_send_message_http() -> None:
+        """Tests `send` for http message producer
+
+        :param http_client_mock: Mock http client
+        :type http_client_mock: `list`[`str`]
+        """
+        with aioresponses.aioresponses() as mock:
+            mock.post(
+                "http://localhost:8080/topics/test_topic",
+                status=200,
+                body="test response"
+            )
+            async with HTTPMessageBus(
+            ) as message_bus:
+                http_message_producer = message_bus.get_message_producer(
+                    url="http://localhost:8080/topics/test_topic"
+                )
+                result = await http_message_producer.send_message(
+                    message=b"message"
+                )
+        text = await result.text()
+        assert text == "test response"

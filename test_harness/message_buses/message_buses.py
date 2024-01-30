@@ -2,11 +2,11 @@
 """
 
 from typing import Any, Self
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 import asyncio
 
 from aiokafka import AIOKafkaProducer
-from kafka import KafkaProducer
+from kafka3 import KafkaProducer
 import aiohttp
 
 from test_harness.utils import wrap_kafka_future
@@ -164,7 +164,7 @@ class KafkaMessageProducer(MessageProducer):
         message_bus: "KafkaMessageBus",
         input_converter: InputConverter | None = None,
         response_converter: ResponseConverter | None = None,
-        exception_handler: MessageExceptionHandler | None = None,
+        exception_converter: MessageExceptionHandler | None = None,
     ) -> None:
         """Constructor method"""
         self.topic = topic
@@ -172,7 +172,7 @@ class KafkaMessageProducer(MessageProducer):
             message_bus=message_bus,
             input_converter=input_converter,
             response_converter=response_converter,
-            exception_handler=exception_handler,
+            exception_converter=exception_converter,
         )
 
     async def _send(self, message: bytes) -> bytes:
@@ -196,10 +196,12 @@ class KafkaMessageBus(MessageBusSendingController):
         self._bootstrap_servers = bootstrap_servers
         super().__init__()
 
-    @abstractproperty
+    @property
     def producer(self) -> Any:
-        """Abstract property to get a producer."""
-        pass
+        """Property to get a producer."""
+        if not hasattr(self, "_producer"):
+            self._set_producer()
+        return self._producer
 
     @abstractmethod
     def _set_producer(self) -> Any:
@@ -218,10 +220,10 @@ class KafkaMessageBus(MessageBusSendingController):
 
     async def send(self, message: bytes, topic: str) -> bytes:
         """Send a message to a topic."""
-        return await self._send_to_topic(data=message, topic=topic)
+        return await self._send_to_topic(message=message, topic=topic)
 
     @abstractmethod
-    async def _send_to_topic(self, data: bytes, topic: str) -> bytes:
+    async def _send_to_topic(self, message: bytes, topic: str) -> bytes:
         """Abstract method to send a message to a topic."""
         pass
 
@@ -307,10 +309,10 @@ class Kafka3MessageBus(KafkaMessageBus):
         if exc is not None:
             raise exc
 
-    async def _send_to_topic(self, data: bytes, topic: str) -> bytes:
+    async def _send_to_topic(self, message: bytes, topic: str) -> bytes:
         """Send a message to a topic."""
         return await wrap_kafka_future(
-            self.producer.send(topic=topic, value=data)
+            self.producer.send(topic=topic, value=message)
         )
 
 
@@ -323,7 +325,7 @@ class HTTPMessageProducer(MessageProducer):
         message_bus: "HTTPMessageBus",
         input_converter: InputConverter | None = None,
         response_converter: ResponseConverter | None = None,
-        exception_handler: MessageExceptionHandler | None = None,
+        exception_converter: MessageExceptionHandler | None = None,
     ) -> None:
         """Constructor method"""
         self.url = url
@@ -331,7 +333,7 @@ class HTTPMessageProducer(MessageProducer):
             message_bus=message_bus,
             input_converter=input_converter,
             response_converter=response_converter,
-            exception_handler=exception_handler,
+            exception_converter=exception_converter,
         )
 
     async def _send(self, message: Any, **kwargs) -> Any:
