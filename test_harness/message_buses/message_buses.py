@@ -416,3 +416,84 @@ class HTTPMessageBus(MessageBusSendingController):
     async def __aexit__(self, exc_type, exc, tb) -> None:
         """Exit the context."""
         await self.session.__aexit__(exc_type, exc, tb)
+
+
+class MessageSender(ABC):
+    """Abstract class for message sender.
+
+    This class is used to send messages (could be batches or single messages)
+    in a variety of ways using a message producer to send the underlying
+    messages.
+    """
+
+    def __init__(
+        self,
+        message_producer: MessageProducer,
+        input_converter: InputConverter | None = None,
+        response_converter: ResponseConverter | None = None,
+    ) -> None:
+        """Constructor method"""
+        self.message_producer = message_producer
+        self._input_converter = (
+            input_converter
+            if input_converter is not None
+            else SimpleInputConverter()
+        )
+        self._response_converter = (
+            response_converter
+            if response_converter is not None
+            else SimpleResponseConverter()
+        )
+
+        """Abstract method to send a message."""
+    async def send(
+        self,
+        message: Any,
+        *args,
+        **kwargs
+    ) -> Any:
+        """Async method to send a list of dicts as a json payload
+
+        :param message: The list of dictionaries
+        :type message: `list`[`dict`[`str`, `Any`]]
+        :param job_id: The job id
+        :type job_id: `str`
+        :param job_info: The job info
+        :type job_info: `dict`[`str`, `str` | `None`]
+        :return: Returns a tuple of:
+        * the list of dicts sent
+        * the file name given
+        * the result of the request
+        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
+        :class:`datetime`]
+        """
+        (
+            converted_data,
+            sender_args,
+            sender_kwargs,
+            response_args,
+            response_kwargs
+        ) = self._input_converter(
+            message=message,
+            *args,
+            **kwargs
+        )
+        response = await self._sender(
+            converted_data=converted_data,
+            *sender_args,
+            **sender_kwargs
+        )
+        return self._response_converter(
+            response,
+            *response_args,
+            **response_kwargs
+        )
+
+    @abstractmethod
+    async def _sender(
+        self,
+        *args,
+        **kwargs
+    ):
+        """Abstract method to send a message."""
+        pass
