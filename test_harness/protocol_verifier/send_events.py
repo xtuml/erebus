@@ -6,6 +6,7 @@ import asyncio
 from io import BytesIO
 from uuid import uuid4
 import logging
+from contextlib import asynccontextmanager
 
 import aiohttp
 from aiokafka.errors import KafkaTimeoutError as AIOKafkaTimeoutError
@@ -17,13 +18,14 @@ from test_harness.protocol_verifier.simulator_data import (
 )
 from test_harness.message_buses.message_buses import (
     MessageProducer, InputConverter, ResponseConverter,
-    MessageExceptionHandler, Kafka3MessageBus, KafkaMessageProducer,
-    HTTPMessageBus, HTTPMessageProducer
+    MessageExceptionHandler, Kafka3MessageBus,
+    HTTPMessageBus, AIOKafkaMessageBus
 )
 
 
-def get_pv_sender(
-    message_bus: Literal["kafka", "http"],
+@asynccontextmanager
+async def get_pv_sender(
+    message_bus: Literal["kafka", "http", "kafka3"],
     **kwargs: Any
 ) -> "PVMessageSender":
     """Function to get a PVMessageSender instance
@@ -35,48 +37,61 @@ def get_pv_sender(
     :return: Returns a :class:`PVMessageSender` instance
     :rtype: :class:`PVMessageSender`
     """
-    response_converter = PVMessageResponseConverter(
-        message_bus=message_bus
-    )
-    exception_handler = PVMessageExceptionHandler(
-        message_bus=message_bus
-    )
+    producer_kwargs = {
+        "response_converter": PVMessageResponseConverter(
+            message_bus=message_bus
+        ),
+        "exception_converter": PVMessageExceptionHandler(
+            message_bus=message_bus
+        )
+    }
     match message_bus:
         case "kafka":
-            producer = KafkaMessageProducer(
-                topic=kwargs["topic"],
-                message_bus=Kafka3MessageBus(
-                    bootstrap_servers=kwargs["bootstrap_servers"],
-                    stop_timeout=(
-                        kwargs["stop_timeout"]
-                        if "stop_timeout" in kwargs
-                        else 10,
-                    )
-                ),
-                response_converter=response_converter,
-                exception_handler=exception_handler,
-            )
+            message_bus_kwargs = {
+                "bootstrap_servers": kwargs["bootstrap_servers"],
+                "stop_timeout": (
+                    kwargs["stop_timeout"]
+                    if "stop_timeout" in kwargs
+                    else 10,
+                )
+            }
+            producer_kwargs["topic"] = kwargs["topic"]
+            message_bus_class = AIOKafkaMessageBus
+        case "kafka3":
+            message_bus_kwargs = {
+                "bootstrap_servers": kwargs["bootstrap_servers"],
+                "stop_timeout": (
+                    kwargs["stop_timeout"]
+                    if "stop_timeout" in kwargs
+                    else 10,
+                )
+            }
+            producer_kwargs["topic"] = kwargs["topic"]
+            message_bus_class = Kafka3MessageBus
         case "http":
-            producer = HTTPMessageProducer(
-                url=kwargs["url"],
-                message_bus=HTTPMessageBus(
-                    max_connections=(
-                        kwargs["max_connections"]
-                        if "max_connections" in kwargs
-                        else 2000
-                    ),
+            message_bus_kwargs = {
+                "max_connections": (
+                    kwargs["max_connections"]
+                    if "max_connections" in kwargs
+                    else 2000
                 ),
-                response_converter=response_converter,
-                exception_handler=exception_handler,
-            )
+            }
+            producer_kwargs["url"] = kwargs["url"]
+            message_bus_class = HTTPMessageBus
         case _:
             raise ValueError(
                 f"Message bus {message_bus} not recognised"
             )
-    return PVMessageSender(
-        producer=producer,
-        message_bus=message_bus,
-    )
+    async with message_bus_class(
+        **message_bus_kwargs
+    ) as message_bus_instance:
+        producer = message_bus_instance.get_message_producer(
+            **producer_kwargs
+        )
+        yield PVMessageSender(
+            producer=producer,
+            message_bus=message_bus,
+        )
 
 
 class PVMessageSender:

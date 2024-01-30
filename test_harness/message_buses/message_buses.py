@@ -144,6 +144,9 @@ class MessageBusSendingController(ABC):
     def get_message_producer(
         self,
         *args,
+        input_converter: InputConverter | None = None,
+        response_converter: ResponseConverter | None = None,
+        exception_converter: MessageExceptionHandler | None = None,
         **kwargs,
     ) -> "MessageProducer":
         """Abstract method to get a message producer."""
@@ -211,11 +214,17 @@ class KafkaMessageBus(MessageBusSendingController):
     def get_message_producer(
         self,
         topic: str,
+        input_converter: InputConverter | None = None,
+        response_converter: ResponseConverter | None = None,
+        exception_converter: MessageExceptionHandler | None = None,
     ) -> "MessageProducer":
         """Get a message producer."""
         return KafkaMessageProducer(
             topic=topic,
             message_bus=self,
+            input_converter=input_converter,
+            response_converter=response_converter,
+            exception_converter=exception_converter
         )
 
     async def send(self, message: bytes, topic: str) -> bytes:
@@ -372,11 +381,17 @@ class HTTPMessageBus(MessageBusSendingController):
     def get_message_producer(
         self,
         url: str,
+        input_converter: InputConverter | None = None,
+        response_converter: ResponseConverter | None = None,
+        exception_converter: MessageExceptionHandler | None = None,
     ) -> "MessageProducer":
         """Get a message producer."""
         return HTTPMessageProducer(
             url=url,
             message_bus=self,
+            input_converter=input_converter,
+            response_converter=response_converter,
+            exception_converter=exception_converter
         )
 
     async def send(self, message: Any, url: str, **kwargs) -> bytes:
