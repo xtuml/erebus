@@ -104,21 +104,6 @@ To change default values of these files a parameter can be copied under the `[no
 * General config
     * `requests_max_retries` - The number of times a synchronous request will retry to get the correct response before providing the wrong response. Defaults to `5`
     * `requests_timeout` - The timeout in seconds of a sychronous request. Defaults to `10`
-* Config relating to metrics collections
-    * Kafka metrics collection config
-        * `metrics_from_kafka` - Boolean indicating whether to collect metrics from a kafka topic. Defaults to `False``
-        * `kafka_metrics_host` - The kafka host to collect the metrics from. Defaults to `host.docker.internal:9092`
-        * `kafka_metrics_topic` - The topic to colect the metrics from. Defaults to `default.BenchmarkingProbe_service0`
-        * `kafka_metrics_collection_interval` - An integer indicating the interval, in seconds, in which to collect metrics. Defaults to 1.
-* Config relating to sending files
-    * `message_bus_protocol` - The protocol to use for sending data to the application being tested. Currently supports the following two values (this will default to HTTP if any inccorect config is given):
-        * HTTP - use the HTTP protocol to send data
-        * KAFKA - use kafka to send data
-    * Config relating to sending files to Kafka (if `message_bus_protocol` is set to "KAFKA")
-        * `kafka_message_bus_host` - The kafka host to send message to. Defaults to  `host.docker.internal:9092`
-        * `kafka_message_bus_topic` The kafka topic to send messages to. Defaults to  `default.AEReception_service0`
-    * Config relating to sending files to the HTTP server (if `message_bus_protocol` is set to "HTTP") TODO: Change this to reflect an arbitrary test
-        * `pv_send_url` - The url of the endpoint that requests are sent to to upload events for reception and verification. Defaults to `http://host.docker.internal:9000/upload/events`
 * log reception and finishing time parameters
     * `log_calc_interval_time` (deprecated and can be set in test config under `test_finish` under subfield `metrics_get_interval` in the test config) - The interval time between requests for the log files. Defaults to `5`
     * `aer_get_file_url` - The url of the endpoint that requests are sent to receive a named log files for AER. Defaults to  `http://host.docker.internal:9000/download/aerlog`
@@ -137,7 +122,8 @@ To change default values of these files a parameter can be copied under the `[no
     * `message_bus_protocol` - The protocol to use for sending data to the application being tested. Currently supports the following two values (this will default to HTTP if any inccorect config is given):
         * HTTP - use the HTTP protocol to send data
         * KAFKA - use kafka to send data
-    * Config relating to sending files to Kafka (if `message_bus_protocol` is set to "KAFKA")
+        * KAFKA3 - use the kafka3 module for sending data (can be more performant)
+    * Config relating to sending files to Kafka (if `message_bus_protocol` is set to "KAFKA" | "KAFKA3")
         * `kafka_message_bus_host` - The kafka host to send message to. Defaults to  `host.docker.internal:9092`
         * `kafka_message_bus_topic` The kafka topic to send messages to. Defaults to  `default.AEReception_service0`
     * Config relating to sending files to the HTTP server (if `message_bus_protocol` is set to "HTTP") TODO: Change this to reflect an arbitrary test
