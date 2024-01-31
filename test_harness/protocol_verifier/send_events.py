@@ -6,140 +6,98 @@ import asyncio
 from io import BytesIO
 from uuid import uuid4
 import logging
-from contextlib import asynccontextmanager
 
 import aiohttp
 from aiokafka.errors import KafkaTimeoutError as AIOKafkaTimeoutError
-from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
+from kafka3.errors import KafkaTimeoutError as Kafka3TimeoutError
 
+from test_harness.config.config import HarnessConfig
 from test_harness.protocol_verifier.simulator_data import (
     convert_list_dict_to_json_io_bytes,
     convert_list_dict_to_pv_json_io_bytes
 )
 from test_harness.message_buses.message_buses import (
     MessageProducer, InputConverter, ResponseConverter,
-    MessageExceptionHandler, Kafka3MessageBus,
-    HTTPMessageBus, AIOKafkaMessageBus
+    MessageExceptionHandler, MessageSender
 )
 
 
-@asynccontextmanager
-async def get_pv_sender(
-    message_bus: Literal["kafka", "http", "kafka3"],
-    **kwargs: Any
-) -> "PVMessageSender":
-    """Function to get a PVMessageSender instance
+def get_message_bus_kwargs(
+    harness_config: HarnessConfig
+) -> dict[str, Any]:
+    """Function to get the message bus kwargs
 
-    :param producer: The message producer
-    :type producer: :class:`MessageProducer`
-    :param message_bus: The message bus
-    :type message_bus: `Literal`["kafka", "http"]
-    :return: Returns a :class:`PVMessageSender` instance
-    :rtype: :class:`PVMessageSender`
+    :param harness_config: The harness config
+    :type harness_config: :class:`HarnessConfig`
+    :raises ValueError: If the message bus protocol is not recognised
+    :return: Returns the message bus kwargs
+    :rtype: `dict`[`str`, `Any`]
+    """
+    match harness_config.message_bus_protocol:
+        case "KAFKA" | "KAFKA3":
+            return {
+                "bootstrap_servers": harness_config.kafka_message_bus_host,
+            }
+        case "HTTP":
+            return {}
+        case _:
+            raise ValueError(
+                f"Message bus {harness_config.message_bus_protocol} "
+                "not recognised"
+            )
+
+
+def get_producer_kwargs(
+    harness_config: HarnessConfig
+) -> dict[str, Any]:
+    """Function to get the producer kwargs
+
+    :param harness_config: The harness config
+    :type harness_config: :class:`HarnessConfig`
+    :raises ValueError: If the message bus protocol is not recognised
+    :return: Returns the producer kwargs
+    :rtype: `dict`[`str`, `Any`]
     """
     producer_kwargs = {
         "response_converter": PVMessageResponseConverter(
-            message_bus=message_bus
+            message_bus=harness_config.message_bus_protocol
         ),
         "exception_converter": PVMessageExceptionHandler(
-            message_bus=message_bus
+            message_bus=harness_config.message_bus_protocol
         )
     }
-    match message_bus:
-        case "kafka":
-            message_bus_kwargs = {
-                "bootstrap_servers": kwargs["bootstrap_servers"],
-                "stop_timeout": (
-                    kwargs["stop_timeout"]
-                    if "stop_timeout" in kwargs
-                    else 10,
-                )
-            }
-            producer_kwargs["topic"] = kwargs["topic"]
-            message_bus_class = AIOKafkaMessageBus
-        case "kafka3":
-            message_bus_kwargs = {
-                "bootstrap_servers": kwargs["bootstrap_servers"],
-                "stop_timeout": (
-                    kwargs["stop_timeout"]
-                    if "stop_timeout" in kwargs
-                    else 10,
-                )
-            }
-            producer_kwargs["topic"] = kwargs["topic"]
-            message_bus_class = Kafka3MessageBus
-        case "http":
-            message_bus_kwargs = {
-                "max_connections": (
-                    kwargs["max_connections"]
-                    if "max_connections" in kwargs
-                    else 2000
-                ),
-            }
-            producer_kwargs["url"] = kwargs["url"]
-            message_bus_class = HTTPMessageBus
+    match harness_config.message_bus_protocol:
+        case "KAFKA" | "KAFKA3":
+            producer_kwargs[
+                "topic"
+            ] = harness_config.kafka_message_bus_topic
+        case "HTTP":
+            producer_kwargs[
+                "url"
+            ] = harness_config.pv_send_url
         case _:
             raise ValueError(
-                f"Message bus {message_bus} not recognised"
+                f"Message bus {harness_config.message_bus_protocol} "
+                "not recognised"
             )
-    async with message_bus_class(
-        **message_bus_kwargs
-    ) as message_bus_instance:
-        producer = message_bus_instance.get_message_producer(
-            **producer_kwargs
-        )
-        yield PVMessageSender(
-            producer=producer,
-            message_bus=message_bus,
-        )
+    return producer_kwargs
 
 
-class PVMessageSender:
+class PVMessageSender(MessageSender):
     def __init__(
         self,
         producer: MessageProducer,
-        message_bus: Literal["kafka", "http"],
+        message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
         self._producer = producer
-        self._input_converter = PVInputConverter(
+        input_converter = PVInputConverter(
             message_bus=message_bus
         )
-        self._response_converter = PVResponseConverter()
-
-    async def send(
-        self,
-        message: list[dict[str, Any]],
-        job_id: str,
-        job_info: dict[str, str | None],
-    ) -> tuple[
-        list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
-    ]:
-        """Async method to send a list of dicts as a json payload
-
-        :param message: The list of dictionaries
-        :type message: `list`[`dict`[`str`, `Any`]]
-        :param job_id: The job id
-        :type job_id: `str`
-        :param job_info: The job info
-        :type job_info: `dict`[`str`, `str` | `None`]
-        :return: Returns a tuple of:
-        * the list of dicts sent
-        * the file name given
-        * the result of the request
-        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
-        :class:`datetime`]
-        """
-        converted_data, _, _, _, _ = self._input_converter(
-            message=message
-        )
-        responses = await self._sender(
-            converted_data=converted_data
-        )
-        return self._response_converter(
-            responses=responses,
-            list_dict=message,
-            job_id=job_id,
-            job_info=job_info,
+        response_converter = PVResponseConverter()
+        super().__init__(
+            producer=producer,
+            input_converter=input_converter,
+            response_converter=response_converter,
         )
 
     async def _sender(self, converted_data: list[Any]) -> Any:
@@ -156,7 +114,7 @@ class PVMessageSender:
 class PVInputConverter(InputConverter):
     def __init__(
         self,
-        message_bus: Literal["kafka", "http"],
+        message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
         super().__init__()
         self._message_bus = message_bus
@@ -181,11 +139,11 @@ class PVInputConverter(InputConverter):
         """Private method to set the data conversion function
         """
         match self._message_bus:
-            case "kafka":
+            case "KAFKA" | "KAFKA3":
                 self._data_conversion_function = (
                     convert_list_dict_to_pv_json_io_bytes
                 )
-            case "http":
+            case "HTTP":
                 self._data_conversion_function = (
                     self._http_conversion_function
                 )
@@ -247,7 +205,7 @@ class PVResponseConverter(ResponseConverter):
 class PVMessageResponseConverter(ResponseConverter):
     def __init__(
         self,
-        message_bus: Literal["kafka", "http"],
+        message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
         super().__init__()
         self._message_bus = message_bus
@@ -271,11 +229,11 @@ class PVMessageResponseConverter(ResponseConverter):
         """Private method to set the data conversion function
         """
         match self._message_bus:
-            case "kafka":
+            case "KAFKA" | "KAFKA3":
                 self._data_conversion_function = (
                     self._kafka_conversion_function
                 )
-            case "http":
+            case "HTTP":
                 self._data_conversion_function = (
                     self._http_conversion_function
                 )
@@ -305,7 +263,7 @@ class PVMessageResponseConverter(ResponseConverter):
 class PVMessageExceptionHandler(MessageExceptionHandler):
     def __init__(
         self,
-        message_bus: Literal["kafka", "http"],
+        message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
         super().__init__()
         self._message_bus = message_bus
@@ -322,9 +280,9 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
         """Private method to set the exception handler
         """
         match self._message_bus:
-            case "kafka":
+            case "KAFKA" | "KAFKA3":
                 self._exception_handler = self._kafka_exception_handler
-            case "http":
+            case "HTTP":
                 self._exception_handler = self._http_exception_handler
             case _:
                 raise ValueError(
@@ -336,7 +294,7 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
         exception: Exception
     ) -> str:
         if isinstance(exception, (
-            AIOKafkaTimeoutError, KafkaTimeoutError3
+            AIOKafkaTimeoutError, Kafka3TimeoutError
         )):
             logging.getLogger().warning(
                 "Error sending payload to kafka: %s", exception
