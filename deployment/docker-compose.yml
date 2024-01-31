@@ -3,7 +3,7 @@ name: test-harness
 services:
   test-harness:
     # amd64 image
-    image: "test-harness:latest"
+    image: "ghcr.io/smartdcsitlimited/test-harness:main"
     volumes:
       - "./config:/config"
       - "./report_output:/test_harness_app/test_harness/report_output"
