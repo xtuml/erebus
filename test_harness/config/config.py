@@ -137,20 +137,34 @@ class HarnessConfig:
         self.pv_send_as_pv_bytes = (
             True if pv_send_as_pv_bytes_raw.lower() == "true" else False
         )
-        if message_bus_protocol == "KAFKA" | message_bus_protocol == "KAFKA3":
-            self.message_bus_protocol = message_bus_protocol
-            self.kafka_message_bus_host = self.config_parser["non-default"][
-                "kafka_message_bus_host"
-            ]
-            self.kafka_message_bus_topic = self.config_parser["non-default"][
-                "kafka_message_bus_topic"
-            ]
-            self.pv_send_as_pv_bytes = True
-        else:
-            self.message_bus_protocol = "HTTP"
-            self.pv_send_url = self.config_parser["non-default"][
-                "pv_send_url"
-            ]
+        match message_bus_protocol:
+            case "KAFKA" | "KAFKA3":
+                self.message_bus_protocol = message_bus_protocol
+                self.kafka_message_bus_host = self.config_parser[
+                    "non-default"
+                ][
+                    "kafka_message_bus_host"
+                ]
+                self.kafka_message_bus_topic = self.config_parser[
+                    "non-default"
+                ][
+                    "kafka_message_bus_topic"
+                ]
+                self.pv_send_as_pv_bytes = True
+            case "HTTP":
+                self.message_bus_protocol = message_bus_protocol
+                self.pv_send_url = self.config_parser["non-default"][
+                    "pv_send_url"
+                ]
+            case _:
+                raise ValueError(
+                    f"Invalid message bus protocol '{message_bus_protocol}'"
+                )
+        # else:
+        #     self.message_bus_protocol = "HTTP"
+        #     self.pv_send_url = self.config_parser["non-default"][
+        #         "pv_send_url"
+        #     ]
 
     def parse_requests_config(self) -> None:
         """Method to parse requests to pv server config"""

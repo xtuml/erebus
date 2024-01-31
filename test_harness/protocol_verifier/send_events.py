@@ -86,16 +86,15 @@ def get_producer_kwargs(
 class PVMessageSender(MessageSender):
     def __init__(
         self,
-        producer: MessageProducer,
+        message_producer: MessageProducer,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
-        self._producer = producer
         input_converter = PVInputConverter(
             message_bus=message_bus
         )
         response_converter = PVResponseConverter()
         super().__init__(
-            producer=producer,
+            message_producer=message_producer,
             input_converter=input_converter,
             response_converter=response_converter,
         )
@@ -103,7 +102,7 @@ class PVMessageSender(MessageSender):
     async def _sender(self, converted_data: list[Any]) -> Any:
         return await asyncio.gather(
             *[
-                self._producer.send_message(
+                self.message_producer.send_message(
                     message=message
                 )
                 for message in converted_data
@@ -123,9 +122,15 @@ class PVInputConverter(InputConverter):
     def convert(
         self,
         message: list[dict[str, Any]],
+        job_id: str,
+        job_info: dict[str, str | None]
     ) -> tuple[list[Any], tuple[()], dict, tuple[()], dict[str, Any]]:
         output_data = self.data_conversion_function(message)
-        return output_data, (), {}, (), {}
+        return output_data, (), {}, (), {
+            "list_dict": message,
+            "job_id": job_id,
+            "job_info": job_info
+        }
 
     @property
     def data_conversion_function(self) -> Callable[
@@ -302,8 +307,8 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
             return str(exception)
         raise exception
 
+    @staticmethod
     def _http_exception_handler(
-        self,
         exception: Exception
     ) -> str:
         logging.getLogger().warning(
