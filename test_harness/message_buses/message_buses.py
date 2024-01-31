@@ -18,7 +18,7 @@ class InputConverter(ABC):
 
     @abstractmethod
     def convert(
-        self, message: Any, *args, **kwargs
+        self, *args, **kwargs
     ) -> tuple[Any, tuple, dict, tuple, dict]:
         """Abstract method to convert a message."""
         pass
@@ -96,7 +96,7 @@ class MessageProducer(ABC):
             else SimpleMessageExceptionHandler()
         )
 
-    async def send_message(self, message: Any, *args, **kwargs) -> Any:
+    async def send_message(self, *args, **kwargs) -> Any:
         """Abstract method to send a message."""
         (
             converted_message,
@@ -104,7 +104,7 @@ class MessageProducer(ABC):
             send_kwargs,
             output_args,
             output_kwargs,
-        ) = self._input_converter.convert(message, *args, **kwargs)
+        ) = self._input_converter.convert(*args, **kwargs)
         try:
             response = await self._send(
                 converted_message, *send_args, **send_kwargs
@@ -449,24 +449,15 @@ class MessageSender(ABC):
         """Abstract method to send a message."""
     async def send(
         self,
-        message: Any,
         *args,
         **kwargs
     ) -> Any:
         """Async method to send a list of dicts as a json payload
 
-        :param message: The list of dictionaries
-        :type message: `list`[`dict`[`str`, `Any`]]
-        :param job_id: The job id
-        :type job_id: `str`
-        :param job_info: The job info
-        :type job_info: `dict`[`str`, `str` | `None`]
-        :return: Returns a tuple of:
-        * the list of dicts sent
-        * the file name given
-        * the result of the request
-        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
-        :class:`datetime`]
+        :param args: The args to send to the input converter class
+        :type args: `Any`
+        :param kwargs: The kwargs to send to the input converter class
+        :type kwargs: `Any`
         """
         (
             converted_data,
@@ -475,7 +466,6 @@ class MessageSender(ABC):
             response_args,
             response_kwargs
         ) = self._input_converter.convert(
-            message=message,
             *args,
             **kwargs
         )
