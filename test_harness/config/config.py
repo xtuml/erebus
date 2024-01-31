@@ -130,15 +130,15 @@ class HarnessConfig:
         """
         message_bus_protocol = self.config_parser["non-default"][
             "message_bus_protocol"
-        ]
+        ].upper()
         pv_send_as_pv_bytes_raw = self.config_parser["non-default"][
             "pv_send_as_pv_bytes"
         ]
         self.pv_send_as_pv_bytes = (
             True if pv_send_as_pv_bytes_raw.lower() == "true" else False
         )
-        if message_bus_protocol.lower() == "kafka":
-            self.message_bus_protocol = "KAFKA"
+        if message_bus_protocol == "KAFKA" | message_bus_protocol == "KAFKA3":
+            self.message_bus_protocol = message_bus_protocol
             self.kafka_message_bus_host = self.config_parser["non-default"][
                 "kafka_message_bus_host"
             ]
