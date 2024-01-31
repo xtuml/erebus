@@ -45,10 +45,14 @@ class TestPVInputConverter:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         data_converter = PVInputConverter(
-            message_bus="kafka"
+            message_bus="KAFKA"
         )
-        io_bytes_list, _, _, _, _ = data_converter.convert(
-            message=job_list
+        job_id = "job_id"
+        job_info = {"job_info": "job_info"}
+        io_bytes_list, _, _, _, response_kwargs = data_converter.convert(
+            message=job_list,
+            job_id=job_id,
+            job_info=job_info
         )
         assert len(io_bytes_list) == len(job_list)
         for io_bytes, event_expected in zip(io_bytes_list, job_list):
@@ -59,6 +63,8 @@ class TestPVInputConverter:
             event_actual = json.loads(json_bytes.decode("utf-8"))
             check_dict_equivalency(event_actual, event_expected)
             assert msg_length == len(json_bytes)
+        assert response_kwargs["job_id"] == job_id
+        assert response_kwargs["job_info"] == job_info
 
     @staticmethod
     def test_convert_http(
@@ -71,10 +77,14 @@ class TestPVInputConverter:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         data_converter = PVInputConverter(
-            message_bus="http"
+            message_bus="HTTP"
         )
-        form_data_list, _, _, _, _ = data_converter.convert(
-            message=job_list
+        job_id = "job_id"
+        job_info = {"job_info": "job_info"}
+        form_data_list, _, _, _, response_kwargs = data_converter.convert(
+            message=job_list,
+            job_id=job_id,
+            job_info=job_info
         )
         assert len(form_data_list) == 1
         form_data = form_data_list[0]
@@ -84,6 +94,8 @@ class TestPVInputConverter:
         payload_dict = json.loads(payload._value.getvalue())
         for expected_event, actual_event in zip(job_list, payload_dict):
             check_dict_equivalency(actual_event, expected_event)
+        assert response_kwargs["job_id"] == job_id
+        assert response_kwargs["job_info"] == job_info
 
 
 class TestPVResponseConverter:
@@ -144,7 +156,7 @@ class TestPVMessageResponseConverter:
         """Tests `convert` for kafka message bus
         """
         response_converter = PVMessageResponseConverter(
-            message_bus="kafka"
+            message_bus="KAFKA"
         )
         response = "response"
         result = response_converter.convert(
@@ -158,7 +170,7 @@ class TestPVMessageResponseConverter:
         """Tests `convert` for http message bus
         """
         response_converter = PVMessageResponseConverter(
-            message_bus="http"
+            message_bus="HTTP"
         )
         response = MockClientResponse(
             status=200,
@@ -177,7 +189,7 @@ class TestPVMessageResponseConverter:
         """Tests `convert` for http message bus
         """
         response_converter = PVMessageResponseConverter(
-            message_bus="http"
+            message_bus="HTTP"
         )
         response = MockClientResponse(
             status=400,
@@ -202,7 +214,7 @@ class TestPVMessageExceptionHandler:
         """Tests `handle_exception`
         """
         exception_handler = PVMessageExceptionHandler(
-            message_bus="kafka"
+            message_bus="KAFKA"
         )
         for exception_class, error_message in [
             (KafkaTimeoutError3, "exception_1"),
@@ -225,7 +237,7 @@ class TestPVMessageExceptionHandler:
         """
         with pytest.raises(ValueError):
             handler = PVMessageExceptionHandler(
-                message_bus="kafka"
+                message_bus="KAFKA"
             )
             handler.handle_exception(ValueError("An error"))
 
@@ -236,7 +248,7 @@ class TestPVMessageExceptionHandler:
         """Tests `handle_exception` for http
         """
         exception_handler = PVMessageExceptionHandler(
-            message_bus="http"
+            message_bus="HTTP"
         )
         for exception_class, error_message, expected_result in [
             (asyncio.TimeoutError, "exception_1", "timed out"),
