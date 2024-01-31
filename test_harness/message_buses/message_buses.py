@@ -474,7 +474,7 @@ class MessageSender(ABC):
             sender_kwargs,
             response_args,
             response_kwargs
-        ) = self._input_converter(
+        ) = self._input_converter.convert(
             message=message,
             *args,
             **kwargs
@@ -484,7 +484,7 @@ class MessageSender(ABC):
             *sender_args,
             **sender_kwargs
         )
-        return self._response_converter(
+        return self._response_converter.convert(
             response,
             *response_args,
             **response_kwargs
