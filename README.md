@@ -69,7 +69,8 @@ To change default values of these files a parameter can be copied under the `[no
     * `message_bus_protocol` - The protocol to use for sending data to the application being tested. Currently supports the following two values (this will default to HTTP if any inccorect config is given):
         * HTTP - use the HTTP protocol to send data
         * KAFKA - use kafka to send data
-    * Config relating to sending files to Kafka (if `message_bus_protocol` is set to "KAFKA")
+        * KAFKA3 - use the kafka3 module for sending data (can be more performant)
+    * Config relating to sending files to Kafka (if `message_bus_protocol` is set to "KAFKA" | "KAFKA3")
         * `kafka_message_bus_host` - The kafka host to send message to. Defaults to  `host.docker.internal:9092`
         * `kafka_message_bus_topic` The kafka topic to send messages to. Defaults to  `default.AEReception_service0`
     * Config relating to sending files to the HTTP server (if `message_bus_protocol` is set to "HTTP") TODO: Change this to reflect an arbitrary test
