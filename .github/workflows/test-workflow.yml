@@ -1,8 +1,11 @@
 name: test-workflow
 on:
-  push:
+  pull_request:
+    types:
+      - opened
+      - synchronize
     branches:
-      '**'
+      'main'
 jobs:
   sast:
     uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
@@ -12,7 +15,7 @@ jobs:
     uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
 
   run-tests:
-    runs-on: sh-k8s-runner
+    runs-on: ubuntu-latest
     steps:
       - name: Setup Checkout
         uses: actions/checkout@v4
