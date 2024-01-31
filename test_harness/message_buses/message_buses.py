@@ -1,9 +1,10 @@
 """Module for holding the message bus classes.
 """
 
-from typing import Any, Self
+from typing import Any, Self, Literal, Generator
 from abc import ABC, abstractmethod
 import asyncio
+from contextlib import asynccontextmanager
 
 from aiokafka import AIOKafkaProducer
 from kafka3 import KafkaProducer
@@ -497,3 +498,64 @@ class MessageSender(ABC):
     ):
         """Abstract method to send a message."""
         pass
+
+
+@asynccontextmanager
+async def get_producer_context(
+    message_bus: Literal["KAFKA", "HTTP", "KAFKA3"],
+    message_bus_kwargs: dict[str, Any],
+    producer_kwargs: dict[str, Any],
+) -> Generator[MessageProducer, Any, None]:
+    """Function to get a producer instance in a context manager for a message
+    bus.
+
+    :param message_bus: The message bus
+    :type message_bus: `Literal`["KAFKA", "KAFKA3", "HTTP"]
+    :param message_bus_kwargs: The message bus keyword arguments
+    :type message_bus_kwargs: `dict`[`str`, `Any`]
+    :param producer_kwargs: The producer keyword arguments
+    :type producer_kwargs: `dict`[`str`, `Any`]
+    :raises ValueError: If the message bus is not recognised
+    :raises ValueError: If the bootstrap_servers keyword argument is not
+        provided for kafka message bus keyword arguments
+    :raises ValueError: If the topic keyword argument is not provided for kafka
+        message producer keyword arguments
+    :raises ValueError: If the url keyword argument is not provided for http
+        message producer keyword arguments
+    :return: Returns a message producer instance
+    :rtype: `MessageProducer`
+    """
+    match message_bus:
+        case "KAFKA" | "KAFKA3":
+            if "bootstrap_servers" not in message_bus_kwargs:
+                raise ValueError(
+                    "bootstrap_servers must be provided for "
+                    "kafka message bus keyword arguments"
+                )
+            if "topic" not in producer_kwargs:
+                raise ValueError(
+                    "topic must be provided for "
+                    "kafka message producer keyword arguments"
+                )
+            message_bus_class = (
+                AIOKafkaMessageBus
+                if message_bus == "KAFKA"
+                else Kafka3MessageBus
+            )
+        case "HTTP":
+            if "url" not in producer_kwargs:
+                raise ValueError(
+                    "url must be provided for "
+                    "http message producer keyword arguments"
+                )
+            message_bus_class = HTTPMessageBus
+        case _:
+            raise ValueError(
+                f"Message bus {message_bus} not recognised"
+            )
+    async with message_bus_class(
+        **message_bus_kwargs
+    ) as message_bus_instance:
+        yield message_bus_instance.get_message_producer(
+            **producer_kwargs
+        )
