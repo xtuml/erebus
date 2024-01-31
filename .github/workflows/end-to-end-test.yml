@@ -1,10 +1,12 @@
 name: End-to-End Test
 
 on:
-  push:
+  pull_request:
+    types:
+      - opened
+      - synchronize
     branches:
-      ## TODO consider whether this should be on all commits or just on PRs (depending on speed)
-      - '**'
+      'main'
 
 jobs:
   build-and-test:

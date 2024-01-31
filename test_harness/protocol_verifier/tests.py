@@ -20,16 +20,12 @@ from multiprocessing import Queue, Event
 import queue
 from contextlib import AsyncExitStack
 
-import aiohttp
 import matplotlib.pyplot as plt
 import flatdict
 import pandas as pd
 import plotly.express as px
 from plotly.graph_objects import Figure
 import requests
-from aiokafka import AIOKafkaProducer
-# TODO: will use in later versions
-# from kafka3 import KafkaProducer
 from tqdm import tqdm
 
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -46,11 +42,6 @@ from test_harness.protocol_verifier.simulator_data import (
     generate_job_batch_events,
     generate_single_events,
     job_sequencer,
-    send_list_dict_as_json_wrap_send_function,
-    convert_list_dict_to_json_io_bytes,
-    convert_list_dict_to_pv_json_io_bytes,
-    send_payload_kafka,
-    send_payload_async,
 )
 from test_harness.simulator.simulator import (
     SimDatum,
@@ -60,6 +51,9 @@ from test_harness.simulator.simulator import (
 from test_harness.simulator.simulator_profile import (
     Profile,
     InterpolatedProfile
+)
+from test_harness.message_buses.message_buses import (
+    get_producer_context
 )
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
@@ -76,7 +70,6 @@ from .pvresultshandler import (
 )
 from .pvperformanceresults import PVPerformanceResults
 from .kafka_metrics import PVKafkaMetricsRetriever
-# from .pvresultsdaskdataframe import PVResultsDaskDataFrame
 from .pvresultsdataframe import PVResultsDataFrame
 from .pvfunctionalresults import PVFunctionalResults
 from .types import (
@@ -84,6 +77,9 @@ from .types import (
     MetricsRetriverKwargsPairAndHandlerKwargsPair,
     MetricsRetrieverKwargsPair,
     ResultsHandlerKwargsPair
+)
+from .send_events import (
+    get_message_bus_kwargs, get_producer_kwargs, PVMessageSender
 )
 
 
@@ -471,61 +467,31 @@ class Test(ABC):
         defaults to `None`
         :type time_sync: :class:`MultiProcessDateSync` | `None`, optional
         """
-        if harness_config.message_bus_protocol == "KAFKA":
-            kafka_producer = AIOKafkaProducer(
-                bootstrap_servers=harness_config.kafka_message_bus_host
+        message_bus_kwargs = get_message_bus_kwargs(
+            harness_config=harness_config,
+        )
+        producer_kwargs = get_producer_kwargs(
+            harness_config=harness_config,
+        )
+        async with get_producer_context(
+            message_bus=harness_config.message_bus_protocol,
+            message_bus_kwargs=message_bus_kwargs,
+            producer_kwargs=producer_kwargs
+        ) as producer:
+            message_sender = PVMessageSender(
+                message_producer=producer,
+                message_bus=harness_config.message_bus_protocol
             )
-            await kafka_producer.start()
-            # TODO: use for later versions
-            # kafka_producer = KafkaProducer(
-            #     bootstrap_servers=harness_config.kafka_message_bus_host
-            # )
             simulator = Simulator(
                 delays=delay_times,
                 simulation_data=sim_data_iterator,
-                action_func=send_list_dict_as_json_wrap_send_function(
-                    send_function=send_payload_kafka,
-                    list_dict_converter=convert_list_dict_to_pv_json_io_bytes,
-                    kafka_topic=harness_config.kafka_message_bus_topic,
-                    kafka_producer=kafka_producer,
-                ),
+                action_func=message_sender.send,
                 results_handler=results_handler,
                 pbar=pbar,
                 time_sync=time_sync,
                 kill_manager=kill_manager,
             )
             await simulator.simulate()
-            logging.getLogger().info(
-                "Stopping Kafka Producer"
-            )
-            await asyncio.wait_for(kafka_producer.stop(), timeout=30)
-            # TODO: use for later versions
-            # kafka_producer.close(timeout=10)
-            logging.getLogger().info(
-                "Kafka Producer stopped"
-            )
-        else:
-            connector = aiohttp.TCPConnector(limit=2000)
-            async with aiohttp.ClientSession(connector=connector) as session:
-                simulator = Simulator(
-                    delays=delay_times,
-                    simulation_data=sim_data_iterator,
-                    action_func=send_list_dict_as_json_wrap_send_function(
-                        send_function=send_payload_async,
-                        list_dict_converter=(
-                            convert_list_dict_to_pv_json_io_bytes
-                            if harness_config.pv_send_as_pv_bytes
-                            else convert_list_dict_to_json_io_bytes
-                        ),
-                        url=harness_config.pv_send_url,
-                        session=session,
-                    ),
-                    results_handler=results_handler,
-                    pbar=pbar,
-                    time_sync=time_sync,
-                    kill_manager=kill_manager,
-                )
-                await simulator.simulate()
 
     async def timeout_test(self) -> None:
         """Method to timeout the test after a certain amount of time if all the

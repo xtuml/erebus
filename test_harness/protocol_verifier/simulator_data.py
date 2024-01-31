@@ -6,7 +6,7 @@
 """
 from __future__ import annotations
 from typing import (
-    Generator, Any, Callable, Awaitable, TypedDict, Literal, Iterable
+    Generator, Any, Callable, TypedDict, Iterable
 )
 import json
 from uuid import uuid4
@@ -14,18 +14,9 @@ from datetime import datetime
 import logging
 import itertools
 from abc import ABC, abstractmethod
-import asyncio
 
-import aiohttp
-from aiokafka import AIOKafkaProducer
-# TODO: for use in later versions
-# from kafka3 import KafkaProducer
-
-from test_harness.jobs.job_delivery import send_payload_async
 from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
 from test_harness.protocol_verifier.types import TemplateOptions
-# TODO: for use in later versions
-# from test_harness.utils import wrap_kafka_future
 
 
 class PVSimDatumTransformer(ABC):
@@ -329,172 +320,6 @@ def convert_list_dict_to_pv_json_io_bytes(
         io_bytes = msg_len + pay_load
         io_bytes_list.append(io_bytes)
     return io_bytes_list
-
-
-def send_list_dict_as_json_wrap_url(
-    url: str,
-    session: aiohttp.ClientSession | None = None,
-    list_dict_converter: Callable[[list[dict[str, Any]]], list[bytes]] = (
-        convert_list_dict_to_json_io_bytes
-    ),
-) -> Callable[
-    [str],
-    Callable[
-        [list[dict[str, Any]]], Awaitable[tuple[list[dict[str, Any]], str]]
-    ],
-]:
-    """Closure to provide an asynchronous function given an input url
-
-    :param url: The url to use for requests
-    :type url: `str`
-    :param session: The session for HTTP requests, defaults to `None`
-    :type session: `aiohttp`.`ClientSession` | `None`, optional
-    :param list_dict_converter: The function to convert a list of dicts to
-    a list of :class:`bytes`, defaults to
-    :func:`convert_list_dict_to_json_io_bytes`
-    :type list_dict_converter: :class:`Callable`[ [`list`[`dict`[`str`,
-    `Any`]]], `list`[:class:`bytes`] ], optional
-    :return: Returns an asynchrcnous function for sending list dictionaries
-    as json packets
-    :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
-    :class:`Awaitable`[`tuple`[`list`[`dict`[`str`, `Any`]], `str`]] ]
-    """
-
-    async def send_list_dict_as_json(
-        list_dict: list[dict[str, Any]],
-        job_id: str,
-        job_info: dict[str, str | None],
-    ) -> tuple[
-        list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
-    ]:
-        """Async method to send a list of dicts as a json payload
-
-        :param list_dict: The list of dictionaries
-        :type list_dict: `list`[`dict`[`str`, `Any`]]
-        :param url: The url to send the payload to
-        :type url: `str`
-        :return: Returns a tuple of:
-        * the list of dicts sent
-        * the file name given
-        * the result of the request
-        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
-        :class:`datetime`]
-        """
-        files = list_dict_converter(list_dict)
-        file_names = [str(uuid4()) + ".json" for _ in range(len(files))]
-        results = await asyncio.gather(
-            *[
-                send_payload_async(
-                    file=file,
-                    file_name=file_name_sent,
-                    url=url,
-                    session=session,
-                )
-                for file, file_name_sent in zip(files, file_names)
-            ]
-        )
-        time_completed = datetime.now()
-        file_name = str(uuid4()) + ".json"
-        result = "".join(results)
-        return list_dict, file_name, job_id, job_info, result, time_completed
-
-    return send_list_dict_as_json
-
-
-def send_list_dict_as_json_wrap_send_function(
-    send_function: Callable[[Any, Any], Awaitable[str]],
-    list_dict_converter: Callable[[list[dict[str, Any]]], list[bytes]] = (
-        convert_list_dict_to_json_io_bytes
-    ),
-    **send_kwargs: Any,
-) -> Callable[
-    [str],
-    Callable[
-        [list[dict[str, Any]]], Awaitable[tuple[list[dict[str, Any]], str]]
-    ],
-]:
-    """Closure to provide an asynchronous function given an input url
-
-    :param send_function: The function to send the payload
-    :type send_function: :class:`Callable`[ [`Any`, `Any`], `Awaitable`[`str`]
-    :param list_dict_converter: The function to convert a list of dicts to
-    a list of :class:`bytes`, defaults to
-    :func:`convert_list_dict_to_json_io_bytes`
-    :type list_dict_converter: :class:`Callable`[ [`list`[`dict`[`str`,
-    `Any`]]], `list`[:class:`bytes`] ], optional
-    :param send_kwargs: Keyword arguments for the send function
-    :type send_kwargs: `Any`
-    :return: Returns an asynchrcnous function for sending list dictionaries
-    as json packets
-    :rtype: :class:`Callable`[ [`list`[`dict`[`str`, `Any`]]],
-    :class:`Awaitable`[`tuple`[`list`[`dict`[`str`, `Any`]], `str`]] ]
-    """
-
-    async def send_list_dict_as_json(
-        list_dict: list[dict[str, Any]],
-        job_id: str,
-        job_info: dict[str, str | None],
-    ) -> tuple[
-        list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
-    ]:
-        """Async method to send a list of dicts as a json payload
-
-        :param list_dict: The list of dictionaries
-        :type list_dict: `list`[`dict`[`str`, `Any`]]
-        :param url: The url to send the payload to
-        :type url: `str`
-        :return: Returns a tuple of:
-        * the list of dicts sent
-        * the file name given
-        * the result of the request
-        :rtype: `tuple`[`list`[`dict`[`str`, `Any`]], `str`, `str`,
-        :class:`datetime`]
-        """
-        files = list_dict_converter(list_dict)
-        file_names = [str(uuid4()) + ".json" for _ in range(len(files))]
-        results = await asyncio.gather(
-            *[
-                send_function(file, file_name_sent, **send_kwargs)
-                for file, file_name_sent in zip(files, file_names)
-            ]
-        )
-        time_completed = datetime.now()
-        file_name = str(uuid4()) + ".json"
-        result = "".join(results)
-        return list_dict, file_name, job_id, job_info, result, time_completed
-
-    return send_list_dict_as_json
-
-
-async def send_payload_kafka(
-    file: bytes,
-    file_name: str,
-    kafka_producer: AIOKafkaProducer,  # KafkaProducer,
-    kafka_topic: str,
-) -> Literal["", "KafkaTimeoutError"]:
-    """Async method to send a payload to a kafka producer
-
-    :param file: The file to send
-    :type file: :class:`bytes`
-    :param producer: The kafka producer
-    :type producer: :class:`KafkaProducer`
-    """
-    try:
-        # TODO: for use in later versions
-        # await wrap_kafka_future(
-        #     kafka_producer.send(topic=kafka_topic, value=file)
-        # )
-        await kafka_producer.send_and_wait(topic=kafka_topic, value=file)
-        result = ""
-        logging.getLogger().debug(
-            f"Sent file {file_name} payload to kafka topic {kafka_topic}"
-        )
-    except Exception as error:
-        logging.getLogger().warning(
-            "Error sending payload to kafka: %s", error
-        )
-        result = str(error)
-    return result
 
 
 class MetaDataCategory(TypedDict):

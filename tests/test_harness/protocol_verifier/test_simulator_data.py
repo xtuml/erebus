@@ -4,7 +4,6 @@
 # pylint: disable=C0302
 """Test simulation_data.py
 """
-from io import BytesIO
 from typing import Generator, Any
 from copy import copy, deepcopy
 import json
@@ -12,9 +11,6 @@ import re
 
 from hypothesis import given, strategies as st
 import pytest
-import aioresponses
-import aiohttp
-import aiokafka
 
 from test_harness.utils import check_dict_equivalency
 from test_harness.simulator.simulator import Batch, SimDatum, async_do_nothing
@@ -33,8 +29,6 @@ from test_harness.protocol_verifier.simulator_data import (
     generate_events_from_template_jobs,
     convert_list_dict_to_json_io_bytes,
     convert_list_dict_to_pv_json_io_bytes,
-    send_list_dict_as_json_wrap_url,
-    send_payload_kafka,
 )
 from test_harness.protocol_verifier.types import TemplateOptions
 
@@ -1198,84 +1192,3 @@ def test_convert_list_dict_to_pv_json_io_bytes(
         event_actual = json.loads(json_bytes.decode("utf-8"))
         check_dict_equivalency(event_actual, event_expected)
         assert msg_length == len(json_bytes)
-
-
-@pytest.mark.asyncio
-async def test_send_list_dict_as_json_wrap_url_pv_data(
-    job_list: list[dict[str, str | list[str]]]
-) -> None:
-    """Tests `send_list_dict_as_json_wrap_url` with
-    the list converter function set to `convert_list_dict_to_pv_json_io_bytes`
-    """
-    form_payload: list[BytesIO] = []
-
-    # callback function to grab data
-    def call_back(url, **kwargs) -> aioresponses.CallbackResult:
-        form_payload.append(kwargs["data"]._parts[0][0]._value)
-        print("called back")
-        return aioresponses.CallbackResult(
-            status=200,
-        )
-
-    with aioresponses.aioresponses() as mock_responses:
-        mock_responses.post("http://test_url", callback=call_back, repeat=True)
-        async with aiohttp.ClientSession() as session:
-            send_func = send_list_dict_as_json_wrap_url(
-                "http://test_url",
-                session,
-                convert_list_dict_to_pv_json_io_bytes,
-            )
-            _ = await send_func(job_list, "test_job_id", {})
-            events_actual = []
-            for io_data in form_payload:
-                # get the io data from the form payload
-                bytes_data = io_data.read()
-                # check the data is as expected
-                msg_length = int.from_bytes(bytes_data[:4], "big")
-                json_bytes = bytes_data[4:]
-                events_actual.append(json.loads(json_bytes.decode("utf-8")))
-                assert msg_length == len(json_bytes)
-            sorted_events_actual = sorted(
-                events_actual, key=lambda x: x["eventId"]
-            )
-            sorted_events_expected = sorted(
-                job_list, key=lambda x: x["eventId"]
-            )
-            for event_actual, event_expected in zip(
-                sorted_events_actual, sorted_events_expected
-            ):
-                check_dict_equivalency(event_actual, event_expected)
-
-
-@pytest.mark.asyncio
-async def test_send_payload_kafka(monkeypatch: pytest.MonkeyPatch):
-    """Tests `send_payload_kafka`"""
-
-    async def mock_send_wait(*agrs, **kwargs):
-        return ""
-
-    monkeypatch.setattr(
-        aiokafka.AIOKafkaProducer, "send_and_wait", mock_send_wait
-    )
-    producer = aiokafka.AIOKafkaProducer()
-    payload = b"some test data"
-    result = await send_payload_kafka(payload, "a_file", producer, "a_topic")
-    assert result == ""
-    await producer.stop()
-
-
-@pytest.mark.asyncio
-async def test_send_payload_kafka_error(monkeypatch: pytest.MonkeyPatch):
-    """Tests `send_payload_kafka` when there is an error"""
-
-    async def mock_send_wait(*agrs, **kwargs):
-        raise aiokafka.errors.KafkaError("test error")
-
-    monkeypatch.setattr(
-        aiokafka.AIOKafkaProducer, "send_and_wait", mock_send_wait
-    )
-    producer = aiokafka.AIOKafkaProducer()
-    payload = b"some test data"
-    result = await send_payload_kafka(payload, "a_file", producer, "a_topic")
-    assert result == str(aiokafka.errors.KafkaError("test error"))
-    await producer.stop()
