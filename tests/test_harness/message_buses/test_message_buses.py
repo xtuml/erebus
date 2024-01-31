@@ -10,6 +10,8 @@ from test_harness.message_buses.message_buses import (
 
 
 class TestAIOKafkaMessageBus:
+    """Tests for `AIOKafkaMessageBus`
+    """
     @staticmethod
     @pytest.mark.asyncio
     async def test_context_manager(
@@ -37,9 +39,12 @@ class TestAIOKafkaMessageBus:
     @staticmethod
     @pytest.mark.asyncio
     async def test_context_manager_error(
-        aio_kafka_producer_mock: list
+        aio_kafka_producer_mock: list[str]
     ) -> None:
         """Tests `send` for kafka message bus
+
+        :param aio_kafka_producer_mock: Mock kafka producer
+        :type aio_kafka_producer_mock: `list`[`str`]
         """
         with pytest.raises(ValueError) as error:
             async with AIOKafkaMessageBus(
@@ -53,6 +58,8 @@ class TestAIOKafkaMessageBus:
 
 
 class TestKafka3MessageBus:
+    """Tests for `Kafka3MessageBus`
+    """
     @staticmethod
     @pytest.mark.asyncio
     async def test_context_manager(
@@ -79,6 +86,8 @@ class TestKafka3MessageBus:
 
 
 class TestHTTPMessageBus:
+    """Tests for `HTTPMessageBus`
+    """
     @staticmethod
     @pytest.mark.asyncio
     async def test_context_manager_send() -> None:
@@ -105,6 +114,8 @@ class TestHTTPMessageBus:
 
 
 class TestMessageProducer:
+    """Tests for `MessageProducer`
+    """
     @staticmethod
     @pytest.mark.asyncio
     async def test_send_message_aio(

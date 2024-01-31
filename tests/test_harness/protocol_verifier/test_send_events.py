@@ -35,6 +35,8 @@ uuid4hex = re.compile(
 
 
 class TestPVInputConverter:
+    """Tests for `PVInputConverter`
+    """
     @staticmethod
     def test_convert_kafka(
         job_list: list[dict[str, str | list[str]]]
@@ -99,6 +101,8 @@ class TestPVInputConverter:
 
 
 class TestPVResponseConverter:
+    """Tests for `PVResponseConverter`
+    """
     @staticmethod
     def test_convert(
         job_list: list[dict[str, str | list[str]]]
@@ -136,20 +140,31 @@ class TestPVResponseConverter:
 
 
 class MockClientResponse:
+    """Mock aiohttp.ClientResponse
+    """
     def __init__(
         self,
         status: int,
         reason: str | None = None,
     ) -> None:
+        """Constructor method
+        """
         self.status = status
         self.reason = reason
 
     @property
     def ok(self) -> bool:
+        """Returns `True` if status is less than 400, `False` otherwise
+
+        :return: `True` if status is less than 400, `False` otherwise
+        :rtype: `bool`
+        """
         return 400 > self.status
 
 
 class TestPVMessageResponseConverter:
+    """Tests for `PVMessageResponseConverter`
+    """
     @staticmethod
     def test_convert_kafka(
     ) -> None:
@@ -187,6 +202,9 @@ class TestPVMessageResponseConverter:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Tests `convert` for http message bus
+
+        :param caplog: Pytest fixture
+        :type caplog: `pytest.LogCaptureFixture`
         """
         response_converter = PVMessageResponseConverter(
             message_bus="HTTP"
@@ -207,11 +225,16 @@ class TestPVMessageResponseConverter:
 
 
 class TestPVMessageExceptionHandler:
+    """Tests for `PVMessageExceptionHandler`
+    """
     @staticmethod
     def test_handle_exception_kafka(
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Tests `handle_exception`
+
+        :param caplog: Pytest fixture
+        :type caplog: `pytest.LogCaptureFixture`
         """
         exception_handler = PVMessageExceptionHandler(
             message_bus="KAFKA"
@@ -246,6 +269,9 @@ class TestPVMessageExceptionHandler:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Tests `handle_exception` for http
+
+        :param caplog: Pytest fixture
+        :type caplog: `pytest.LogCaptureFixture`
         """
         exception_handler = PVMessageExceptionHandler(
             message_bus="HTTP"
@@ -268,6 +294,8 @@ class TestPVMessageExceptionHandler:
 
 
 class TestPVMessageSender:
+    """Tests for `PVMessageSender`
+    """
     @staticmethod
     @pytest.mark.asyncio
     async def test_send_aio_kafka(
@@ -275,6 +303,11 @@ class TestPVMessageSender:
         kafka_producer_mock: list[str]
     ) -> None:
         """Tests `send` for aiokafka
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+        :param kafka_producer_mock: Mock kafka producer
+        :type kafka_producer_mock: `list`[`str`]
         """
         message_bus_kwargs = dict(
             bootstrap_servers="localhost:9092",
@@ -327,6 +360,13 @@ class TestPVMessageSender:
         monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Tests `send` for aiokafka with timeout error
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+        :param kafka_producer_mock: Mock kafka producer
+        :type kafka_producer_mock: `list`[`str`]
+        :param monkeypatch: Pytest fixture
+        :type monkeypatch: `pytest.MonkeyPatch`
         """
         timeout_error = AIOKafkaTimeoutError("timeout")
 
@@ -387,6 +427,11 @@ class TestPVMessageSender:
         sync_kafka_producer_mock: list[str]
     ) -> None:
         """Tests `send` for kafka3
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+        :param sync_kafka_producer_mock: Mock kafka producer
+        :type sync_kafka_producer_mock: `list`[`str`]
         """
         message_bus_kwargs = dict(
             bootstrap_servers="localhost:9092",
@@ -436,10 +481,16 @@ class TestPVMessageSender:
     async def test_send_sync_kafka_error(
         job_list: list[dict[str, str | list[str]]],
         sync_kafka_producer_mock: list[str],
-        caplog: pytest.LogCaptureFixture,
         monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Tests `send` for kafka3 with timeout error
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+        :param sync_kafka_producer_mock: Mock kafka producer
+        :type sync_kafka_producer_mock: `list`[`str`]
+        :param monkeypatch: Pytest fixture
+        :type monkeypatch: `pytest.MonkeyPatch`
         """
         timeout_error = KafkaTimeoutError3("timeout")
 
@@ -501,6 +552,9 @@ class TestPVMessageSender:
         job_list: list[dict[str, str | list[str]]],
     ) -> None:
         """Tests `send` for http
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         message_bus_kwargs = dict()
         producer_kwargs = dict(
@@ -549,6 +603,9 @@ class TestPVMessageSender:
         job_list: list[dict[str, str | list[str]]],
     ) -> None:
         """Tests `send` for http
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         message_bus_kwargs = dict()
         producer_kwargs = dict(
@@ -596,6 +653,9 @@ class TestPVMessageSender:
         job_list: list[dict[str, str | list[str]]],
     ) -> None:
         """Tests `send` for http
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         message_bus_kwargs = dict()
         producer_kwargs = dict(
