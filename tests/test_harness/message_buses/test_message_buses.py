@@ -122,7 +122,7 @@ class TestMessageProducer:
                 topic="test_topic"
             )
             result = await kafka_message_producer.send_message(
-                message=b"message"
+                b"message"
             )
         assert result == ""
         assert aio_kafka_producer_mock[0] == "start"
@@ -146,7 +146,7 @@ class TestMessageProducer:
                 topic="test_topic"
             )
             result = await kafka_message_producer.send_message(
-                message=b"message"
+                b"message"
             )
         assert result == ""
         assert sync_kafka_producer_mock[0] == "start"
@@ -173,7 +173,7 @@ class TestMessageProducer:
                     url="http://localhost:8080/topics/test_topic"
                 )
                 result = await http_message_producer.send_message(
-                    message=b"message"
+                    b"message"
                 )
         text = await result.text()
         assert text == "test response"
@@ -202,7 +202,7 @@ class TestGetProducerContext:
             )
         ) as producer:
             result = await producer.send_message(
-                message=b"message"
+                b"message"
             )
         assert result == ""
         assert aio_kafka_producer_mock[0] == "start"
@@ -229,7 +229,7 @@ class TestGetProducerContext:
             )
         ) as producer:
             result = await producer.send_message(
-                message=b"message"
+                b"message"
             )
         assert result == ""
         assert sync_kafka_producer_mock[0] == "start"
@@ -258,7 +258,7 @@ class TestGetProducerContext:
                 )
             ) as producer:
                 result = await producer.send_message(
-                    message=b"message"
+                    b"message"
                 )
         text = await result.text()
         assert text == "test response"

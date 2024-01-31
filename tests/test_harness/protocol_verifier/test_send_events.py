@@ -50,7 +50,7 @@ class TestPVInputConverter:
         job_id = "job_id"
         job_info = {"job_info": "job_info"}
         io_bytes_list, _, _, _, response_kwargs = data_converter.convert(
-            message=job_list,
+            list_dict=job_list,
             job_id=job_id,
             job_info=job_info
         )
@@ -82,7 +82,7 @@ class TestPVInputConverter:
         job_id = "job_id"
         job_info = {"job_info": "job_info"}
         form_data_list, _, _, _, response_kwargs = data_converter.convert(
-            message=job_list,
+            list_dict=job_list,
             job_id=job_id,
             job_info=job_info
         )
@@ -300,7 +300,7 @@ class TestPVMessageSender:
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
             results = await sender.send(
-                message=job_list,
+                list_dict=job_list,
                 job_id=job_id,
                 job_info=job_info
             )
@@ -324,7 +324,6 @@ class TestPVMessageSender:
     async def test_send_aio_kafka_timeout_error(
         job_list: list[dict[str, str | list[str]]],
         kafka_producer_mock: list[str],
-        caplog: pytest.LogCaptureFixture,
         monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Tests `send` for aiokafka with timeout error
@@ -362,7 +361,7 @@ class TestPVMessageSender:
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
             results = await sender.send(
-                message=job_list,
+                list_dict=job_list,
                 job_id=job_id,
                 job_info=job_info
             )
@@ -413,7 +412,7 @@ class TestPVMessageSender:
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
             results = await sender.send(
-                message=job_list,
+                list_dict=job_list,
                 job_id=job_id,
                 job_info=job_info
             )
@@ -477,7 +476,7 @@ class TestPVMessageSender:
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
             results = await sender.send(
-                message=job_list,
+                list_dict=job_list,
                 job_id=job_id,
                 job_info=job_info
             )
@@ -531,7 +530,7 @@ class TestPVMessageSender:
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}
                 results = await sender.send(
-                    message=job_list,
+                    list_dict=job_list,
                     job_id=job_id,
                     job_info=job_info
                 )
@@ -578,7 +577,7 @@ class TestPVMessageSender:
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}
                 results = await sender.send(
-                    message=job_list,
+                    list_dict=job_list,
                     job_id=job_id,
                     job_info=job_info
                 )
@@ -625,7 +624,7 @@ class TestPVMessageSender:
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}
                 results = await sender.send(
-                    message=job_list,
+                    list_dict=job_list,
                     job_id=job_id,
                     job_info=job_info
                 )
