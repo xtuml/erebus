@@ -84,11 +84,16 @@ def get_producer_kwargs(
 
 
 class PVMessageSender(MessageSender):
+    """Class to handle sending messages to the protocol verifier given a
+    message producer relating to a message bus
+    """
     def __init__(
         self,
         message_producer: MessageProducer,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
+        """Constructor method
+        """
         input_converter = PVInputConverter(
             message_bus=message_bus
         )
@@ -100,6 +105,14 @@ class PVMessageSender(MessageSender):
         )
 
     async def _sender(self, converted_data: list[Any]) -> Any:
+        """Private method to send the converted data used by the base class
+        `send` method
+
+        :param converted_data: The converted data
+        :type converted_data: `list`[`Any`]
+        :return: Returns the response
+        :rtype: `Any`
+        """
         return await asyncio.gather(
             *[
                 self.message_producer.send_message(
@@ -111,10 +124,17 @@ class PVMessageSender(MessageSender):
 
 
 class PVInputConverter(InputConverter):
+    """Class to handle converting input data to the PVMessageSender
+
+    :param message_bus: The message bus
+    :type message_bus: :class:`Literal`["KAFKA", "KAFKA3", "HTTP"]
+    """
     def __init__(
         self,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
+        """Constructor method
+        """
         super().__init__()
         self._message_bus = message_bus
         self._set_data_conversion_function()
@@ -124,7 +144,25 @@ class PVInputConverter(InputConverter):
         list_dict: list[dict[str, Any]],
         job_id: str,
         job_info: dict[str, str | None]
-    ) -> tuple[list[Any], tuple[()], dict, tuple[()], dict[str, Any]]:
+    ) -> tuple[
+        list[Any], tuple[Any, ...], dict, tuple[Any, ...], dict[str, Any]
+    ]:
+        """Method to convert the input data to the PVMessageSender `send`
+        method
+
+        :param list_dict: The list of dictionaries
+        :type list_dict: `list`[`dict`[`str`, `Any`]]
+        :param job_id: The job id
+        :type job_id: `str`
+        :param job_info: The job info
+        :type job_info: `dict`[`str`, `str` | `None`]
+
+        :return: Returns the converted data
+        :rtype: `tuple`[
+            `list`[`Any`], `tuple`[`Any`, ...], `dict`, `tuple`[`Any`, ...],
+            `dict`[`str`, `Any`]
+        ]
+        """
         output_data = self.data_conversion_function(list_dict)
         return output_data, (), {}, (), {
             "list_dict": list_dict,
@@ -136,6 +174,11 @@ class PVInputConverter(InputConverter):
     def data_conversion_function(self) -> Callable[
         [list[dict[str, Any]]], list[Any]
     ]:
+        """Property to get the data conversion function
+
+        :return: Returns the data conversion function
+        :rtype: `Callable`[[`list`[`dict`[`str`, `Any`]]], `list`[`Any`]]
+        """
         return self._data_conversion_function
 
     def _set_data_conversion_function(
@@ -184,9 +227,13 @@ class PVInputConverter(InputConverter):
 
 
 class PVResponseConverter(ResponseConverter):
+    """Class to handle converting the response from the PVMessageSender
+    """
     def __init__(
         self,
     ) -> None:
+        """Constructor method
+        """
         super().__init__()
 
     def convert(
@@ -198,6 +245,23 @@ class PVResponseConverter(ResponseConverter):
     ) -> tuple[
         list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
     ]:
+        """Method to convert the response from the PVMessageSender `send`
+        method
+
+        :param responses: The responses
+        :type responses: `list`[`str`]
+        :param list_dict: The list of dictionaries
+        :type list_dict: `list`[`dict`[`str`, `Any`]]
+        :param job_id: The job id
+        :type job_id: `str`
+        :param job_info: The job info
+        :type job_info: `dict`[`str`, `str` | `None`]
+        :return: Returns the converted data
+        :rtype: `tuple`[
+            `list`[`dict`[`str`, `Any`]], `str`, `str`, `dict`[`str`, `str` |
+            `None`], `str`, :class:`datetime`.`datetime`
+        ]
+        """
         time_completed = datetime.now()
         file_name = str(uuid4()) + ".json"
         result = "".join(responses)
@@ -208,6 +272,12 @@ class PVResponseConverter(ResponseConverter):
 
 
 class PVMessageResponseConverter(ResponseConverter):
+    """Class to handle converting the response in the :class:`MessageProducer`
+    used
+
+    :param message_bus: The message bus
+    :type message_bus: :class:`Literal`["KAFKA", "KAFKA3", "HTTP"]
+    """
     def __init__(
         self,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
@@ -220,12 +290,25 @@ class PVMessageResponseConverter(ResponseConverter):
     def data_conversion_function(self) -> Callable[
         [Any], str
     ]:
+        """Property to get the data conversion function
+
+        :return: Returns the data conversion function
+        :rtype: `Callable`[[`Any`], `str`]
+        """
         return self._data_conversion_function
 
     def convert(
         self,
         response: Any
     ) -> str:
+        """Method to convert the response from the :class:`MessageProducer`
+        `send` method
+
+        :param response: The response
+        :type response: `Any`
+        :return: Returns the converted data
+        :rtype: `str`
+        """
         return self.data_conversion_function(response)
 
     def _set_data_conversion_function(
@@ -251,6 +334,14 @@ class PVMessageResponseConverter(ResponseConverter):
     def _http_conversion_function(
         response: aiohttp.ClientResponse
     ) -> str:
+        """Method to convert the response from the :class:`MessageProducer`
+        `send` method for the HTTP message bus
+
+        :param response: The response
+        :type response: :class:`aiohttp`.`ClientResponse`
+        :return: Returns the converted data
+        :rtype: `str`
+        """
         if response.ok:
             return ""
         logging.getLogger().warning(
@@ -262,23 +353,48 @@ class PVMessageResponseConverter(ResponseConverter):
     def _kafka_conversion_function(
         *_
     ) -> str:
+        """Method to convert the response from the :class:`MessageProducer`
+        `send` method for the kafka message bus
+
+        :return: Returns the converted data
+        :rtype: `str`
+        """
         return ""
 
 
 class PVMessageExceptionHandler(MessageExceptionHandler):
+    """Class to handle exceptions in the :class:`MessageProducer` used
+
+    :param message_bus: The message bus
+    :type message_bus: :class:`Literal`["KAFKA", "KAFKA3", "HTTP"]
+    """
     def __init__(
         self,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
+        """Constructor method
+        """
         super().__init__()
         self._message_bus = message_bus
         self._set_exception_handler()
 
     @property
     def exception_handler(self) -> Callable[[Exception], str]:
+        """Property to get the exception handler
+
+        :return: Returns the exception handler
+        :rtype: `Callable`[[`Exception`], `str`]
+        """
         return self._exception_handler
 
     def handle_exception(self, exception: Exception) -> str:
+        """Method to handle an exception
+
+        :param exception: The exception
+        :type exception: :class:`Exception`
+        :return: Returns the exception message
+        :rtype: `str`
+        """
         return self._exception_handler(exception)
 
     def _set_exception_handler(self) -> None:
@@ -298,6 +414,13 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
     def _kafka_exception_handler(
         exception: Exception
     ) -> str:
+        """Method to handle an exception for the kafka message bus
+
+        :param exception: The exception
+        :type exception: :class:`Exception`
+        :return: Returns the exception message
+        :rtype: `str`
+        """
         if isinstance(exception, (
             AIOKafkaTimeoutError, Kafka3TimeoutError
         )):
@@ -311,6 +434,13 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
     def _http_exception_handler(
         exception: Exception
     ) -> str:
+        """Method to handle an exception for the HTTP message bus
+
+        :param exception: The exception
+        :type exception: :class:`Exception`
+        :return: Returns the exception message
+        :rtype: `str`
+        """
         logging.getLogger().warning(
             "Error sending http payload: %s", exception
         )
