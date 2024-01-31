@@ -4,7 +4,6 @@
 # pylint: disable=C0302
 """Test simulation_data.py
 """
-from io import BytesIO
 from typing import Generator, Any
 from copy import copy, deepcopy
 import json
@@ -12,9 +11,6 @@ import re
 
 from hypothesis import given, strategies as st
 import pytest
-import aioresponses
-import aiohttp
-import aiokafka
 
 from test_harness.utils import check_dict_equivalency
 from test_harness.simulator.simulator import Batch, SimDatum, async_do_nothing
