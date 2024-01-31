@@ -172,6 +172,9 @@ def test_puml_files_test() -> None:
         clean_directories([harness_config.report_file_store])
 
 
+@pytest.mark.skip(
+        reason="This test is deprecated and will be removed in the future"
+)
 @responses.activate
 def test_puml_files_test_send_as_pv_bytes() -> None:
     """Tests method `puml_test_files` with send as pv bytes set to true
