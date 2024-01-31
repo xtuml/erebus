@@ -103,7 +103,7 @@ class PVMessageSender(MessageSender):
         return await asyncio.gather(
             *[
                 self.message_producer.send_message(
-                    message=message
+                    message
                 )
                 for message in converted_data
             ]
@@ -121,13 +121,13 @@ class PVInputConverter(InputConverter):
 
     def convert(
         self,
-        message: list[dict[str, Any]],
+        list_dict: list[dict[str, Any]],
         job_id: str,
         job_info: dict[str, str | None]
     ) -> tuple[list[Any], tuple[()], dict, tuple[()], dict[str, Any]]:
-        output_data = self.data_conversion_function(message)
+        output_data = self.data_conversion_function(list_dict)
         return output_data, (), {}, (), {
-            "list_dict": message,
+            "list_dict": list_dict,
             "job_id": job_id,
             "job_info": job_info
         }
