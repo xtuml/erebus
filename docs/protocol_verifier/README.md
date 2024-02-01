@@ -372,6 +372,31 @@ A test for the PV can be run by using any of the four following stages (UML uplo
         }
     }    
     ```
+    A more recent addition allows the upload of just an event stream JSON file (array of event JSON's). However, this assumes that file has `validity` equal to `true` an `sequence_type` as `"ValidSols"` with no extra options. An example is shown below
+    ```json
+    [
+        {
+            "jobId": "4f57f033-03e9-468c-b3b4-c144af8a3e20",
+            "jobName": "test_uml_1",
+            "eventType": "A",
+            "eventId": "8628fdb6-48e7-4eab-9c9d-95bcbe48b7d0",
+            "timestamp": "2023-09-21T14:35:09.728704Z",
+            "applicationName": "default_application_name"
+        },
+        {
+            "jobId": "4f57f033-03e9-468c-b3b4-c144af8a3e20",
+            "jobName": "test_uml_1",
+            "eventType": "B",
+            "eventId": "ad46fae5-4970-4e7d-90d2-eb23d83f63ec",
+            "timestamp": "2023-09-21T14:35:09.728783Z",
+            "applicationName": "default_application_name",
+            "previousEventIds": [
+                "8628fdb6-48e7-4eab-9c9d-95bcbe48b7d0"
+            ]
+        }
+    ],
+    ```
+
     The endpoint `/upload/test-files` allows the upload of multiple test files and is of mime type `multipart/form`. An example curl request is shown below:
     ```sh
     curl --location --request POST 'http://127.0.0.1:8800/upload/test-files' --form 'file1=@"test_uml_1_events.json"'
@@ -389,8 +414,8 @@ A test for the PV can be run by using any of the four following stages (UML uplo
         └── test_uml_1.puml (optional)
     ```
     Note that all folders and files are optional in general within the zip file (this may not be the case for specific systems for example the `test_file_store` may need to be populated with template test data if the test for the specific system in question does not have a generator of test data). The folder can include:
-    * `profile_store` - (OPTIONAL) This can be populated with a single profile for the test case detailing the time dependent rate at which single instances of test data will be sent.
-    * `test_file_store` - (OPTIONAL) This can be populted with arbitary template (or otherwise) test data that will be used in the test
+    * `profile_store` - (OPTIONAL) This can be populated with a single profile for the test case detailing the time dependent rate at which single instances of test data will be sent. File format is found in `docs/TestProfiles.md`
+    * `test_file_store` - (OPTIONAL) This can be populted with arbitary template (or otherwise) test json data files that will be used in the test (test json file formats described above for the endpoint `/upload/test-files` documentation). Test file template files can be created using the cli tool (from project directory) `./test_harness/protocol_verifier/create_test_file_json.py` (usage is held within the script).
     * `uml_file_store` - (OPTIONAL) This can be populated with the required PUML job definition files for conversion and sending to the PV.
     * `test_config.yaml` - (OPTIONAL) This yaml file includes the test config used for the particular test case. If not present the test config in the JSON body of the `startTest` endpoint will be used (along with any defaults not set in the input config)
     

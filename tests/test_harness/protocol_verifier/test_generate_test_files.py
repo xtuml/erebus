@@ -7,7 +7,8 @@ from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_file,
     generate_test_events_from_puml_files,
     load_test_file_data_json_into_test_file_holder,
-    get_test_events_from_test_file_jsons
+    get_test_events_from_test_file_jsons,
+    create_valid_test_job_file_from_event_stream
 )
 from test_harness.config.config import TestConfig
 from test_harness.utils import check_dict_equivalency
@@ -224,3 +225,44 @@ def test_load_test_file_data_json_into_test_file_holder_options() -> None:
     assert options
     assert options["invariant_matched"] is False
     assert options["invariant_length"] == 2
+
+
+def test_create_valid_test_job_file_from_event_stream() -> None:
+    """Tests `create_valid_test_job_file_from_event_stream`
+    """
+    test_file_path = test_file_resources / "test_uml_1_events.json"
+    with open(test_file_path, 'r', encoding="utf-8") as file:
+        test_file = json.load(file)
+    test_job_file = create_valid_test_job_file_from_event_stream(
+        test_file["job_file"])
+    assert test_job_file["job_file"] == test_file["job_file"]
+    assert test_job_file["job_name"] == test_file["job_file"][0]["jobName"]
+    assert test_job_file["sequence_type"] == "ValidSols"
+    assert test_job_file["validity"] is True
+
+
+def test_load_test_file_data_json_into_test_file_holder_event_stream() -> None:
+    """Tests `load_test_file_data_json_into_test_file_holder`
+    when loading in an event stream rather than test file json
+    """
+    test_file_path = test_file_resources / "test_uml_1_event_stream.json"
+    with open(test_file_path, 'r', encoding="utf-8") as file:
+        test_file = json.load(file)
+    test_file_holder = {}
+    load_test_file_data_json_into_test_file_holder(
+        test_file_path,
+        test_file_holder
+    )
+    assert test_file_holder
+    assert len(test_file_holder) == 1
+    assert "test_uml_1" in test_file_holder
+    assert test_file_holder["test_uml_1"]
+    assert len(test_file_holder["test_uml_1"]) == 1
+    assert "ValidSols" in test_file_holder["test_uml_1"]
+    assert test_file_holder["test_uml_1"]["ValidSols"][1]
+    job_tuples = [*test_file_holder["test_uml_1"]["ValidSols"][0]]
+    assert len(job_tuples) == 1
+    check_dict_equivalency(
+        job_tuples[0][0],
+        test_file["job_file"]
+    )

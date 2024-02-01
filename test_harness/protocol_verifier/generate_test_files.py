@@ -122,7 +122,9 @@ def load_test_file_data_json_into_test_file_holder(
     `TemplateJobsDataAndValidityTuple` ] ]
     """
     with open(test_file_path, 'r', encoding="utf-8") as file:
-        test_file_data: TestJobFile = json.load(file)
+        test_file_data: TestJobFile | list[dict[str, str | list | dict]] = (
+            json.load(file)
+        )
     update_test_files_holder_with_test_file(
         test_files_holder=test_files_holder,
         test_file_data=test_file_data
@@ -137,7 +139,7 @@ def update_test_files_holder_with_test_file(
             SequenceTypeData
         ]
     ],
-    test_file_data: TestJobFile
+    test_file_data: TestJobFile | list[dict[str, str | list | dict]]
 ) -> None:
     """Method to update the test file holder with the test file
 
@@ -145,8 +147,13 @@ def update_test_files_holder_with_test_file(
     the test harness
     :type test_files_holder: `dict`[ `str`, `dict`[ `str`, `SequenceTypeData`]]
     :param test_file_data: The test file data as a python dictionary
-    :type test_file_data: :class:`TestJobFile`
+    :type test_file_data: :class:`TestJobFile` | `list`[`dict`[`str`, `str` |
+    `list` | `dict`]]
     """
+    if isinstance(test_file_data, list):
+        test_file_data = create_valid_test_job_file_from_event_stream(
+            test_file_data
+        )
     if test_file_data["job_name"] not in test_files_holder:
         test_files_holder[test_file_data["job_name"]] = {}
     if test_file_data["sequence_type"] not in test_files_holder[
@@ -171,4 +178,22 @@ def update_test_files_holder_with_test_file(
             None,
             None
         )
+    )
+
+
+def create_valid_test_job_file_from_event_stream(
+    event_stream: list[dict[str, str | list | dict]]
+) -> TestJobFile:
+    """Method to create a valid test job file from an event stream
+
+    :param event_stream: The event stream
+    :type event_stream: `list`[`dict`[`str`, `str` | `list` | `dict`]]
+    :return: Returns the test job file
+    :rtype: :class:`TestJobFile`
+    """
+    return TestJobFile(
+        job_file=event_stream,
+        job_name=event_stream[0]["jobName"],
+        sequence_type="ValidSols",
+        validity=True,
     )
