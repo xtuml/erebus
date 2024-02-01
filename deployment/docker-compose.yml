@@ -12,3 +12,5 @@ services:
       - "./profile_store:/test_harness_app/test_harness/profile_store"
     ports:
     - 8800:8800
+    environment:
+     - PYTHONUNBUFFERED=1
