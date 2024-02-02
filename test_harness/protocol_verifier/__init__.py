@@ -123,10 +123,18 @@ def puml_files_test(
             test_file_paths=test_file_paths
         )
     else:
-        test_events = generate_test_events_from_puml_files(
-            puml_file_paths,
-            test_config
-        )
+        try:
+            test_events = generate_test_events_from_puml_files(
+                puml_file_paths,
+                test_config
+            )
+        except ImportError:
+            raise ImportError(
+                "The test_event_generator package is required to generate "
+                "test files from puml files. Either reinstall or rebuild the "
+                "test harness with the test_event_generator package or upload "
+                "test files jsons as well as a puml file"
+            )
 
     # send job definitions to pv
     send_job_defs_from_uml(

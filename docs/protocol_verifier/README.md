@@ -14,8 +14,7 @@ NOTE: If the above doesn't work, check that you can access gitlab via git withou
 To install and build this project one must have the following pre-requisites:
 * python 3.11 (https://docs.python.org/3/whatsnew/3.11.html) and pip (or other python package manager) be installed on the machine that will be hosting the Test Harness (installation only)
 * SSH access to the following git repositories:
-    * https://gitlab.com/smartdcs1/cdsdt/test-event-generator
-    * https://github.com/xtuml/plus2json 
+    * git@github.com:SmartDCSITlimited/test-event-generator.git (this is not required but some functionality will be lost if test-event-generator is not present)
 * Docker installed on the machine (build only)
 
 
@@ -415,7 +414,7 @@ A test for the PV can be run by using any of the four following stages (UML uplo
     ```
     Note that all folders and files are optional in general within the zip file (this may not be the case for specific systems for example the `test_file_store` may need to be populated with template test data if the test for the specific system in question does not have a generator of test data). The folder can include:
     * `profile_store` - (OPTIONAL) This can be populated with a single profile for the test case detailing the time dependent rate at which single instances of test data will be sent. File format is found in `docs/TestProfiles.md`
-    * `test_file_store` - (OPTIONAL) This can be populted with arbitary template (or otherwise) test json data files that will be used in the test (test json file formats described above for the endpoint `/upload/test-files` documentation). Test file template files can be created using the cli tool (from project directory) `./test_harness/protocol_verifier/create_test_file_json.py` (usage is held within the script).
+    * `test_file_store` - (OPTIONAL: NOTE not optional if test-event-generator is not installed) This can be populted with arbitary template (or otherwise) test json data files that will be used in the test (test json file formats described above for the endpoint `/upload/test-files` documentation). Test file template files can be created using the cli tool (from project directory) `./test_harness/protocol_verifier/create_test_file_json.py` (usage is held within the script).
     * `uml_file_store` - (OPTIONAL) This can be populated with the required PUML job definition files for conversion and sending to the PV.
     * `test_config.yaml` - (OPTIONAL) This yaml file includes the test config used for the particular test case. If not present the test config in the JSON body of the `startTest` endpoint will be used (along with any defaults not set in the input config)
     

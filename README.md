@@ -15,8 +15,7 @@ NOTE: If the above doesn't work, check that you can access gitlab via git withou
 To install and build this project one must have the following pre-requisites:
 * python 3.11 (https://docs.python.org/3/whatsnew/3.11.html) and pip (or other python package manager) be installed on the machine that will be hosting the Test Harness (installation only)
 * SSH access to the following git repositories:
-    * https://gitlab.com/smartdcs1/cdsdt/test-event-generator
-    * https://github.com/xtuml/plus2json 
+    * git@github.com:SmartDCSITlimited/test-event-generator.git (this is not required but some functionality will be lost if test-event-generator is not present)
 * Docker installed on the machine (build only)
 
 

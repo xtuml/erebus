@@ -3,10 +3,6 @@
 from itertools import chain
 import json
 
-from test_event_generator.io.run import (  # pylint: disable=E0401
-    puml_file_to_test_events
-)
-
 from test_harness.config.config import TestConfig
 from test_harness.protocol_verifier.types import (
     TestJobFile, TemplateJobsDataAndValidityTuple,
@@ -33,6 +29,9 @@ def generate_test_events_from_puml_file(
     :return: Returns the dictionary of job defintions mapped to test cases
     :rtype: `dict`[ `str`, `dict`[ `str`, `TemplateJobsDataAndValidityTuple`]]
     """
+    from test_event_generator.io.run import (  # pylint: disable=E0401
+        puml_file_to_test_events
+    )
     test_events = puml_file_to_test_events(
         file_path=puml_file_path,
         **test_config.event_gen_options

@@ -785,6 +785,41 @@ def test_puml_files_test_with_location_log_urls(
         clean_directories([harness_config.report_file_store])
 
 
+def test_puml_files_test_no_teg_pkg(
+    monkeypatch: pytest.MonkeyPatch
+):
+    """Tests method `puml_test_files` with no teg package
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    import builtins
+    real_import = builtins.__import__
+
+    def raise_import_error(name: str, *args, **kwargs):
+        if "test_event_generator" == name.split(".")[0]:
+            raise ImportError("No module named 'test_event_generator'")
+        return real_import(name, *args, **kwargs)
+    monkeypatch.setattr(
+        builtins,
+        "__import__",
+        raise_import_error
+    )
+    with pytest.raises(ImportError) as e_info:
+        puml_files_test(
+            puml_file_paths=[test_file_path],
+            test_output_directory=harness_config.report_file_store,
+            harness_config=harness_config,
+            test_config=test_config,
+            test_file_paths=None
+        )
+    assert e_info.value.args[0] == (
+        "The test_event_generator package is required to generate "
+        "test files from puml files. Either reinstall or rebuild the "
+        "test harness with the test_event_generator package or upload "
+        "test files jsons as well as a puml file"
+    )
+
+
 def test_get_test_profile_one_file() -> None:
     """Tests `get_test_profile` when one file is present in the folder
     """

@@ -3,6 +3,8 @@
 from pathlib import Path
 import json
 
+import pytest
+
 from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_file,
     generate_test_events_from_puml_files,
@@ -97,6 +99,36 @@ def test_generate_test_events_from_puml_files() -> None:
     assert len(test_events) == 2
     assert "test_uml_1" in test_events
     assert "test_uml_2" in test_events
+
+
+def test_generate_test_events_from_puml_file_no_teg_pkg(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tests `generate_test_events_from_puml_file` with no test event generator
+    package
+
+    :param monkeypatch: The monkeypatch fixture
+    :type monkeypatch: :class:`pytest.MonkeyPatch`
+    """
+    import builtins
+    real_import = builtins.__import__
+
+    def raise_import_error(name: str, *args, **kwargs):
+        if "test_event_generator" == name.split(".")[0]:
+            raise ImportError("No module named 'test_event_generator'")
+        return real_import(name, *args, **kwargs)
+    monkeypatch.setattr(
+        builtins,
+        "__import__",
+        raise_import_error
+    )
+    test_config = TestConfig()
+    test_file_path = test_file_resources / "test_uml_job_def.puml"
+    with pytest.raises(ImportError):
+        generate_test_events_from_puml_file(
+            test_file_path,
+            test_config
+        )
 
 
 def test_load_test_file_data_json_into_test_file_holder() -> None:
