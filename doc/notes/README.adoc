@@ -1,0 +1,6 @@
+= Technical Notes
+
+Copy a template file from doc/process/templates when creating a new
+engineering note.  There are templates here for Analysis Note, Design
+Note and Implementation Note among others.
+
