@@ -1,0 +1,5 @@
+name: called-template-tests
+on: [workflow_call]
+jobs:
+  sast:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main

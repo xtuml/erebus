@@ -1,0 +1,5 @@
+name: called-template-tests
+on: [workflow_call]
+jobs:
+  python-linting:
+    uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main

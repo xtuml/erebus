@@ -7,27 +7,26 @@ on:
     branches:
       'main'
 jobs:
-  skip-if:
+  sast:
     if: |
         github.repository == 'SmartDCSITlimited/test-harness'
             && github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - name: nothing
-        uses: alex-sandri/nothing-action@v1.1 
-
-  sast:
-    needs: [skip-if]
-    uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
+    uses: ./.github/workflows/template_workflows/SAST.yml
   secret-detection:
-    needs: [skip-if]
-    uses: SmartDCSITlimited/actions-store/.github/workflows/SecretDetection.yml@main
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
+    uses: ./.github/workflows/template_workflows/SecretDetection.yml
   python-linting:
-    needs: [skip-if]
-    uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
+    uses: ./.github/workflows/template_workflows/PythonLinting.yml
 
   run-tests:
-    needs: [skip-if]
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Setup Checkout
