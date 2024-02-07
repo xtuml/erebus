@@ -39,7 +39,7 @@ It is recommended to deploy the test harness in the same VPC (or private network
 ![](./diagrams/deployment/deployment.png)
 
 ### <b>HTTP Server</b>
-The HTTP server is an intermediary device to allow the test harness to be separated from the PV machine and allows the http requests to upload files and download files (https://gitlab.com/smartdcs1/cdsdt/protocol-verifier-http-server). This can however be replaced by any intermediary as long as the end points server exactly the same purpose.
+The HTTP server is an intermediary device to allow the test harness to be separated from the PV machine and allows the http requests to upload files and download files (https://github.com/SmartDCSITlimited/protocol-verifier-http-server or https://github.com/xtuml/charon). This can however be replaced by any intermediary as long as the end points serve exactly the same purpose.
 #### <b>Endpoints</b>
 The deployment of the Test Harness must be used in conjuction with an HTTP server that has the following endpoints that provide functionality to upload, download, track and remove files from mounted folders:
 * upload
