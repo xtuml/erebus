@@ -1,14 +1,27 @@
+# Jenkins Integration
 ![](./images/overview.png)
 
-The jenkins pipeline can be run by copying the text of the pipeline.groovy file into the 'Configure > Pipeline' section in Jenkins.
+## Installation
+### PV setup
+For Jenkins to interact with the Server that the Protocol Verifier is installed on it is required to copy the `docker-compose-1AER*.yml` files and `*.sh` files from the `ci/jenkins/scripts` directory to the Protocol Verifier `deploy` directory (these files should be changed according to the location that Kafka has).
+
+### Enable ssh root access on PV from Jenkins
+* Create/use a key pair on the Jenkins box
+* ssh on to the Protocol Verifier box
+* relog as root (sudo su -l root)
+* if authorized_keys isn't present at /root/.ssh , create it
+* add the pubkey of whatever keypair you are using on the Jenkins you'll be using to that authorized_keys file
+### Jenkins Configurations
+The Jenkins pipeline can be run by copying the text of the pipeline.groovy file into the 'Configure > Pipeline' section in Jenkins.
 
 Before the pipeline is run, care must be taken that the environment variables at the top of the script are set correctly. These environment variables are;
 
-DATA_HOME: Specifies the path for test case scripts.
-OUTPUTS: Points to the workspace directory for test harness outputs.
-PV_BOX and TH_BOX: Define IP addresses for specific test environments (protocol verifier and test harness, respectively).
-CONFIG_FILE_NAME: The name of the configuration file used in testing.
+* `DATA_HOME`: Specifies the path for test case scripts.
+* `OUTPUTS`: Points to the workspace directory for test harness outputs.
+* `PV_BOX` and `TH_BOX`: Define IP addresses for specific test environments (protocol verifier and test harness, respectively).
+* `CONFIG_FILE_NAME`: The name of the configuration file used in testing.
 
+## Running
 When the pipeline is started, the user is given the option to upload a custom test file. This will restrict the pipeline from running multiple tests in sequence, but allows for greater flexibility in the case that the desired test is only going to be run once and is therefore not present in the test harness repo.
 
 ![](./images/1.png)
