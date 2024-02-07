@@ -5,6 +5,8 @@
 ### PV setup
 For Jenkins to interact with the Server that the Protocol Verifier is installed on it is required to copy the `docker-compose-1AER*.yml` files and `*.sh` files from the `ci/jenkins/scripts` directory to the Protocol Verifier `deploy` directory (these files should be changed according to the location that Kafka has).
 
+The docker compose files refer to the service `http_server`. The tagged docker image version within those files `http-server:latest` should be built, named and tagged from the HTTP server repo under the latest tagged version of that repo (see `docs/protocol_verifier/README.md` for more information on the location of the repos).
+
 ### Enable ssh root access on PV from Jenkins
 * Create/use a key pair on the Jenkins box
 * ssh on to the Protocol Verifier box
