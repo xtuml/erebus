@@ -8,13 +8,25 @@ on:
       'main'
 jobs:
   sast:
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
     uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
   secret-detection:
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
     uses: SmartDCSITlimited/actions-store/.github/workflows/SecretDetection.yml@main
   python-linting:
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
     uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
 
   run-tests:
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Setup Checkout
