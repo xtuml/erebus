@@ -8,20 +8,11 @@ on:
       'main'
 jobs:
   sast:
-    if: |
-        github.repository == 'SmartDCSITlimited/test-harness'
-            && github.actor != 'dependabot[bot]'
-    uses: ./.github/workflows/SAST.yml
+    uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
   secret-detection:
-    if: |
-        github.repository == 'SmartDCSITlimited/test-harness'
-            && github.actor != 'dependabot[bot]'
-    uses: ./.github/workflows/SecretDetection.yml
+    uses: SmartDCSITlimited/actions-store/.github/workflows/SecretDetection.yml@main
   python-linting:
-    if: |
-        github.repository == 'SmartDCSITlimited/test-harness'
-            && github.actor != 'dependabot[bot]'
-    uses: ./.github/workflows/PythonLinting.yml
+    uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
 
   run-tests:
     if: |
