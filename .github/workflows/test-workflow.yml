@@ -11,17 +11,17 @@ jobs:
     if: |
         github.repository == 'SmartDCSITlimited/test-harness'
             && github.actor != 'dependabot[bot]'
-    uses: ./.github/workflows/template_workflows/SAST.yml
+    uses: ./.github/workflows/SAST.yml
   secret-detection:
     if: |
         github.repository == 'SmartDCSITlimited/test-harness'
             && github.actor != 'dependabot[bot]'
-    uses: ./.github/workflows/template_workflows/SecretDetection.yml
+    uses: ./.github/workflows/SecretDetection.yml
   python-linting:
     if: |
         github.repository == 'SmartDCSITlimited/test-harness'
             && github.actor != 'dependabot[bot]'
-    uses: ./.github/workflows/template_workflows/PythonLinting.yml
+    uses: ./.github/workflows/PythonLinting.yml
 
   run-tests:
     if: |
