@@ -3,6 +3,8 @@
 import zipimport
 import logging
 import json
+import os
+from pathlib import Path
 
 import xtuml
 
@@ -12,8 +14,12 @@ from test_harness.utils import (
     collect_error_logs_from_func
 )
 
+# get zip file path
+path_of_python_file = os.path.dirname(os.path.realpath(__file__))
+path_of_zip_file = Path(path_of_python_file).parent / "plus2json.pyz"
+
 # import plus2json
-importer = zipimport.zipimporter("test_harness/plus2json.pyz")
+importer = zipimport.zipimporter(str(path_of_zip_file))
 plus2json = importer.load_module('plusj2son.plus2json')
 
 
