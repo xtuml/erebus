@@ -25,9 +25,6 @@ setup(
         'test_harness.results',
         'test_harness.process_manager',
     ],
-    package_data={
-        'test_harness': [
-            'test_harness/plus2json.pyz',
-        ],
-    }
+    package_dir={"": "test_harness"},
+    include_package_data=True,
 )
