@@ -25,6 +25,6 @@ setup(
         'test_harness.results',
         'test_harness.process_manager',
     ],
-    package_dir={"": ""},
+    package_dir={"test_harness": "test_harness"},
     include_package_data=True,
 )
