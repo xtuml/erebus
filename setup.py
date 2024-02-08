@@ -4,7 +4,7 @@
 from setuptools import setup
 
 setup(
-    name='Erebus',
+    name='test_harness',
     version='1.0.0',
     description=(
         'General purpose Test Harness supporting the munin project software'
@@ -25,4 +25,9 @@ setup(
         'test_harness.results',
         'test_harness.process_manager',
     ],
+    package_data={
+        'test_harness': [
+            'test_harness/plus2json.pyz',
+        ],
+    }
 )
