@@ -1,0 +1,33 @@
+type: "Functional"
+max_different_sequences: 200
+event_gen_options: 
+  solution_limit: 100
+  max_sol_time: 120
+  invalid: False
+  invalid_types: [
+    "StackedSolutions", "MissingEvents", "MissingEdges",
+    "GhostEvents", "SpyEvents", "XORConstraintBreaks",
+    "ANDConstraintBreaks"
+  ]
+
+performance_options:
+  num_files_per_sec: 10
+  shard: False
+  total_jobs: 100
+  save_logs: True
+
+functional_options:
+  log_domain: "ver"
+
+num_workers: 0
+
+aggregate_during: False
+
+sample_rate: 0
+
+low_memory: False
+
+test_finish:
+  metric_get_interval: 5
+  finish_interval: 30
+  timeout: 120

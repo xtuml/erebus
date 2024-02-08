@@ -1,0 +1,16 @@
+version: "1"
+name: test-harness
+services:
+  test-harness:
+    # amd64 image
+    image: "ghcr.io/smartdcsitlimited/test-harness:main"
+    volumes:
+      - "./config:/config"
+      - "./report_output:/test_harness_app/test_harness/report_output"
+      - "./uml_file_store:/test_harness_app/test_harness/uml_file_store"
+      - "./test_file_store:/test_harness_app/test_harness/test_file_store"
+      - "./profile_store:/test_harness_app/test_harness/profile_store"
+    ports:
+    - 8800:8800
+    environment:
+     - PYTHONUNBUFFERED=1

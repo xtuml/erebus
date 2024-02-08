@@ -1,0 +1,19 @@
+{
+    "SpecUpdateRate": "PT20S",
+    "MaxOutOfSequenceEvents": "100",
+    "MaximumJobTime": "PT1M",
+    "JobCompletePeriod": "PT1M",
+    "IncomingDirectory": "./incoming",
+    "ProcessingDirectory": "./processing",
+    "ProcessedDirectory": "./processed",
+    "JobDefinitionDirectory": "./config/job_definitions",
+    "DefaultJobExpiryDuration" : "P99W",
+    "DefaultStaleAuditEventDuration" : "PT24H",
+    "DefaultBlockedAuditEventDuration" : "PT24H",
+    "EventThrottleRate": "PT0S",
+    "ReceptionDeletionTime": "PT10M",
+    "ConcurrentReceptionLimit": "1",
+    "JobStoreLocation": "./JobIdStore",
+    "JobStoreAgeLimit": "P7D",
+    "InvariantStoreLoadRate": "PT30S"
+}

@@ -1,0 +1,8 @@
+@startuml
+partition "test_uml_2"{
+    group "test_uml_2"
+        :C,EINV,USER,name=testEINV;
+        :D;
+    end group
+}
+@enduml

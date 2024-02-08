@@ -1,0 +1,13 @@
+test_harness/uml_file_store/*.puml
+.vscode
+output
+env
+.hypothesis
+
+# ignore .pyc files
+*.pyc
+.venv/*
+tests/test_harness/report_output/*
+tests/test_harness/test_file_store/*
+
+ansible/hosts.yml

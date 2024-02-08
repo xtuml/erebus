@@ -1,0 +1,69 @@
+2023-10-26T11:35:08.912509Z  aeordering_job_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217
+2023-10-26T11:35:08.913190Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = 836e5af0-98fc-4b20-9ed8-ece0e61a06af : EventType = CSJA
+2023-10-26T11:35:08.913364Z  svdc_event_received : EventId = 836e5af0-98fc-4b20-9ed8-ece0e61a06af
+2023-10-26T11:35:08.913585Z  svdc_new_job_started : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = 836e5af0-98fc-4b20-9ed8-ece0e61a06af : EventType = CSJA
+2023-10-26T11:35:08.914012Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = df55a8dc-805f-46c4-8884-05fa16eadf0d : EventType = CSJB
+2023-10-26T11:35:08.914146Z  svdc_event_received : EventId = df55a8dc-805f-46c4-8884-05fa16eadf0d
+2023-10-26T11:35:08.914459Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = b0b80219-bb7b-41b2-a6d6-ac25c570ac3b : EventType = CSJC
+2023-10-26T11:35:08.914532Z  svdc_event_received : EventId = b0b80219-bb7b-41b2-a6d6-ac25c570ac3b
+2023-10-26T11:35:08.914827Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = 6ac1eed1-8356-4949-b14e-848af97cf462 : EventType = CSJD
+2023-10-26T11:35:08.914903Z  svdc_event_received : EventId = 6ac1eed1-8356-4949-b14e-848af97cf462
+2023-10-26T11:35:08.915183Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = e38165f3-a0ca-44db-8a9d-fe170b68b006 : EventType = CSJB_Err
+2023-10-26T11:35:08.915256Z  svdc_event_received : EventId = e38165f3-a0ca-44db-8a9d-fe170b68b006
+2023-10-26T11:35:08.915537Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = 5a6d6c23-a1a9-411d-97c1-02cc577361b5 : EventType = CSJF
+2023-10-26T11:35:08.915607Z  svdc_event_received : EventId = 5a6d6c23-a1a9-411d-97c1-02cc577361b5
+2023-10-26T11:35:08.915912Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = cdfad539-c303-4b5f-9ba9-9016ae3685d6 : EventType = CSJG
+2023-10-26T11:35:08.915985Z  svdc_event_received : EventId = cdfad539-c303-4b5f-9ba9-9016ae3685d6
+2023-10-26T11:35:08.916259Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = df2efcef-10e4-4e85-b9f5-3e2fada910ea : EventType = CSJB_Err
+2023-10-26T11:35:08.916330Z  svdc_event_received : EventId = df2efcef-10e4-4e85-b9f5-3e2fada910ea
+2023-10-26T11:35:08.916607Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = 4f539294-9941-480d-807f-21cfc01c5584 : EventType = CSJI
+2023-10-26T11:35:08.916688Z  svdc_event_received : EventId = 4f539294-9941-480d-807f-21cfc01c5584
+2023-10-26T11:35:08.916974Z  aeordering_events_processed : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : EventId = e76d191f-5275-46f9-8aed-013fdfded826 : EventType = CSJJ
+2023-10-26T11:35:08.917048Z  svdc_event_received : EventId = e76d191f-5275-46f9-8aed-013fdfded826
+2023-10-26T11:35:18.917533Z  svdc_job_success : JobId = e365e78d-1b7a-49f1-b12d-165a64bae217 : JobName = ACriticalJob1
+2023-10-26T11:35:18.917601Z  svdc_happy_event_processed : EventId = 836e5af0-98fc-4b20-9ed8-ece0e61a06af
+2023-10-26T11:35:18.917612Z  svdc_happy_event_processed : EventId = df55a8dc-805f-46c4-8884-05fa16eadf0d
+2023-10-26T11:35:18.917621Z  svdc_happy_event_processed : EventId = b0b80219-bb7b-41b2-a6d6-ac25c570ac3b
+2023-10-26T11:35:18.917630Z  svdc_happy_event_processed : EventId = 6ac1eed1-8356-4949-b14e-848af97cf462
+2023-10-26T11:35:18.917639Z  svdc_happy_event_processed : EventId = 5a6d6c23-a1a9-411d-97c1-02cc577361b5
+2023-10-26T11:35:18.917647Z  svdc_happy_event_processed : EventId = cdfad539-c303-4b5f-9ba9-9016ae3685d6
+2023-10-26T11:35:18.917655Z  svdc_happy_event_processed : EventId = 4f539294-9941-480d-807f-21cfc01c5584
+2023-10-26T11:35:18.917663Z  svdc_happy_event_processed : EventId = e76d191f-5275-46f9-8aed-013fdfded826
+2023-10-26T11:35:18.917674Z  svdc_unhappy_event_processed : EventId = e38165f3-a0ca-44db-8a9d-fe170b68b006
+2023-10-26T11:35:18.917683Z  svdc_unhappy_event_processed : EventId = df2efcef-10e4-4e85-b9f5-3e2fada910ea
+2023-10-26T11:35:53.924283Z  aeordering_job_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b
+2023-10-26T11:35:53.924590Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 2fff2a97-35d6-49f3-8b91-b42ecab8d483 : EventType = CSJA
+2023-10-26T11:35:53.924830Z  svdc_event_received : EventId = 2fff2a97-35d6-49f3-8b91-b42ecab8d483
+2023-10-26T11:35:53.924991Z  svdc_new_job_started : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 2fff2a97-35d6-49f3-8b91-b42ecab8d483 : EventType = CSJA
+2023-10-26T11:35:53.925957Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = dbdf13ea-6e71-411a-ad83-504cbd6df7e8 : EventType = CSJB
+2023-10-26T11:35:53.926213Z  svdc_event_received : EventId = dbdf13ea-6e71-411a-ad83-504cbd6df7e8
+2023-10-26T11:35:53.926534Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 4bd1cfee-b2de-4ff5-a90b-edf7b3f6e111 : EventType = CSJC
+2023-10-26T11:35:53.926606Z  svdc_event_received : EventId = 4bd1cfee-b2de-4ff5-a90b-edf7b3f6e111
+2023-10-26T11:35:53.926913Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = c463f9ef-21f3-4c12-b917-6fb14ce79461 : EventType = CSJB_Err
+2023-10-26T11:35:53.926993Z  svdc_event_received : EventId = c463f9ef-21f3-4c12-b917-6fb14ce79461
+2023-10-26T11:35:53.927272Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 5e82914e-fcf0-4675-8736-2fea949caec3 : EventType = CSJD
+2023-10-26T11:35:53.927350Z  svdc_event_received : EventId = 5e82914e-fcf0-4675-8736-2fea949caec3
+2023-10-26T11:35:53.927620Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 7de2cb83-4d24-43cc-ac28-370dc0da8430 : EventType = CSJE
+2023-10-26T11:35:53.927691Z  svdc_event_received : EventId = 7de2cb83-4d24-43cc-ac28-370dc0da8430
+2023-10-26T11:35:53.927998Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 71ae2997-c0a6-4a8f-9d1c-9492b606fa19 : EventType = CSJF
+2023-10-26T11:35:53.928073Z  svdc_event_received : EventId = 71ae2997-c0a6-4a8f-9d1c-9492b606fa19
+2023-10-26T11:35:53.928349Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 5ef843a8-e77c-4e6e-93b8-eb669d191520 : EventType = CSJG
+2023-10-26T11:35:53.928419Z  svdc_event_received : EventId = 5ef843a8-e77c-4e6e-93b8-eb669d191520
+2023-10-26T11:35:53.928698Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 957d6490-3719-4c7e-8ff0-a06282d7f744 : EventType = CSJH
+2023-10-26T11:35:53.928770Z  svdc_event_received : EventId = 957d6490-3719-4c7e-8ff0-a06282d7f744
+2023-10-26T11:35:53.929072Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = 18b59baa-ce89-454f-b3db-b660c15ca0c5 : EventType = CSJI
+2023-10-26T11:35:53.929156Z  svdc_event_received : EventId = 18b59baa-ce89-454f-b3db-b660c15ca0c5
+2023-10-26T11:35:53.929423Z  aeordering_events_processed : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b : EventId = ab5fdb10-3fe7-45c7-bcdc-1940dab22c31 : EventType = CSJJ
+2023-10-26T11:35:53.929493Z  svdc_event_received : EventId = ab5fdb10-3fe7-45c7-bcdc-1940dab22c31
+2023-10-26T11:36:03.930147Z  svdc_job_alarm : Alarm Condition = ALARM: Unhappy event seen within the scope of a Critical event : JobId = 296fea2e-db4b-48d2-b111-223694a5a64b with Job Name = ACriticalJob1
+2023-10-26T11:36:03.930175Z  svdc_happy_event_processed : EventId = 7de2cb83-4d24-43cc-ac28-370dc0da8430
+2023-10-26T11:36:03.930186Z  svdc_happy_event_processed : EventId = 71ae2997-c0a6-4a8f-9d1c-9492b606fa19
+2023-10-26T11:36:03.930195Z  svdc_happy_event_processed : EventId = 5ef843a8-e77c-4e6e-93b8-eb669d191520
+2023-10-26T11:36:03.930203Z  svdc_happy_event_processed : EventId = 957d6490-3719-4c7e-8ff0-a06282d7f744
+2023-10-26T11:36:03.930212Z  svdc_happy_event_processed : EventId = 18b59baa-ce89-454f-b3db-b660c15ca0c5
+2023-10-26T11:36:03.930221Z  svdc_happy_event_processed : EventId = ab5fdb10-3fe7-45c7-bcdc-1940dab22c31
+2023-10-26T11:36:03.930237Z  svdc_happy_event_processed : EventId = 2fff2a97-35d6-49f3-8b91-b42ecab8d483
+2023-10-26T11:36:03.930246Z  svdc_happy_event_processed : EventId = dbdf13ea-6e71-411a-ad83-504cbd6df7e8
+2023-10-26T11:36:03.930254Z  svdc_happy_event_processed : EventId = 4bd1cfee-b2de-4ff5-a90b-edf7b3f6e111
+2023-10-26T11:36:03.930263Z  svdc_happy_event_processed : EventId = 5e82914e-fcf0-4675-8736-2fea949caec3
+2023-10-26T11:36:03.930273Z  svdc_unhappy_event_processed : EventId = c463f9ef-21f3-4c12-b917-6fb14ce79461

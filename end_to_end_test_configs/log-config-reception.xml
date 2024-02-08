@@ -1,0 +1,40 @@
+<log>
+    <logger>
+        <name>AEReception</name>
+        <filter>
+            <minlevel>trace</minlevel>
+            <format>
+                <pattern><timestamp decimal="none"/> <priority/>: <message/></pattern>   <!-- defines a pattern inline -->
+                <stderr/>
+                <file>
+                    <path>/var/log/reception/AEReception.log</path> <!-- Name of the log file -->
+                    <archive>
+                        <rotate>
+                            <size units="MiB">10</size> <!-- When to rotate  -->
+                        </rotate>
+                        <extension>timestamp</extension> <!-- What extension to use on archived log files -->
+                        <compress>true</compress> <!-- If archived files should be compressed -->
+                        <purge units="count">10</purge> <!-- How many archive to keep -->
+                    </archive>
+                </file>
+            </format>
+        </filter>
+    </logger>
+    <logger>
+        <name>Reception</name>
+        <format>
+            <pattern><timestamp/> <message/></pattern>
+            <file>
+                <path>/var/log/reception/Reception.log</path> <!-- Name of the log file -->
+                <archive>
+                    <rotate>
+                        <size units="MiB">50</size> <!-- When to rotate  -->
+                    </rotate>
+                    <extension>timestamp</extension> <!-- What extension to use on archived log files -->
+                    <compress>true</compress> <!-- If archived files should be compressed -->
+                    <purge units="count">10</purge> <!-- How many archive to keep -->
+                </archive>
+            </file>
+        </format>
+    </logger>
+</log>
