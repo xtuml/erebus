@@ -19,7 +19,7 @@ setup(
         'test_harness.config',
         'test_harness.pv_config',
         'test_harness.metrics',
-        'test_harness.asyn_management',
+        'test_harness.async_management',
         'test_harness.reporting',
         'test_harness.requests',
         'test_harness.results',
