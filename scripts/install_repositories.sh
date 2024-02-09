@@ -22,7 +22,7 @@ fi
 set -e
 cd test-event-generator
 git fetch --all --tags
-git checkout tags/MuninP2S1-midstage -b latest
+git checkout tags/v1.0.0 -b latest
 pip install -r requirements.txt
 pip install .
 cd ..
