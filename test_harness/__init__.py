@@ -265,9 +265,8 @@ class HarnessApp(Flask):
                     "test_config.yaml"
                 )
             )
-        else:
-            if "TestConfig" in request_json:
-                test_config.parse_from_dict(request_json["TestConfig"])
+        if "TestConfig" in request_json:
+            test_config.parse_from_dict(request_json["TestConfig"])
         test_to_run["TestConfig"] = test_config
         response_json["TestConfig"] = test_config.config_to_dict()
         with open(
