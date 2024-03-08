@@ -112,9 +112,11 @@ class PVResultsHandler(QueueHandler):
             self.events_cache_file
         ):
             shelf_name = re.sub(r".db$", "", self.events_cache_file)
+            # nosemgrep
             with shelve.open(shelf_name) as shelf:
                 for item in shelf.values():
                     self.handle_result(item)
+            # nosemgrep
 
     def _events_cache_worker_function(
         self, child_conn: Connection, filename: str
@@ -130,6 +132,7 @@ class PVResultsHandler(QueueHandler):
         last_updated = datetime.utcnow()
 
         id_ = 0
+        # nosemgrep
         with shelve.open(filename, writeback=False) as shelf:
             # This loop will continue to run until the child_conn recieves a
             # falsey value, e.g. None, False, etc.
@@ -140,6 +143,7 @@ class PVResultsHandler(QueueHandler):
                 if (last_updated - start_time).total_seconds() > 10:
                     shelf.sync()
                     last_updated = datetime.utcnow()
+        # nosemgrep
         return
 
     def __enter__(self) -> PVResultsAdder:

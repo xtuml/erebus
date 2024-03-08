@@ -626,6 +626,70 @@ def test_start_test_with_uploaded_zip_files(
     )
 
 
+def test_start_test_with_uploaded_zip_files_override_test_config_yaml(
+    client: FlaskClient,
+    test_app: HarnessApp
+) -> None:
+    """Test that the start test endpoint works when zip files are uploaded
+    and the test config is overridden
+
+    :param client: The flask client
+    :type client: :class:`FlaskClient`
+    :param test_app: The test app
+    :type test_app: :class:`HarnessApp`
+    """
+    data = get_multi_file_data(
+        [
+            ("test_1", "test_zip_file.zip", "test_zip_file.zip"),
+        ]
+    )
+    response = post_multi_form_data(
+        client,
+        data,
+        "/upload/named-zip-files"
+    )
+
+    test_1_path = os.path.join(
+        test_app.harness_config.report_file_store,
+        "test_1"
+    )
+
+    response = client.post(
+        "/startTest",
+        json={
+            "TestName": "test_1",
+            "TestConfig": {
+                "num_workers": 5,
+                "aggregate_during": True
+            }
+        }
+    )
+    assert response.status_code == 200
+    response_dict = response.json
+    expected_test_config = TestConfig()
+    expected_test_config.parse_from_yaml(
+        os.path.join(test_1_path, "test_config.yaml")
+    )
+    assert response_dict["TestConfig"]["num_workers"] == 5
+    assert response_dict["TestConfig"]["num_workers"] != (
+        expected_test_config.num_workers
+    )
+    assert response_dict["TestConfig"]["aggregate_during"]
+    assert not expected_test_config.aggregate_during
+    del response_dict["TestConfig"]["num_workers"]
+    del response_dict["TestConfig"]["aggregate_during"]
+    expected_config_dict = expected_test_config.config_to_dict()
+    del expected_config_dict["num_workers"]
+    del expected_config_dict["aggregate_during"]
+    check_dict_equivalency(
+        response_dict["TestConfig"],
+        expected_config_dict
+    )
+    clean_directories(
+        [test_app.harness_config.report_file_store]
+    )
+
+
 def test_start_test_with_test_finish_options(
     client: FlaskClient,
     test_app: HarnessApp
