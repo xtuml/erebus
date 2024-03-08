@@ -9,8 +9,10 @@ on:
 
 jobs:
   build-and-push:
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
     env:
       SSH_AUTH_SOCK: $SSH_AUTH_SOCK
     steps:
