@@ -300,12 +300,12 @@ class HarnessApp(Flask):
                     save_file_dir_path=self.harness_config.report_file_store,
                 )
         except Exception as error:
-            return make_response(
+            return (
                 f"Error uploading zip"
                 f"file {uploaded_file_identifier}: {error}\n",
                 400
             )
-        return make_response("Zip archives uploaded successfully\n", 200)
+        return "Zip archives uploaded successfully\n", 200
 
     def stop_test(self) -> Response:
         """API for stopping a test given a json POST request
@@ -332,7 +332,7 @@ class HarnessApp(Flask):
         :rtype: `Response`
         """
         self.test_stopper.set()
-        return make_response("Request to stop test successful\n", 200)
+        return ("Request to stop test successful\n", 200)
 
     def get_test_output_folder(self) -> Response:
         """Method to get the test output folder
@@ -359,7 +359,7 @@ class HarnessApp(Flask):
         :rtype: `Response`
         """
         if "TestName" not in request_json:
-            return make_response(
+            return (
                 "Field 'TestName' not in request json\n", 400
             )
         test_name = request_json["TestName"]
@@ -368,7 +368,7 @@ class HarnessApp(Flask):
             test_name
         )
         if not os.path.exists(test_output_directory_path):
-            return make_response(
+            return (
                 f"Test with name {test_name} does not exist\n", 400
             )
         with TemporaryDirectory() as temp_dir:
@@ -499,7 +499,7 @@ def handle_single_file_upload(
     :rtype: :class:`Response`
     """
     if len(uploaded_files) > 1:
-        return make_response(
+        return (
             "More than two files uploaded. A single file is required\n", 400
         )
     return handle_multiple_file_uploads(uploaded_files, save_file_dir_path)
@@ -519,7 +519,7 @@ def handle_multiple_file_uploads(
     """
     for uploaded_file in uploaded_files:
         handle_uploaded_file(uploaded_file, save_file_dir_path)
-    return make_response("Files uploaded successfully\n", 200)
+    return ("Files uploaded successfully\n", 200)
 
 
 def handle_uploaded_file(file: FileStorage, save_file_dir_path: str) -> None:
