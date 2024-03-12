@@ -1,7 +1,7 @@
 # pylint: disable=W0622
 # pylint: disable=R0903
 """Utility functions"""
-from typing import Generator, Any, Literal, Callable, Awaitable, Self
+from typing import Generator, Any, Literal, Callable, Awaitable, Self, TypeVar
 from io import BytesIO
 import os
 import glob
@@ -15,6 +15,8 @@ import flatdict
 from tqdm import tqdm
 import numpy as np
 from kafka3.producer.future import FutureRecordMetadata
+
+T = TypeVar("T")
 
 
 def create_file_io_file_name_tuple(
@@ -536,26 +538,37 @@ class RollOverChoice:
     :type roll_over_value: `int`
     """
     def __init__(self, roll_over_value: int) -> None:
+        """Constructor method"""
         self.roll_over_value = roll_over_value
         self._counter = 0
 
     def __call__(
         self,
-        list_to_choose_from: list[Any],
+        list_to_choose_from: list[T],
         k: int = 1
-    ) -> list[Any]:
+    ) -> list[T]:
+        """Method to choose from a list with a roll over value
+
+        :param list_to_choose_from: The list to choose from
+        :type list_to_choose_from: `list`[`T`]
+        :param k: The number of items to choose, defaults to 1
+        :type k: `int`, optional
+        :return: Returns a list of items chosen from the input list
+        :rtype: `list`[`T`]
+        :raises IndexError: Raises an :class:`IndexError` if the roll over
+        value is larger than the length of the list
+        """
         try:
-            first_index = self._counter % self.roll_over_value
-            second_index = (self._counter + k) % self.roll_over_value
-            return_value = list_to_choose_from[
-                first_index: first_index + k
-            ]
-            if second_index < first_index:
-                return_value += list_to_choose_from[:second_index]
-            self._counter += k
+            return_value = []
+            for _ in range(k):
+                return_value.append(
+                    list_to_choose_from[self._counter % self.roll_over_value]
+                )
+                self._counter += 1
             return return_value
         except IndexError:
             raise IndexError(
-                "The rollover value is larger than the list you are tryong to"
-                " choose from"
+                f"The rollover value ({self.roll_over_value}) is larger than"
+                f" the length of the list ({len(list_to_choose_from)}) you are"
+                " trying to choose from"
             )
