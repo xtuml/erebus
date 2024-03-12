@@ -16,6 +16,7 @@ performance_options:
   total_jobs: 100
   save_logs: True
   job_event_gap: 1
+  round_robin: False
 
 functional_options:
   log_domain: "ver"

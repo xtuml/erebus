@@ -282,6 +282,7 @@ class TestConfig:
                 "total_jobs": `int` => 0, defaults to 10000;
                 "save_logs": `bool`, defaults to `True`;
                 "job_event_gap": `int` => 0, defaults to 1;
+                "round_robin": `bool`, defaults to `False`;
             },
             "functional_options": `dict`, {
                 "log_domain": "ver" | "aer", defaults to "ver";
@@ -322,6 +323,7 @@ class TestConfig:
             "total_jobs": 10000,
             "save_logs": True,
             "job_event_gap": 1,
+            "round_robin": False,
         }
         self.functional_options = {
             "log_domain": "ver"
