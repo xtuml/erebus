@@ -1312,6 +1312,69 @@ def test_run_test_performance_multi_process() -> None:
         )
 
 
+@responses.activate
+def test_run_test_performance_zero_gap_jobs() -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` when the job event gap is
+    set to zero meaning that all jobs are sequenced in order with no overlap
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {
+                "num_files_per_sec": 3, "total_jobs": 4,
+                "job_event_gap": 0, "shard": True,
+            },
+            "test_finish": {
+                "finish_interval": 5
+            }
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    with aioresponses() as mock:
+        mock.post(url=harness_config.pv_send_url, repeat=True)
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={"fileNames": ["Reception.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b"test log",
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={"fileNames": ["Verifier.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b"test log",
+        )
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+
+        )
+        asyncio.run(test.run_test())
+        counter = 0
+        job_ids = set()
+        for _, event in test.results.results.items():
+            if counter % 3 == 0:
+                job_id_set = set()
+            job_id_set.add(event["job_id"])
+            if counter % 3 == 2:
+                assert len(job_id_set) == 1
+                job_ids.add(job_id_set.pop())
+            counter += 1
+        assert len(job_ids) == 4
+        assert len(test.results) == 12
+        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
+        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+
+
 @pytest.mark.skip(
     reason="Will implement when functionality is working correctly"
 )
