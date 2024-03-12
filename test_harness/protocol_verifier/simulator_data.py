@@ -244,7 +244,10 @@ def job_sequencer(
     :yield: Generates :class:`SimDatums`'s
     :rtype: :class:`Generator`[:class:`SimDatum`, `Any`, `None`]
     """
-    ratio = desired_job_event_gap / min_interval_between_job_events
+    ratio = max(
+        1,
+        desired_job_event_gap / min_interval_between_job_events
+    )
     if ratio < 1.5:
         logging.getLogger().warning(
             "Ratio of desired job event gap and the minium interval between "
