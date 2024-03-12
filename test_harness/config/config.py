@@ -281,6 +281,7 @@ class TestConfig:
                 "shard": `bool`, defaults to `False`;
                 "total_jobs": `int` => 0, defaults to 10000;
                 "save_logs": `bool`, defaults to `True`;
+                "job_event_gap": `int` => 0, defaults to 1;
             },
             "functional_options": `dict`, {
                 "log_domain": "ver" | "aer", defaults to "ver";
@@ -319,7 +320,8 @@ class TestConfig:
             "num_files_per_sec": 100,
             "shard": False,
             "total_jobs": 10000,
-            "save_logs": True
+            "save_logs": True,
+            "job_event_gap": 1,
         }
         self.functional_options = {
             "log_domain": "ver"
@@ -331,7 +333,7 @@ class TestConfig:
         self.test_finish = {}
 
     def config_to_dict(self) -> dict:
-        """TODO docstring."""
+        """Provide config as a dictionary"""
         config_dict_to_return = {
             "type": self.type,
             "max_different_sequences": 200,
