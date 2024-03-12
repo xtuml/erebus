@@ -925,7 +925,10 @@ class PerformanceTest(Test):
             sequence_generator=job_sequencer,
             generator_function=event_generator,
             sequencer_kwargs={
-                "min_interval_between_job_events": self._get_min_interval()
+                "min_interval_between_job_events": self._get_min_interval(),
+                "desired_job_event_gap": self.test_config.performance_options[
+                    "job_event_gap"
+                ],
             },
         )
 
