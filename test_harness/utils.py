@@ -540,6 +540,11 @@ class RollOverChoice:
     def __init__(self, roll_over_value: int) -> None:
         """Constructor method"""
         self.roll_over_value = roll_over_value
+        if roll_over_value < 1:
+            raise ValueError(
+                "The roll over value must be an integer greater than or equal"
+                "to 1"
+            )
         self._counter = 0
 
     def __call__(
