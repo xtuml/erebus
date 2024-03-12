@@ -1,7 +1,6 @@
 # pylint: disable=W0622
 # pylint: disable=R0903
-"""Utility functions
-"""
+"""Utility functions"""
 from typing import Generator, Any, Literal, Callable, Awaitable, Self
 from io import BytesIO
 import os
@@ -19,8 +18,7 @@ from kafka3.producer.future import FutureRecordMetadata
 
 
 def create_file_io_file_name_tuple(
-    file_name: str,
-    file_string: str
+    file_name: str, file_string: str
 ) -> tuple[BytesIO, str]:
     """Function to create file io file name tuple from a file name and file
     string
@@ -32,15 +30,11 @@ def create_file_io_file_name_tuple(
     :return: Returns a tuple of the file io and file name pair
     :rtype: `tuple`[:class:`BytesIO`, `str`]
     """
-    return (
-        BytesIO(file_string.encode("utf-8")),
-        file_name
-    )
+    return (BytesIO(file_string.encode("utf-8")), file_name)
 
 
 def create_file_io_file_name_tuple_with_file_path(
-    file_path: str,
-    file_string: str
+    file_path: str, file_string: str
 ) -> tuple[BytesIO, str]:
     """Function to create file io file name tuple from a file path and file
     string
@@ -53,15 +47,13 @@ def create_file_io_file_name_tuple_with_file_path(
     :rtype: `tuple`[:class:`BytesIO`, `str`]
     """
     file_io_file_name = create_file_io_file_name_tuple(
-        os.path.basename(file_path),
-        file_string
+        os.path.basename(file_path), file_string
     )
     return file_io_file_name
 
 
 def divide_chunks(
-    list_to_chunk: list,
-    chunk_size: int
+    list_to_chunk: list, chunk_size: int
 ) -> Generator[list, Any, None]:
     """Method to split list into chunks
 
@@ -76,9 +68,7 @@ def divide_chunks(
         yield list_to_chunk[index: index + chunk_size]
 
 
-def clean_directories(
-    directory_paths: list[str]
-) -> None:
+def clean_directories(directory_paths: list[str]) -> None:
     """Method to clear directories of non-hidden files
 
     :param directory_paths: Paths of directories to clear
@@ -88,9 +78,7 @@ def clean_directories(
         clean_directory(directory_path)
 
 
-def clean_directory(
-    directory_path: str
-) -> None:
+def clean_directory(directory_path: str) -> None:
     """Method to clear a directory of non-hidden files
 
     :param directory_path: The path of the directory to clear
@@ -98,20 +86,14 @@ def clean_directory(
     """
     files = glob.glob("*", root_dir=directory_path)
     for file in files:
-        path = os.path.join(
-            directory_path,
-            file
-        )
+        path = os.path.join(directory_path, file)
         if os.path.isdir(path):
             shutil.rmtree(path)
         else:
             os.remove(path)
 
 
-def check_dict_equivalency(
-    dict_1: dict,
-    dict_2: dict
-) -> None:
+def check_dict_equivalency(dict_1: dict, dict_2: dict) -> None:
     """Method to check the equivalency of two dictionaries
 
     :param dict_1: Dictionary to compare
@@ -119,21 +101,16 @@ def check_dict_equivalency(
     :param dict_2: Dictionary to compare
     :type dict_2: `dict`
     """
-    flat_dict_1 = flatdict.FlatterDict(
-        dict_1
-    )
-    flat_dict_2 = flatdict.FlatterDict(
-        dict_2
-    )
+    flat_dict_1 = flatdict.FlatterDict(dict_1)
+    flat_dict_2 = flatdict.FlatterDict(dict_2)
     for sub_1_item, sub_2_item in zip(
         sorted(flat_dict_1.items(), key=lambda item: item[0]),
-        sorted(flat_dict_2.items(), key=lambda item: item[0])
+        sorted(flat_dict_2.items(), key=lambda item: item[0]),
     ):
         # check sorted values are the same
         # for floats check if nan first
-        if (
-            isinstance(sub_1_item[1], float) and
-            isinstance(sub_2_item[1], float)
+        if isinstance(sub_1_item[1], float) and isinstance(
+            sub_2_item[1], float
         ):
             if np.isnan(sub_1_item[1]) and np.isnan(sub_2_item[1]):
                 assert True
@@ -142,9 +119,7 @@ def check_dict_equivalency(
         else:
             assert sub_1_item[1] == sub_2_item[1]
         # check the value lies at the correct depth
-        assert (
-            len(sub_1_item[0].split(":"))
-        ) == (
+        assert (len(sub_1_item[0].split(":"))) == (
             len(sub_2_item[0].split(":"))
         )
 
@@ -153,9 +128,9 @@ class FilterException(Exception):
     """:class:`Exception` subslass to differentiate exceptions when logs
     filtered by :class:`ErrorFilter:
     """
+
     def __init__(self, *args: object) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         super().__init__(*args)
 
 
@@ -167,9 +142,9 @@ class ErrorFilter(logging.Filter):
     :param name: Name of the filter, defaults to `""`
     :type name: `str`, optional
     """
+
     def __init__(self, name: str = "") -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         super().__init__(name)
         self.output_error_message: str
 
@@ -185,9 +160,7 @@ class ErrorFilter(logging.Filter):
         """
         if record.levelno == logging.ERROR:
             self.output_error_message = record.msg
-            raise FilterException(
-                "There was a logging error from the logger"
-            )
+            raise FilterException("There was a logging error from the logger")
         return False
 
 
@@ -245,9 +218,9 @@ async def delayed_async_func(
         args = []
     if not kwargs:
         kwargs = {}
-#   This has been placed before the await
-#   as running it after the await could cause the
-#   updates to happen out of order
+    #   This has been placed before the await
+    #   as running it after the await could cause the
+    #   updates to happen out of order
     awaited_data = await func(*args, **kwargs)
     return awaited_data
 
@@ -274,10 +247,7 @@ def calc_interval(
     if interval_time <= 0:
         return 0
     t_diff = t_2 - t_1
-    interval = (
-        (t_diff // interval_time + 1) * interval_time
-        - t_diff
-    )
+    interval = (t_diff // interval_time + 1) * interval_time - t_diff
     return interval
 
 
@@ -289,19 +259,14 @@ class ProcessSafeSharedIterator:
     :param request_queue: The request queue to use
     :type request_queue: :class:`multiprocessing`.`Queue`
     """
-    def __init__(
-        self,
-        queue: Queue,
-        request_queue: Queue
-    ) -> None:
-        """Constructor method
-        """
+
+    def __init__(self, queue: Queue, request_queue: Queue) -> None:
+        """Constructor method"""
         self.queue = queue
         self.request_queue = request_queue
 
     def __iter__(self) -> Self:
-        """Method to return self as the iterator
-        """
+        """Method to return self as the iterator"""
         return self
 
     def __next__(self) -> Any:
@@ -325,12 +290,12 @@ class ProcessGeneratorManager:
     :param generator: The generator to manage
     :type generator: :class:`Generator`[`Any`, `Any`, `Any`]
     """
+
     def __init__(
         self,
         generator: Generator[Any, Any, Any],
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         self.generator = generator
         self.receive_request_daemon = Thread(target=self.serve, daemon=True)
         self.output_queue = Queue()
@@ -338,13 +303,11 @@ class ProcessGeneratorManager:
         self.num_children = 0
 
     def _update_num_children(self) -> None:
-        """Method to update the number of children
-        """
+        """Method to update the number of children"""
         self.num_children += 1
 
     def serve(self) -> None:
-        """Method to serve the generator
-        """
+        """Method to serve the generator"""
         while True:
             try:
                 request = self.receive_queue.get()
@@ -370,7 +333,7 @@ class ProcessGeneratorManager:
         self,
         exc_type: type[BaseException],
         exc_value: BaseException,
-        traceback: Any
+        traceback: Any,
     ) -> None:
         """Method to exit the context manager
 
@@ -398,10 +361,9 @@ class ProcessGeneratorManager:
         :rtype: :class:`ProcessSafeSharedIterator`
         """
         self._update_num_children()
-        return ProcessSafeSharedIterator(
-            self.output_queue,
-            self.receive_queue
-        )
+        return ProcessSafeSharedIterator(self.output_queue, self.receive_queue)
+
+
 # TODO: Test this code and remove the old code if performance is fine and it
 # works as expected
 # class ProcessSafeSharedIterator:
@@ -534,9 +496,7 @@ class ProcessGeneratorManager:
 #             raise exc_value
 
 
-def wrap_kafka_future(
-    future: FutureRecordMetadata
-) -> asyncio.Future[Any]:
+def wrap_kafka_future(future: FutureRecordMetadata) -> asyncio.Future[Any]:
     """Method to wrap a kafka future in an asyncio future
 
     :param future: The kafka future
@@ -548,23 +508,17 @@ def wrap_kafka_future(
     aio_future = loop.create_future()
 
     def on_err(*_):
-        loop.call_soon_threadsafe(
-            aio_future.set_exception, future.exception
-        )
+        loop.call_soon_threadsafe(aio_future.set_exception, future.exception)
 
     def on_success(*_):
-        loop.call_soon_threadsafe(
-            aio_future.set_result, future.value
-        )
+        loop.call_soon_threadsafe(aio_future.set_result, future.value)
+
     future.add_callback(on_success)
     future.add_errback(on_err)
     return aio_future
 
 
-def create_zip_file_from_folder(
-    folder_path: str,
-    zip_file_path: str
-) -> None:
+def create_zip_file_from_folder(folder_path: str, zip_file_path: str) -> None:
     """Method to create a zip file from a folder
 
     :param folder_path: The path of the folder to zip
@@ -572,8 +526,28 @@ def create_zip_file_from_folder(
     :param zip_file_path: The path of the zip file to create
     :type zip_file_path: `str`
     """
-    shutil.make_archive(
-        zip_file_path[:-4],
-        "zip",
-        folder_path
-    )
+    shutil.make_archive(zip_file_path[:-4], "zip", folder_path)
+
+
+class RollOverChoice:
+    """Class to create a roll over choice object
+
+    :param roll_over_value: The roll over value
+    :type roll_over_value: `int`
+    """
+    def __init__(self, roll_over_value: int) -> None:
+        self.roll_over_value = roll_over_value
+        self._counter = 0
+
+    def __call__(self, list_to_choose_from: list[Any]) -> Any:
+        try:
+            return_value = list_to_choose_from[
+                self._counter % self.roll_over_value
+            ]
+            self._counter += 1
+            return return_value
+        except IndexError:
+            raise IndexError(
+                "The rollover value is larger than the list you are tryong to"
+                " choose from"
+            )
