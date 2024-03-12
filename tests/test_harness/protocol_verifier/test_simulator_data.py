@@ -1107,6 +1107,32 @@ def test_job_sequencer(
         assert sim_datum.args[0] == expected_args
 
 
+def test_job_sequencer_zero_gap(
+    list_generated_sim_datum: list[Generator[SimDatum, Any, None]]
+) -> None:
+    """Tests `job_sequencer` with a zero gap
+
+    :param list_generated_sim_datum: Fixture providing a list of generators of
+    :class:`SimDatum``s
+    :type list_generated_sim_datum:
+    `list`[:class:`Generator`
+    [:class:`SimDatum`, `Any`, `None`]]
+    """
+    generated_sequence = job_sequencer(
+        generated_events=list_generated_sim_datum,
+        min_interval_between_job_events=1,
+        desired_job_event_gap=0,
+    )
+
+    result = list(generated_sequence)
+    for sim_datum, expected_args in zip(
+        result, ["a", "b", "aa", "bb", "aaa", "bbb"]
+    ):
+        assert isinstance(sim_datum, SimDatum)
+        assert len(sim_datum.args) == 1
+        assert sim_datum.args[0] == expected_args
+
+
 def test_generate_events_from_template_jobs_job_batch(
     job_list: list[dict[str, str | list[str]]]
 ) -> None:
