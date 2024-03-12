@@ -539,12 +539,20 @@ class RollOverChoice:
         self.roll_over_value = roll_over_value
         self._counter = 0
 
-    def __call__(self, list_to_choose_from: list[Any]) -> Any:
+    def __call__(
+        self,
+        list_to_choose_from: list[Any],
+        k: int = 1
+    ) -> list[Any]:
         try:
+            first_index = self._counter % self.roll_over_value
+            second_index = (self._counter + k) % self.roll_over_value
             return_value = list_to_choose_from[
-                self._counter % self.roll_over_value
+                first_index: first_index + k
             ]
-            self._counter += 1
+            if second_index < first_index:
+                return_value += list_to_choose_from[:second_index]
+            self._counter += k
             return return_value
         except IndexError:
             raise IndexError(
