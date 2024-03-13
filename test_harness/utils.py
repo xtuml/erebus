@@ -577,3 +577,16 @@ class RollOverChoice:
                 f" the length of the list ({len(list_to_choose_from)}) you are"
                 " trying to choose from"
             )
+
+
+def choose_from_front_of_list(
+    list_to_choose_from: list[T]
+) -> T:
+    """Method to choose from the front of a list
+
+    :param list_to_choose_from: The list to choose from
+    :type list_to_choose_from: `list`[`T`]
+    :return: Returns the item at the front of the list
+    :rtype: `T`
+    """
+    return list_to_choose_from[0]
