@@ -18,12 +18,13 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Iterable
 import time
+import json
 
 import numpy as np
 import pandas as pd
 import pytest
 import responses
-from aioresponses import aioresponses
+from aioresponses import aioresponses, CallbackResult
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from pygrok import Grok
@@ -1371,6 +1372,83 @@ def test_run_test_performance_zero_gap_jobs() -> None:
             counter += 1
         assert len(job_ids) == 4
         assert len(test.results) == 12
+        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
+        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+
+
+@responses.activate
+def test_run_test_performance_round_robin_zero_gap() -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` when the job event gap is
+    set to zero meaning that all jobs are sequenced in order with no overlap
+    and the round robin option is set to true.
+
+    Uses two puml files to test the round robin functionality one with events
+    A -> B and the other with events C -> D
+    """
+    harness_config = HarnessConfig(test_config_path)
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {
+                "num_files_per_sec": 4, "total_jobs": 4,
+                "job_event_gap": 0, "shard": True,
+                "round_robin": True
+            },
+            "test_finish": {
+                "finish_interval": 3
+            }
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [
+            test_files_path / "test_uml_1.puml",
+            test_files_path / "test_uml_2.puml"
+        ], test_config=test_config
+    )
+    events = []
+
+    def callback(url, **kwargs):
+        io_data = kwargs["data"]._parts[0][0]._value
+        bytes_data = io_data.read()
+        # check the data is as expected
+        json_bytes = json.loads(bytes_data)
+        events.append(json_bytes[0])
+        return CallbackResult(
+            status=200,
+        )
+
+    with aioresponses() as mock:
+        mock.post(
+            url=harness_config.pv_send_url, repeat=True, callback=callback
+        )
+        responses.get(
+            url=harness_config.log_urls["aer"]["getFileNames"],
+            json={"fileNames": ["Reception.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["aer"]["getFile"],
+            body=b"test log",
+        )
+        responses.get(
+            url=harness_config.log_urls["ver"]["getFileNames"],
+            json={"fileNames": ["Verifier.log"]},
+        )
+        responses.post(
+            url=harness_config.log_urls["ver"]["getFile"],
+            body=b"test log",
+        )
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+
+        )
+        asyncio.run(test.run_test())
+        assert len(events) == 8
+        expected_event_sequence = ["A", "B", "C", "D"] * 2
+        for event, expected_event in zip(events, expected_event_sequence):
+            assert event["eventType"] == expected_event
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
 

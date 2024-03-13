@@ -30,7 +30,8 @@ from tqdm import tqdm
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.utils import (
-    clean_directories, ProcessGeneratorManager
+    clean_directories, ProcessGeneratorManager, RollOverChoice,
+    choose_from_front_of_list
 )
 from test_harness.protocol_verifier.calc_pv_finish import (
     PVFileInspector,
@@ -236,13 +237,17 @@ class Test(ABC):
         counter = 0
         # loop until the max number of different sequences have been templated
         # or until all test sequences have been used up
+        if self.test_config.performance_options["round_robin"]:
+            chooser = choose_from_front_of_list
+        else:
+            chooser = choice
         while (
             counter < (self.test_config.max_different_sequences)
             and flattened_keys
         ):
             counter += 1
             try:
-                flattened_key: str = choice(flattened_keys)
+                flattened_key = chooser(flattened_keys)
                 try:
                     job_sequence = next(
                         flattened_test_files[flattened_key][0]
@@ -938,18 +943,24 @@ class PerformanceTest(Test):
         :return: Returns the jobs to send
         :rtype: `list`[`tuple`[:class:`Job`, `dict`[`str`, `str` | `bool`]]]
         """
+        if self.test_config.performance_options["round_robin"]:
+            chooser = RollOverChoice(
+                len(self.job_templates)
+            )
+        else:
+            chooser = choices
         if self.test_profile:
             jobs_to_send = []
             num_events = 0
             max_number_of_events = len(self.test_profile.delay_times)
             while True:
-                job = choice(self.job_templates)
+                job = chooser(self.job_templates, k=1)[0]
                 num_events += len(job.events)
                 if num_events > max_number_of_events:
                     break
                 jobs_to_send.append(job)
         else:
-            jobs_to_send = choices(
+            jobs_to_send = chooser(
                 self.job_templates,
                 k=self.test_config.performance_options["total_jobs"],
             )
