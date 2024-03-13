@@ -202,6 +202,7 @@ The fields within the json and yaml file are as follows:
     * `total_jobs`: `int` `>= 0` - The total number of separate jobs to use in the performance test if no profile has been uploaded.
     * `save_logs`: `True` | `False`: `bool` - Boolean value indicating whether to save logs (`True`) or no (`False`). Defaults to `True`
     * `job_event_gap`: `float` `>=0` - (PV specific) The desired time gap between events in the same job. Although a float is taken this will be rounded to the nearest second. If the value `0` is provided then events of the same job will be sent one after another. Defaults to `1` second gap.
+    * `round_robin`: `True` | `False`: bool - Boolean value indicating whether to go through the uploaded job template files in a round robin style (`True`) or choose templates randomly (`False`). Defaults to `False`.
 * `functional_options`: `dict` - Options for a functional test is `type` is set to `"Functional"`. This option contains the following sub-fields:
     * `log_domain`: `"aer"` | `"ver"` `str` : The log domain to use for the functional test, defaults to `"ver"`:
         * `"ver"` - Indicates that Verifier.log is the file to use for functional tests
