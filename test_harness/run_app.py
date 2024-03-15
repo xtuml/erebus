@@ -7,6 +7,8 @@ import logging
 import sys
 import os
 from contextlib import ExitStack
+from time import sleep
+import gc
 
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -45,6 +47,7 @@ def run_harness_app(
     try:
         while True:
             if not harness_app.test_to_run:
+                sleep(1)
                 continue
             test_to_run: dict = harness_app.test_to_run
             harness_app.test_to_run = {}
@@ -69,6 +72,7 @@ def run_harness_app(
                     logging.getLogger().info(
                         "Test Harness test run completed successfully"
                     )
+            gc.collect()
     except KeyboardInterrupt:
         sys.exit()
 

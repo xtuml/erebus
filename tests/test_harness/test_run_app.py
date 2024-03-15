@@ -80,6 +80,7 @@ def run_performance_test_requests(
             "TestConfig": test_config
         }
     )
+    time.sleep(1)
     response = requests.get(
         url="http://localhost:8800/isTestRunning"
     )
@@ -265,7 +266,7 @@ def run_performance_test_requests_zip_file_upload(
         }
     )
     results_capture["start test json"] = response.json()
-    time.sleep(1)
+    time.sleep(2)
     while True:
         response = requests.get(
             url="http://localhost:8800/isTestRunning"
