@@ -17,7 +17,6 @@ jobs:
   run-tests:
     if: |
         github.repository == 'SmartDCSITlimited/test-harness'
-            && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Setup Checkout
