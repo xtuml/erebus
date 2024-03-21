@@ -27,5 +27,5 @@ PyYAML~=6.0.1
 requests~=2.31.0
 responses~=0.24.0
 scipy~=1.12.0
-SQLAlchemy~=2.0.25
+SQLAlchemy~=2.0.28
 tqdm~=4.66.1
