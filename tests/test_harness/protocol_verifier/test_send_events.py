@@ -103,7 +103,9 @@ class TestPVInputConverter:
             try:
                 json_bytes = bytes_array[4:]
                 event_actual = json.loads(json_bytes.decode("utf-8"))
-                AssertionError("json should not be parseable without first 4 bytes")
+                AssertionError(
+                    "json should not be parseable without first 4 bytes"
+                )
             except ValueError:
                 pass
             event_actual = json.loads(bytes_array.decode("utf-8"))

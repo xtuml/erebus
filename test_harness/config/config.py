@@ -1,6 +1,7 @@
 """
 Config class for test harness
 """
+
 import os
 from typing import Optional
 from configparser import ConfigParser
@@ -104,8 +105,7 @@ class HarnessConfig:
         self.parse_kafka_metrics_config()
 
     def parse_kafka_metrics_config(self) -> None:
-        """Method to parse kafka metrics config from config file
-        """
+        """Method to parse kafka metrics config from config file"""
         # flag to get metrics from kafka
         metrics_from_kafka_raw = self.config_parser["non-default"][
             "metrics_from_kafka"
@@ -126,36 +126,33 @@ class HarnessConfig:
         )
 
     def parse_message_bus_config(self) -> None:
-        """Method to parse message bus config from config file
-        """
+        """Method to parse message bus config from config file"""
         message_bus_protocol = self.config_parser["non-default"][
             "message_bus_protocol"
         ].upper()
         pv_send_as_pv_bytes_raw = self.config_parser["non-default"][
             "pv_send_as_pv_bytes"
         ]
-        send_json_without_length_prefix_raw = self.config_parser["non-default"][
-            "send_json_without_length_prefix"
-        ]
+        send_json_without_length_prefix_raw = self.config_parser[
+            "non-default"
+        ]["send_json_without_length_prefix"]
         self.pv_send_as_pv_bytes = (
             True if pv_send_as_pv_bytes_raw.lower() == "true" else False
         )
         self.send_json_without_length_prefix = (
-            True if send_json_without_length_prefix_raw.lower() == "true" else False
+            True
+            if send_json_without_length_prefix_raw.lower() == "true"
+            else False
         )
         match message_bus_protocol:
             case "KAFKA" | "KAFKA3":
                 self.message_bus_protocol = message_bus_protocol
                 self.kafka_message_bus_host = self.config_parser[
                     "non-default"
-                ][
-                    "kafka_message_bus_host"
-                ]
+                ]["kafka_message_bus_host"]
                 self.kafka_message_bus_topic = self.config_parser[
                     "non-default"
-                ][
-                    "kafka_message_bus_topic"
-                ]
+                ]["kafka_message_bus_topic"]
                 self.pv_send_as_pv_bytes = True
             case "HTTP":
                 self.message_bus_protocol = message_bus_protocol
@@ -331,9 +328,7 @@ class TestConfig:
             "job_event_gap": 1,
             "round_robin": False,
         }
-        self.functional_options = {
-            "log_domain": "ver"
-        }
+        self.functional_options = {"log_domain": "ver"}
         self.num_workers = 0
         self.aggregate_during = False
         self.sample_rate = 0

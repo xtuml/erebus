@@ -193,7 +193,7 @@ class PVInputConverter(InputConverter):
         """
         match self._message_bus:
             case "KAFKA" | "KAFKA3":
-                if(harness_config.send_json_without_length_prefix):
+                if (harness_config.send_json_without_length_prefix):
                     self._data_conversion_function = (
                         convert_list_dict_to_pv_json_io_bytes_without_prefix
                     )
