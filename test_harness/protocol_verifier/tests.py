@@ -485,7 +485,8 @@ class Test(ABC):
         ) as producer:
             message_sender = PVMessageSender(
                 message_producer=producer,
-                message_bus=harness_config.message_bus_protocol
+                message_bus=harness_config.message_bus_protocol,
+                harness_config=harness_config,
             )
             simulator = Simulator(
                 delays=delay_times,

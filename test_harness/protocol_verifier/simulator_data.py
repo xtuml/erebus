@@ -305,6 +305,25 @@ def convert_list_dict_to_json_io_bytes(
     return [io_bytes]
 
 
+def convert_list_dict_to_pv_json_io_bytes_without_prefix(
+    list_dict: list[dict[str, Any]]
+) -> list[bytes]:
+    """Method to convert a list of dicts into a list of :class:`bytes` for
+    each event suitable for ingestion directly by the PV
+
+    :param list_dict: The list of dictionaries
+    :type list_dict: `list`[`dict`[`str`, `Any`]]
+    :return: Returns the :class:`bytes` instance
+    :rtype: `list`[:class:`bytes`]
+    """
+    io_bytes_list = []
+    for event in list_dict:
+        pay_load = json.dumps(event).encode("utf8")
+        io_bytes = pay_load
+        io_bytes_list.append(io_bytes)
+    return io_bytes_list
+
+
 def convert_list_dict_to_pv_json_io_bytes(
     list_dict: list[dict[str, Any]]
 ) -> list[bytes]:

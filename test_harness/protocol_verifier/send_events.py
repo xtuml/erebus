@@ -14,7 +14,8 @@ from kafka3.errors import KafkaTimeoutError as Kafka3TimeoutError
 from test_harness.config.config import HarnessConfig
 from test_harness.protocol_verifier.simulator_data import (
     convert_list_dict_to_json_io_bytes,
-    convert_list_dict_to_pv_json_io_bytes
+    convert_list_dict_to_pv_json_io_bytes,
+    convert_list_dict_to_pv_json_io_bytes_without_prefix
 )
 from test_harness.message_buses.message_buses import (
     MessageProducer, InputConverter, ResponseConverter,
@@ -91,11 +92,13 @@ class PVMessageSender(MessageSender):
         self,
         message_producer: MessageProducer,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
+        harness_config: HarnessConfig
     ) -> None:
         """Constructor method
         """
         input_converter = PVInputConverter(
-            message_bus=message_bus
+            message_bus=message_bus,
+            harness_config=harness_config
         )
         response_converter = PVResponseConverter()
         super().__init__(
@@ -132,12 +135,13 @@ class PVInputConverter(InputConverter):
     def __init__(
         self,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
+        harness_config: HarnessConfig
     ) -> None:
         """Constructor method
         """
         super().__init__()
         self._message_bus = message_bus
-        self._set_data_conversion_function()
+        self._set_data_conversion_function(harness_config=harness_config)
 
     def convert(
         self,
@@ -182,15 +186,21 @@ class PVInputConverter(InputConverter):
         return self._data_conversion_function
 
     def _set_data_conversion_function(
-        self
+        self,
+        harness_config: HarnessConfig
     ) -> None:
         """Private method to set the data conversion function
         """
         match self._message_bus:
             case "KAFKA" | "KAFKA3":
-                self._data_conversion_function = (
-                    convert_list_dict_to_pv_json_io_bytes
-                )
+                if (harness_config.send_json_without_length_prefix):
+                    self._data_conversion_function = (
+                        convert_list_dict_to_pv_json_io_bytes_without_prefix
+                    )
+                else:
+                    self._data_conversion_function = (
+                        convert_list_dict_to_pv_json_io_bytes
+                    )
             case "HTTP":
                 self._data_conversion_function = (
                     self._http_conversion_function
