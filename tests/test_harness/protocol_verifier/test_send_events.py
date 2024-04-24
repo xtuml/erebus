@@ -46,8 +46,12 @@ class TestPVInputConverter:
         :param job_list: A list of event dicts in a job
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
+        test_config = HarnessConfig()
+        test_config.send_json_without_length_prefix = False
+
         data_converter = PVInputConverter(
-            message_bus="KAFKA"
+            message_bus="KAFKA",
+            harness_config=test_config
         )
         job_id = "job_id"
         job_info = {"job_info": "job_info"}
@@ -69,6 +73,46 @@ class TestPVInputConverter:
         assert response_kwargs["job_info"] == job_info
 
     @staticmethod
+    def test_convert_kafka_no_length(
+        job_list: list[dict[str, str | list[str]]]
+    ) -> None:
+        """Tests `convert_list_dict_to_json_io_bytes`
+
+        :param job_list: A list of event dicts in a job
+        :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
+        """
+
+        test_config = HarnessConfig()
+        test_config.send_json_without_length_prefix = True
+
+        data_converter = PVInputConverter(
+            message_bus="KAFKA",
+            harness_config=test_config
+        )
+        job_id = "job_id"
+        job_info = {"job_info": "job_info"}
+        io_bytes_list, _, _, _, response_kwargs = data_converter.convert(
+            list_dict=job_list,
+            job_id=job_id,
+            job_info=job_info
+        )
+        assert len(io_bytes_list) == len(job_list)
+        for io_bytes, event_expected in zip(io_bytes_list, job_list):
+            assert isinstance(io_bytes, bytes)
+            bytes_array = io_bytes
+            try:
+                json_bytes = bytes_array[4:]
+                event_actual = json.loads(json_bytes.decode("utf-8"))
+                AssertionError("json should not be parseable without first 4 bytes")
+            except ValueError:
+                pass
+            event_actual = json.loads(bytes_array.decode("utf-8"))
+            check_dict_equivalency(event_actual, event_expected)
+
+        assert response_kwargs["job_id"] == job_id
+        assert response_kwargs["job_info"] == job_info
+
+    @staticmethod
     def test_convert_http(
         job_list: list[dict[str, str | list[str]]]
     ) -> None:
@@ -79,7 +123,8 @@ class TestPVInputConverter:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         data_converter = PVInputConverter(
-            message_bus="HTTP"
+            message_bus="HTTP",
+            harness_config=HarnessConfig()
         )
         job_id = "job_id"
         job_info = {"job_info": "job_info"}
@@ -328,7 +373,8 @@ class TestPVMessageSender:
         ) as producer:
             sender = PVMessageSender(
                 message_producer=producer,
-                message_bus="KAFKA"
+                message_bus="KAFKA",
+                harness_config=HarnessConfig()
             )
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
@@ -396,7 +442,8 @@ class TestPVMessageSender:
         ) as producer:
             sender = PVMessageSender(
                 message_producer=producer,
-                message_bus="KAFKA"
+                message_bus="KAFKA",
+                harness_config=HarnessConfig(),
             )
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
@@ -452,7 +499,8 @@ class TestPVMessageSender:
         ) as producer:
             sender = PVMessageSender(
                 message_producer=producer,
-                message_bus="KAFKA3"
+                message_bus="KAFKA3",
+                harness_config=HarnessConfig(),
             )
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
@@ -522,7 +570,8 @@ class TestPVMessageSender:
         ) as producer:
             sender = PVMessageSender(
                 message_producer=producer,
-                message_bus="KAFKA3"
+                message_bus="KAFKA3",
+                harness_config=HarnessConfig(),
             )
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
@@ -579,7 +628,8 @@ class TestPVMessageSender:
             ) as producer:
                 sender = PVMessageSender(
                     message_producer=producer,
-                    message_bus="HTTP"
+                    message_bus="HTTP",
+                    harness_config=HarnessConfig(),
                 )
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}
@@ -629,7 +679,8 @@ class TestPVMessageSender:
             ) as producer:
                 sender = PVMessageSender(
                     message_producer=producer,
-                    message_bus="HTTP"
+                    message_bus="HTTP",
+                    harness_config=HarnessConfig(),
                 )
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}
@@ -679,7 +730,8 @@ class TestPVMessageSender:
             ) as producer:
                 sender = PVMessageSender(
                     message_producer=producer,
-                    message_bus="HTTP"
+                    message_bus="HTTP",
+                    harness_config=HarnessConfig(),
                 )
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}

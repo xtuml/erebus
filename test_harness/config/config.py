@@ -134,8 +134,14 @@ class HarnessConfig:
         pv_send_as_pv_bytes_raw = self.config_parser["non-default"][
             "pv_send_as_pv_bytes"
         ]
+        send_json_without_length_prefix_raw = self.config_parser["non-default"][
+            "send_json_without_length_prefix"
+        ]
         self.pv_send_as_pv_bytes = (
             True if pv_send_as_pv_bytes_raw.lower() == "true" else False
+        )
+        self.send_json_without_length_prefix = (
+            True if send_json_without_length_prefix_raw.lower() == "true" else False
         )
         match message_bus_protocol:
             case "KAFKA" | "KAFKA3":
