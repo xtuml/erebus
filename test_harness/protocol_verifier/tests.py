@@ -67,7 +67,10 @@ from test_harness.async_management import (
 )
 from .pvresults import PVResults
 from .pvresultshandler import (
-    PVResultsHandler, PVResultsAdder, PVKafkaMetricsHandler
+    PVResultsHandler,
+    PVResultsAdder,
+    PVKafkaMetricsHandler,
+    PVKafkaMetricsHandlerNoLength
 )
 from .pvperformanceresults import PVPerformanceResults
 from .kafka_metrics import PVKafkaMetricsRetriever
@@ -865,6 +868,11 @@ class PerformanceTest(Test):
         ] | None = None
     ) -> None:
         """Constructor method"""
+        if harness_config.send_json_without_length_prefix:
+            handler_class = PVKafkaMetricsHandlerNoLength
+        else:
+            handler_class = PVKafkaMetricsHandler
+
         metrics_retriever_and_handlers = [
             MetricsRetriverKwargsPairAndHandlerKwargsPair(
                 metric_retriever_kwargs_pair=MetricsRetrieverKwargsPair(
@@ -879,15 +887,17 @@ class PerformanceTest(Test):
                     },
                 ),
                 handler_kwargs_pair=ResultsHandlerKwargsPair(
-                    handler_class=PVKafkaMetricsHandler,
+                    handler_class=handler_class,
                     kwargs={
                         "interval": (
-                            harness_config.kafka_metrics_collection_interval
+                            harness_config.
+                            kafka_metrics_collection_interval
                         ),
                     },
                 )
             )
         ] if harness_config.metrics_from_kafka else []
+
         super().__init__(
             test_file_generators=test_file_generators,
             harness_config=harness_config,
