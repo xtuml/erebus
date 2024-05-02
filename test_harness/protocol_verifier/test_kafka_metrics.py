@@ -1,3 +1,4 @@
+"""Tests for kafka_metrics.py"""
 import datetime
 import json
 
@@ -9,6 +10,23 @@ from test_harness.protocol_verifier.kafka_metrics import (
 
 
 def test_decode_and_yield_events_from_raw_msgs_no_length() -> None:
+    """
+    Test case for the decode_and_yield_events_from_raw_msgs_no_length function.
+
+    This test verifies that the function correctly decodes and yields events
+        from raw messages when the length information is not provided.
+
+    Steps:
+    1. Prepare test data with a raw message containing a JSON payload.
+    2. Execute the function to decode and yield events from the raw messages.
+    3. Assert the results by checking the number of events and their field
+        values.
+
+    Expected behavior:
+    - The function should decode the JSON payload and yield a single event.
+    - The event should have the expected field values.
+
+    """
     # Prepare test data
     raw_msgs = {
         aiokafka.TopicPartition("topic", 0): [

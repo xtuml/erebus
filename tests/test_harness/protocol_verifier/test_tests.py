@@ -873,7 +873,6 @@ class TestPVResultsHandler:
     def test_events_cache_happy_path() -> None:
         """Tests the happy path for event caching using shelve.Shelf."""
         harness_config = HarnessConfig(test_config_path)
-        harness_config.send_json_without_length_prefix = True
         results = PVFunctionalResults()
         with NamedTemporaryFile(suffix=".db") as tmp_file:
             with PVResultsHandler(
@@ -905,7 +904,6 @@ class TestPVResultsHandler:
     def test___enter__() -> None:
         """Tests :class:`PVResultsHandler`.`__enter__`"""
         harness_config = HarnessConfig(test_config_path)
-
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -917,7 +915,6 @@ class TestPVResultsHandler:
     def test___exit__() -> None:
         """Tests :class:`PVResultsHandler`.`__exit__`"""
         harness_config = HarnessConfig(test_config_path)
-
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -932,7 +929,6 @@ class TestPVResultsHandler:
         :class:`PVResultsHandler`.`__exit__` when an error is thrown
         """
         harness_config = HarnessConfig(test_config_path)
-
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -949,7 +945,6 @@ class TestPVResultsHandler:
         thrown
         """
         harness_config = HarnessConfig(test_config_path)
-
         results = PVFunctionalResults()
         with pytest.raises(RuntimeError) as e_info:
             with PVResultsHandler(results, harness_config.report_file_store):
@@ -960,7 +955,6 @@ class TestPVResultsHandler:
     def test_handle_result() -> None:
         """Tests :class:`PVResultsHandler`.`handle_result`"""
         harness_config = HarnessConfig(test_config_path)
-
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -977,7 +971,6 @@ class TestPVResultsHandler:
         with no save
         """
         harness_config = HarnessConfig(test_config_path)
-
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -1004,7 +997,6 @@ class TestPVResultsHandler:
         with save
         """
         harness_config = HarnessConfig(test_config_path)
-
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store, save_files=True
@@ -1171,9 +1163,7 @@ def test_send_test_files_performance() -> None:
         assert len(test.results) == 6
 
 
-def test_send_test_files_with_simulator_sliced_delays(
-
-) -> None:
+def test_send_test_files_with_simulator_sliced_delays() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
@@ -1570,10 +1560,7 @@ def test_run_test_performance_kafka(
 
 
 @responses.activate
-def test_run_test_performance_calc_results(
-    grok_exporter_string: str,
-
-) -> None:
+def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
     """Tests :class:`PerformanceTests`.`calc_results`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
@@ -1737,7 +1724,6 @@ def test_run_test_performance_profile_shard() -> None:
 @responses.activate
 def test_get_report_files_from_results(
     results_dataframe: pd.DataFrame,
-
 ) -> None:
     """Tests :class:`PerformanceTests`.`get_report_files_from_results`
     :param results_dataframe: Fixture providing a results dataframe with
@@ -1815,7 +1801,6 @@ def test_get_report_files_from_results(
 @responses.activate
 def test_run_test_performance_stop_test(
     caplog: pytest.LogCaptureFixture,
-
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
@@ -1870,7 +1855,6 @@ def test_run_test_performance_stop_test(
 @responses.activate
 def test_run_test_performance_stop_test_async_test_stopper(
     caplog: pytest.LogCaptureFixture,
-
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
@@ -1931,7 +1915,6 @@ def test_run_test_performance_stop_test_async_test_stopper(
 @pytest.mark.asyncio
 async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
     caplog: pytest.LogCaptureFixture,
-
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` when performing a stop in
     the middle of a multi process test
@@ -2008,7 +1991,6 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
 @responses.activate
 def test_run_test_performance_no_logs(
     caplog: pytest.LogCaptureFixture,
-
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` not grabbing logs"""
     harness_config = HarnessConfig(test_config_path)
@@ -2081,6 +2063,7 @@ def test_run_test_performance_kafka_get_metrics_from_kafka(
     harness_config.pv_send_as_pv_bytes = True
     harness_config.metrics_from_kafka = True
     test_config = TestConfig()
+
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
@@ -2145,6 +2128,7 @@ def test_run_test_performance_agg_during_test(
     harness_config.pv_send_as_pv_bytes = True
     harness_config.metrics_from_kafka = True
     test_config = TestConfig()
+
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
@@ -2224,6 +2208,7 @@ def test_run_test_performance_agg_during_test_sample(
     harness_config.metrics_from_kafka = True
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
+
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
@@ -2288,6 +2273,7 @@ def test_run_test_performance_low_memory(
     harness_config.metrics_from_kafka = True
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
+
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
