@@ -1,14 +1,10 @@
 import datetime
 import json
-from typing import Any, Generator
-from unittest.mock import MagicMock
 
 import aiokafka
-import pytest
 
 from test_harness.protocol_verifier.kafka_metrics import (
     decode_and_yield_events_from_raw_msgs_no_length,
-    ResultsDict,
 )
 
 

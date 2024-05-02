@@ -1035,7 +1035,6 @@ class TestPVResultsHandler:
 def test_send_test_files_functional() -> None:
     """Tests :class:`FunctionalTest`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
@@ -1059,7 +1058,6 @@ def test_send_test_files_functional() -> None:
 def test_run_test_functional() -> None:
     """Tests :class:`FunctionalTest`.`run_test`"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
@@ -1101,7 +1099,6 @@ def test_run_test_functional() -> None:
 def test_calc_results_functional():
     """Tests :class:`FunctionalTest`.`calc_results`"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -1147,7 +1144,6 @@ def test_calc_results_functional():
 def test_send_test_files_performance() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1180,7 +1176,6 @@ def test_send_test_files_with_simulator_sliced_delays(
 ) -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1230,7 +1225,6 @@ def test_send_test_files_with_simulator_sliced_delays(
 def test_run_test_performance() -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1282,7 +1276,6 @@ def test_run_test_performance_multi_process() -> None:
     :type caplog: :class:`pytest.LogCaptureFixture`
     """
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1336,7 +1329,6 @@ def test_run_test_performance_zero_gap_jobs() -> None:
     set to zero meaning that all jobs are sequenced in order with no overlap
     """
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1404,7 +1396,6 @@ def test_run_test_performance_round_robin_zero_gap() -> None:
     A -> B and the other with events C -> D
     """
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1482,7 +1473,6 @@ def test_send_test_files_with_simulator_process_safe() -> None:
     """
     harness_config = HarnessConfig(test_config_path)
     harness_config.pv_finish_interval = 8
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1586,7 +1576,6 @@ def test_run_test_performance_calc_results(
 ) -> None:
     """Tests :class:`PerformanceTests`.`calc_results`"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1649,7 +1638,6 @@ def test_run_test_performance_calc_results(
 def test_run_test_performance_profile_job_batch() -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1699,7 +1687,6 @@ def test_run_test_performance_profile_shard() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
     harness_config = HarnessConfig(test_config_path)
     harness_config.pv_finish_interval = 5
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1758,7 +1745,6 @@ def test_get_report_files_from_results(
     :type results_dataframe: :class:`pd`.`DataFrame`
     """
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -1835,7 +1821,6 @@ def test_run_test_performance_stop_test(
     harness_config = HarnessConfig(test_config_path)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 1
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1892,7 +1877,6 @@ def test_run_test_performance_stop_test_async_test_stopper(
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 10000
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1959,7 +1943,6 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 10000
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -2029,7 +2012,6 @@ def test_run_test_performance_no_logs(
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` not grabbing logs"""
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -2099,7 +2081,6 @@ def test_run_test_performance_kafka_get_metrics_from_kafka(
     harness_config.pv_send_as_pv_bytes = True
     harness_config.metrics_from_kafka = True
     test_config = TestConfig()
-
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
@@ -2164,7 +2145,6 @@ def test_run_test_performance_agg_during_test(
     harness_config.pv_send_as_pv_bytes = True
     harness_config.metrics_from_kafka = True
     test_config = TestConfig()
-
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
@@ -2244,7 +2224,6 @@ def test_run_test_performance_agg_during_test_sample(
     harness_config.metrics_from_kafka = True
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
-
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
@@ -2309,7 +2288,6 @@ def test_run_test_performance_low_memory(
     harness_config.metrics_from_kafka = True
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
-
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
@@ -2357,7 +2335,6 @@ def test_use_harness_config_instead_of_test_config() -> None:
     HarnessConfig
     """
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -2385,7 +2362,6 @@ def test_use_test_config_instead_of_harness_config() -> None:
     TestConfig
     """
     harness_config = HarnessConfig(test_config_path)
-
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
