@@ -902,11 +902,10 @@ class TestPVResultsHandler:
                 # TODO more testing around this functionality.
 
     @staticmethod
-    @pytest.mark.parametrize("send_with_length", [True, False])
-    def test___enter__(send_with_length) -> None:
+    def test___enter__() -> None:
         """Tests :class:`PVResultsHandler`.`__enter__`"""
         harness_config = HarnessConfig(test_config_path)
-        harness_config.send_json_without_length_prefix = send_with_length
+
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -915,11 +914,10 @@ class TestPVResultsHandler:
         assert results_handler.daemon_thread.is_alive()
 
     @staticmethod
-    @pytest.mark.parametrize("send_with_length", [True, False])
-    def test___exit__(send_with_length) -> None:
+    def test___exit__() -> None:
         """Tests :class:`PVResultsHandler`.`__exit__`"""
         harness_config = HarnessConfig(test_config_path)
-        harness_config.send_json_without_length_prefix = send_with_length
+
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -929,13 +927,12 @@ class TestPVResultsHandler:
         assert not results_handler.daemon_thread.is_alive()
 
     @staticmethod
-    @pytest.mark.parametrize("send_with_length", [True, False])
-    def test___exit___error(send_with_length) -> None:
+    def test___exit___error() -> None:
         """Tests
         :class:`PVResultsHandler`.`__exit__` when an error is thrown
         """
         harness_config = HarnessConfig(test_config_path)
-        harness_config.send_json_without_length_prefix = send_with_length
+
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -947,13 +944,12 @@ class TestPVResultsHandler:
         assert e_info.value.args[0] == "An error"
 
     @staticmethod
-    @pytest.mark.parametrize("send_with_length", [True, False])
-    def test_context_manager_error(send_with_length) -> None:
+    def test_context_manager_error() -> None:
         """Tests :class:`PVResultsHandler` context manager when an error is
         thrown
         """
         harness_config = HarnessConfig(test_config_path)
-        harness_config.send_json_without_length_prefix = send_with_length
+
         results = PVFunctionalResults()
         with pytest.raises(RuntimeError) as e_info:
             with PVResultsHandler(results, harness_config.report_file_store):
@@ -961,11 +957,10 @@ class TestPVResultsHandler:
         assert e_info.value.args[0] == "An error"
 
     @staticmethod
-    @pytest.mark.parametrize("send_with_length", [True, False])
-    def test_handle_result(send_with_length) -> None:
+    def test_handle_result() -> None:
         """Tests :class:`PVResultsHandler`.`handle_result`"""
         harness_config = HarnessConfig(test_config_path)
-        harness_config.send_json_without_length_prefix = send_with_length
+
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -977,13 +972,12 @@ class TestPVResultsHandler:
         assert results_handler.queue.get() == object_in_queue
 
     @staticmethod
-    @pytest.mark.parametrize("send_with_length", [True, False])
-    def test_handle_item_from_queue_no_save(send_with_length) -> None:
+    def test_handle_item_from_queue_no_save() -> None:
         """Tests :class:`PVResultsHandler`.`handle_item_from_queue`
         with no save
         """
         harness_config = HarnessConfig(test_config_path)
-        harness_config.send_json_without_length_prefix = send_with_length
+
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -1005,13 +999,12 @@ class TestPVResultsHandler:
             assert attr[0] == item
 
     @staticmethod
-    @pytest.mark.parametrize("send_with_length", [True, False])
-    def test_handle_item_from_queue_with_save(send_with_length) -> None:
+    def test_handle_item_from_queue_with_save() -> None:
         """Tests :class:`PVResultsHandler`.`handle_item_from_queue`
         with save
         """
         harness_config = HarnessConfig(test_config_path)
-        harness_config.send_json_without_length_prefix = send_with_length
+
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store, save_files=True
@@ -1039,11 +1032,10 @@ class TestPVResultsHandler:
         assert not glob.glob("*.*", root_dir=harness_config.report_file_store)
 
 
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_send_test_files_functional(send_with_length) -> None:
+def test_send_test_files_functional() -> None:
     """Tests :class:`FunctionalTest`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
@@ -1064,11 +1056,10 @@ def test_send_test_files_functional(send_with_length) -> None:
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_run_test_functional(send_with_length) -> None:
+def test_run_test_functional() -> None:
     """Tests :class:`FunctionalTest`.`run_test`"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
@@ -1107,11 +1098,10 @@ def test_run_test_functional(send_with_length) -> None:
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_calc_results_functional(send_with_length):
+def test_calc_results_functional():
     """Tests :class:`FunctionalTest`.`calc_results`"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -1154,11 +1144,10 @@ def test_calc_results_functional(send_with_length):
             )
 
 
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_send_test_files_performance(send_with_length) -> None:
+def test_send_test_files_performance() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1186,13 +1175,12 @@ def test_send_test_files_performance(send_with_length) -> None:
         assert len(test.results) == 6
 
 
-@pytest.mark.parametrize("send_with_length", [True, False])
 def test_send_test_files_with_simulator_sliced_delays(
-    send_with_length
+
 ) -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1239,11 +1227,10 @@ def test_send_test_files_with_simulator_sliced_delays(
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_run_test_performance(send_with_length) -> None:
+def test_run_test_performance() -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1287,8 +1274,7 @@ def test_run_test_performance(send_with_length) -> None:
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_run_test_performance_multi_process(send_with_length) -> None:
+def test_run_test_performance_multi_process() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` when performing a stop in
     the middle of a multi process test
 
@@ -1296,7 +1282,7 @@ def test_run_test_performance_multi_process(send_with_length) -> None:
     :type caplog: :class:`pytest.LogCaptureFixture`
     """
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1345,13 +1331,12 @@ def test_run_test_performance_multi_process(send_with_length) -> None:
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_run_test_performance_zero_gap_jobs(send_with_length) -> None:
+def test_run_test_performance_zero_gap_jobs() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` when the job event gap is
     set to zero meaning that all jobs are sequenced in order with no overlap
     """
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1410,8 +1395,7 @@ def test_run_test_performance_zero_gap_jobs(send_with_length) -> None:
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_run_test_performance_round_robin_zero_gap(send_with_length) -> None:
+def test_run_test_performance_round_robin_zero_gap() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` when the job event gap is
     set to zero meaning that all jobs are sequenced in order with no overlap
     and the round robin option is set to true.
@@ -1420,7 +1404,7 @@ def test_run_test_performance_round_robin_zero_gap(send_with_length) -> None:
     A -> B and the other with events C -> D
     """
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1492,14 +1476,13 @@ def test_run_test_performance_round_robin_zero_gap(send_with_length) -> None:
     reason="Will implement when functionality is working correctly"
 )
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_send_test_files_with_simulator_process_safe(send_with_length) -> None:
+def test_send_test_files_with_simulator_process_safe() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files_with_simulator`
     using process safe generators for sim data and delay times
     """
     harness_config = HarnessConfig(test_config_path)
     harness_config.pv_finish_interval = 8
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1597,14 +1580,13 @@ def test_run_test_performance_kafka(
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
 def test_run_test_performance_calc_results(
     grok_exporter_string: str,
-    send_with_length
+
 ) -> None:
     """Tests :class:`PerformanceTests`.`calc_results`"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1664,11 +1646,10 @@ def test_run_test_performance_calc_results(
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_run_test_performance_profile_job_batch(send_with_length) -> None:
+def test_run_test_performance_profile_job_batch() -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1714,12 +1695,11 @@ def test_run_test_performance_profile_job_batch(send_with_length) -> None:
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_run_test_performance_profile_shard(send_with_length) -> None:
+def test_run_test_performance_profile_shard() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
     harness_config = HarnessConfig(test_config_path)
     harness_config.pv_finish_interval = 5
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1768,10 +1748,9 @@ def test_run_test_performance_profile_shard(send_with_length) -> None:
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
 def test_get_report_files_from_results(
     results_dataframe: pd.DataFrame,
-    send_with_length
+
 ) -> None:
     """Tests :class:`PerformanceTests`.`get_report_files_from_results`
     :param results_dataframe: Fixture providing a results dataframe with
@@ -1779,7 +1758,7 @@ def test_get_report_files_from_results(
     :type results_dataframe: :class:`pd`.`DataFrame`
     """
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -1848,16 +1827,15 @@ def test_get_report_files_from_results(
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
 def test_run_test_performance_stop_test(
     caplog: pytest.LogCaptureFixture,
-    send_with_length
+
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 1
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1905,17 +1883,16 @@ def test_run_test_performance_stop_test(
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
 def test_run_test_performance_stop_test_async_test_stopper(
     caplog: pytest.LogCaptureFixture,
-    send_with_length
+
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
     harness_config = HarnessConfig(test_config_path)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 10000
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1968,10 +1945,9 @@ def test_run_test_performance_stop_test_async_test_stopper(
 
 @responses.activate
 @pytest.mark.asyncio
-@pytest.mark.parametrize("send_with_length", [True, False])
 async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
     caplog: pytest.LogCaptureFixture,
-    send_with_length
+
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` when performing a stop in
     the middle of a multi process test
@@ -1983,7 +1959,7 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 10000
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -2047,14 +2023,13 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
 
 
 @responses.activate
-@pytest.mark.parametrize("send_with_length", [True, False])
 def test_run_test_performance_no_logs(
     caplog: pytest.LogCaptureFixture,
-    send_with_length
+
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` not grabbing logs"""
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -2377,13 +2352,12 @@ def test_run_test_performance_low_memory(
     )
 
 
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_use_harness_config_instead_of_test_config(send_with_length) -> None:
+def test_use_harness_config_instead_of_test_config() -> None:
     """Tests :class:`PerformanceTests` using test_finish parameters in
     HarnessConfig
     """
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -2406,13 +2380,12 @@ def test_use_harness_config_instead_of_test_config(send_with_length) -> None:
     )
 
 
-@pytest.mark.parametrize("send_with_length", [True, False])
-def test_use_test_config_instead_of_harness_config(send_with_length) -> None:
+def test_use_test_config_instead_of_harness_config() -> None:
     """Tests :class:`PerformanceTests` using test_finish parameters in
     TestConfig
     """
     harness_config = HarnessConfig(test_config_path)
-    harness_config.send_json_without_length_prefix = send_with_length
+
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
