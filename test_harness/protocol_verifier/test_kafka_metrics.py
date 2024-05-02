@@ -1,5 +1,4 @@
 """Tests for kafka_metrics.py"""
-import datetime
 import json
 
 import aiokafka
@@ -38,7 +37,7 @@ def test_decode_and_yield_events_from_raw_msgs_no_length() -> None:
                 value=bytearray(
                     json.dumps(
                         {
-                            "tag": "test_tag",
+                            "tag": "reception_event_received",
                             "timestamp": "2022-01-01T00:00:00.000Z",
                             "EventId": "test_event_id",
                         }
@@ -59,6 +58,6 @@ def test_decode_and_yield_events_from_raw_msgs_no_length() -> None:
 
     # Assert the results
     assert len(results) == 1
-    assert results[0]["field"] == "test_tag"
-    assert results[0]["timestamp"] == datetime.datetime(2022, 1, 1, 0, 0, 0)
+    assert results[0]["field"] == "reception_event_received"
+    assert results[0]["timestamp"] == '2022-01-01T00:00:00.000Z'
     assert results[0]["event_id"] == "test_event_id"

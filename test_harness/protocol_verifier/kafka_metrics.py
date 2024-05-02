@@ -206,14 +206,13 @@ def decode_and_yield_events_from_raw_msgs_no_length(
     for partition in raw_msgs.keys():
         for msg in raw_msgs[partition]:
             data = bytearray(msg.value)
-            json_data = json.loads(data)
-            yield ResultsDict(
-                field=json_data["tag"],
-                timestamp=datetime.datetime.strptime(
-                    json_data['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ"
-                ),
-                event_id=json_data["EventId"]
-            )
+            json_data = json.loads(data.decode("utf-8"))
+            if json_data["tag"] in KEY_EVENTS:
+                yield ResultsDict(
+                    field=json_data["tag"],
+                    timestamp=json_data['timestamp'],
+                    event_id=json_data["EventId"]
+                )
 
 
 class PVKafkaMetricsRetriever(MetricsRetriever):

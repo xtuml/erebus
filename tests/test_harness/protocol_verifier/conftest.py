@@ -183,6 +183,46 @@ def events_sent_list() -> list[dict[str, str | list[str]]]:
 
 
 @pytest.fixture
+def kafka_producer_mock_no_length(
+    monkeypatch: pytest.MonkeyPatch,
+    events_sent_list: list[dict[str, str | list[str]]]
+) -> list[str]:
+    """Fixture providing a mock kafka producer
+
+    :param monkeypatch: Pytest monkeypatch
+    :type monkeypatch: :class:`pytest`.`MonkeyPatch`
+    :param events_sent_list: List of events sent
+    :type events_sent_list: `list`[`dict`[`str`, `str` | `list`[`str`]]]
+    :return: List of actions performed
+    :rtype: `list`[`str`]
+    """
+    action_list = []
+
+    async def mock_send_wait(*args, **kwargs):
+        events_sent_list.append(json.loads(kwargs['value']))
+        action_list.append("send")
+        return ""
+
+    async def mock_start(*agrs, **kwargs):
+        action_list.append("start")
+        return None
+
+    async def mock_stop(*agrs, **kwargs):
+        action_list.append("stop")
+        return None
+    monkeypatch.setattr(
+        aiokafka.AIOKafkaProducer, "send_and_wait", mock_send_wait
+    )
+    monkeypatch.setattr(
+        aiokafka.AIOKafkaProducer, "start", mock_start
+    )
+    monkeypatch.setattr(
+        aiokafka.AIOKafkaProducer, "stop", mock_stop
+    )
+    return action_list
+
+
+@pytest.fixture
 def kafka_producer_mock(
     monkeypatch: pytest.MonkeyPatch,
     events_sent_list: list[dict[str, str | list[str]]]
@@ -317,6 +357,79 @@ def kafka_consumer_mock(
                 )
                 consumer_records.append(consumer_record)
                 time_stamp += 1
+        return {aiokafka.TopicPartition(
+            topic='default.BenchmarkingProbe_service0', partition=0
+        ): consumer_records}
+
+    async def mock_start(*agrs, **kwargs):
+        return None
+    monkeypatch.setattr(
+        aiokafka.AIOKafkaConsumer, "getmany", mock_get_many
+    )
+    monkeypatch.setattr(
+        aiokafka.AIOKafkaConsumer, "start", mock_start
+    )
+
+
+@pytest.fixture
+def kafka_consumer_mock_no_length(
+    monkeypatch: pytest.MonkeyPatch,
+    events_sent_list: list[dict[str, str | list[str]]]
+) -> None:
+    """Fixture providing a mock kafka consumer
+
+    :param monkeypatch: Pytest monkeypatch
+    :type monkeypatch: :class:`pytest`.`MonkeyPatch`
+    :param events_sent_list: List of events sent
+    :type events_sent_list: `list`[`dict`[`str`, `str` | `list`[`str`]]]
+    """
+    async def mock_get_many(*args, **kwargs):
+        consumer_records = []
+        time_stamp = datetime.datetime.now(datetime.UTC)
+        for _ in range(len(events_sent_list)):
+            event = events_sent_list.pop(0)
+            log_field = [
+                "reception_event_received",
+                "reception_event_valid",
+                "reception_event_written",
+                "aeordering_events_processed",
+                "svdc_event_received",
+                "svdc_event_processed",
+            ]
+            for i, field in enumerate(log_field):
+
+                bytes_string = ('"tag" : "' + field + '", ')
+
+                event_id_string = f""""EventId" : "{event['eventId']}", """
+
+                timestamp_string = (
+                    '"timestamp" : "'
+                    + time_stamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ') + '"'
+                )
+
+                byte_array = str(
+                    "{ "
+                    + bytes_string
+                    + event_id_string
+                    + timestamp_string
+                    + " }"
+                ).encode("utf-8")
+
+                consumer_record = aiokafka.ConsumerRecord(
+                    topic="test_topic",
+                    partition=0,
+                    offset=0,
+                    timestamp=0,
+                    timestamp_type=0,
+                    key=None,
+                    value=byte_array,
+                    headers=None,
+                    checksum=0,
+                    serialized_key_size=0,
+                    serialized_value_size=0,
+                )
+                consumer_records.append(consumer_record)
+                time_stamp += datetime.timedelta(0, 1)
         return {aiokafka.TopicPartition(
             topic='default.BenchmarkingProbe_service0', partition=0
         ): consumer_records}
