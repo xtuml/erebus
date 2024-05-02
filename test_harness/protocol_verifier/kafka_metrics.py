@@ -1,5 +1,6 @@
 """Module to collect metrics from Kafka topics
 """
+import json
 import re
 import datetime
 from typing import Generator, Any, Literal, Self
@@ -188,6 +189,32 @@ def decode_and_yield_events_from_raw_msgs(
                 yield ResultsDict(
                     field=label, timestamp=d, event_id=evt_id
                 )
+
+
+def decode_and_yield_events_from_raw_msgs_no_length(
+    raw_msgs: dict[aiokafka.TopicPartition, list[aiokafka.ConsumerRecord]],
+) -> Generator[ResultsDict, Any, ResultsDict | None]:
+    """Decode the raw messages and yield the events
+
+    :param raw_msgs: The raw messages to decode and yield events from
+    :type raw_msgs: `dict`[:class:`aiokafka.TopicPartition`,
+    `list`[:class:`aiokafka.ConsumerRecord`]]
+    :yield: The decoded events
+    :rtype: :class:`ResultsDict` | `None`
+    """
+    json_data = {}
+    for partition in raw_msgs.keys():
+        for msg in raw_msgs[partition]:
+            print(msg.value.decode("utf-8"))
+            data = bytearray(msg.value)
+            json_data = json.loads(data)
+            for key, value in json_data:
+                if key in KEY_EVENTS:
+                    yield ResultsDict(
+                        field=key,
+                        timestamp=value["timestamp"],
+                        event_id=value["EventId"]
+                    )
 
 
 class PVKafkaMetricsRetriever(MetricsRetriever):

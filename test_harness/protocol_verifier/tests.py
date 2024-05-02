@@ -67,7 +67,10 @@ from test_harness.async_management import (
 )
 from .pvresults import PVResults
 from .pvresultshandler import (
-    PVResultsHandler, PVResultsAdder, PVKafkaMetricsHandler
+    PVResultsHandler,
+    PVResultsAdder,
+    PVKafkaMetricsHandler,
+    PVKafkaMetricsHandlerNoLength
 )
 from .pvperformanceresults import PVPerformanceResults
 from .kafka_metrics import PVKafkaMetricsRetriever
@@ -865,29 +868,57 @@ class PerformanceTest(Test):
         ] | None = None
     ) -> None:
         """Constructor method"""
-        metrics_retriever_and_handlers = [
-            MetricsRetriverKwargsPairAndHandlerKwargsPair(
-                metric_retriever_kwargs_pair=MetricsRetrieverKwargsPair(
-                    metric_retriever_class=PVKafkaMetricsRetriever,
-                    kwargs={
-                        "msgbroker": (
-                            harness_config.kafka_metrics_host
-                        ),
-                        "topic": (
-                            harness_config.kafka_metrics_topic
-                        ),
-                    },
-                ),
-                handler_kwargs_pair=ResultsHandlerKwargsPair(
-                    handler_class=PVKafkaMetricsHandler,
-                    kwargs={
-                        "interval": (
-                            harness_config.kafka_metrics_collection_interval
-                        ),
-                    },
+        if harness_config.send_json_without_length_prefix:
+            metrics_retriever_and_handlers = [
+                MetricsRetriverKwargsPairAndHandlerKwargsPair(
+                    metric_retriever_kwargs_pair=MetricsRetrieverKwargsPair(
+                        metric_retriever_class=PVKafkaMetricsRetriever,
+                        kwargs={
+                            "msgbroker": (
+                                harness_config.kafka_metrics_host
+                            ),
+                            "topic": (
+                                harness_config.kafka_metrics_topic
+                            ),
+                        },
+                    ),
+                    handler_kwargs_pair=ResultsHandlerKwargsPair(
+                        handler_class=PVKafkaMetricsHandlerNoLength,
+                        kwargs={
+                            "interval": (
+                                harness_config.
+                                kafka_metrics_collection_interval
+                            ),
+                        },
+                    )
                 )
-            )
-        ] if harness_config.metrics_from_kafka else []
+            ] if harness_config.metrics_from_kafka else []
+        else:
+            metrics_retriever_and_handlers = [
+                MetricsRetriverKwargsPairAndHandlerKwargsPair(
+                    metric_retriever_kwargs_pair=MetricsRetrieverKwargsPair(
+                        metric_retriever_class=PVKafkaMetricsRetriever,
+                        kwargs={
+                            "msgbroker": (
+                                harness_config.kafka_metrics_host
+                            ),
+                            "topic": (
+                                harness_config.kafka_metrics_topic
+                            ),
+                        },
+                    ),
+                    handler_kwargs_pair=ResultsHandlerKwargsPair(
+                        handler_class=PVKafkaMetricsHandler,
+                        kwargs={
+                            "interval": (
+                                harness_config.
+                                kafka_metrics_collection_interval
+                            ),
+                        },
+                    )
+                )
+            ] if harness_config.metrics_from_kafka else []
+
         super().__init__(
             test_file_generators=test_file_generators,
             harness_config=harness_config,

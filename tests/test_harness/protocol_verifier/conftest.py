@@ -245,6 +245,13 @@ def sync_kafka_producer_mock(
         future.success("")
         return future
 
+    def mock_send_no_length(*args, **kwargs):
+        events_sent_list.append(json.loads(kwargs['value']))
+        action_list.append("send")
+        future = Future()
+        future.success("")
+        return future
+
     def mock_start(*agrs, **kwargs):
         action_list.append("start")
         return None

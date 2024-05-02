@@ -20,7 +20,10 @@ import aiokafka
 from test_harness.simulator.simulator import QueueHandler, ResultsHandler
 from .pvresults import PVResults
 from .pvperformanceresults import PVPerformanceResults
-from .kafka_metrics import decode_and_yield_events_from_raw_msgs
+from .kafka_metrics import (
+    decode_and_yield_events_from_raw_msgs,
+    decode_and_yield_events_from_raw_msgs_no_length,
+)
 from .types import PVResultsHandlerItem
 
 
@@ -254,3 +257,42 @@ class PVKafkaMetricsHandler(QueueHandler):
         for result in decode_and_yield_events_from_raw_msgs(item):
             # TODO: Sort out the typing here - probably a new base class
             self.results_holder.add_result(result)
+
+
+class PVKafkaMetricsHandlerNoLength(QueueHandler):
+    """Subclass of :class:`QueueHandler` to handle saving of files and data
+    from a PV test run. Uses a context manager and daemon thread to save
+    results in the background whilst a test is running.
+
+    :param results_holder: Instance used to hold the data relating to the sent
+    jobs/events
+    :type results_holder: :class:`PVPerformanceResults`
+    """
+
+    def __init__(
+        self,
+        results_holder: PVPerformanceResults,
+    ) -> None:
+        """Constructor method"""
+        super().__init__(results_holder)
+
+    def handle_item_from_queue(
+        self,
+        item: (
+            dict[aiokafka.TopicPartition, list[aiokafka.ConsumerRecord]] | None
+        ),
+    ) -> None:
+        """Method to handle saving the data when an item is take from the queue
+
+        :param item: PV iteration data taken from the queue
+        """
+        if item is None:
+            return
+
+        for result in decode_and_yield_events_from_raw_msgs_no_length(
+            item
+        ):
+            # TODO: Sort out the typing here - probably a new base class
+            self.results_holder.add_result(
+                result
+            )
