@@ -224,7 +224,9 @@ async def pv_finish_inspector_logs(
                 urls=urls[domain],
                 domain_file_names=domain_file_names,
                 log_file_store_path=log_file_store_path,
-                save_log_files=save_log_files
+                save_log_files=save_log_files,
+                file_prefix=urls[domain]["prefix"],
+                location=urls[domain]["location"]
             )
             # update domain variables
             most_current_log_file_names[domain] = current_log_file_name
