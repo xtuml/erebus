@@ -635,7 +635,7 @@ def get_log_file_names_call_back() -> (
                     case "AEReception":
                         file_names.append("AEReception.log")
                     case _:
-                        pass
+                        file_names.append("Reception.log")
             case "VERIFIER":
                 match payload["file_prefix"]:
                     case "AEOrdering":
@@ -645,6 +645,7 @@ def get_log_file_names_call_back() -> (
                     case "IStore":
                         file_names.append("IStore.log")
                     case _:
+                        file_names.append("Verifier.log")
                         pass
             case _:
                 return (
