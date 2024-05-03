@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import responses
-from aioresponses import aioresponses, CallbackResult
+from aioresponses import CallbackResult
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from pygrok import Grok
@@ -50,7 +50,8 @@ from test_harness import TestHarnessPbar
 from test_harness.protocol_verifier.types import PVResultsHandlerItem
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.utils import (
-    check_dict_equivalency, clean_directories, ProcessGeneratorManager
+    check_dict_equivalency, clean_directories, ProcessGeneratorManager,
+    mock_pv_http_interface
 )
 from test_harness.results.results import DictResultsHolder, ResultsHolder
 from test_harness import AsyncTestStopper
@@ -1032,8 +1033,7 @@ def test_send_test_files_functional() -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url)
+    with mock_pv_http_interface(harness_config):
         test = FunctionalTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1055,24 +1055,7 @@ def test_run_test_functional() -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test = FunctionalTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1095,24 +1078,7 @@ def test_calc_results_functional():
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test = FunctionalTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1146,8 +1112,7 @@ def test_send_test_files_performance() -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
+    with mock_pv_http_interface(harness_config):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1176,8 +1141,7 @@ def test_send_test_files_with_simulator_sliced_delays() -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
+    with mock_pv_http_interface(harness_config):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1225,24 +1189,7 @@ def test_run_test_performance() -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1277,24 +1224,7 @@ def test_run_test_performance_multi_process() -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test_stopper = AsyncTestStopper()
         with TestHarnessPbar() as pbar:
             test = PerformanceTest(
@@ -1335,24 +1265,7 @@ def test_run_test_performance_zero_gap_jobs() -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1408,7 +1321,7 @@ def test_run_test_performance_round_robin_zero_gap() -> None:
     )
     events = []
 
-    def callback(url, **kwargs):
+    def callback(url, **kwargs) -> CallbackResult:
         io_data = kwargs["data"]._parts[0][0]._value
         bytes_data = io_data.read()
         # check the data is as expected
@@ -1418,26 +1331,7 @@ def test_run_test_performance_round_robin_zero_gap() -> None:
             status=200,
         )
 
-    with aioresponses() as mock:
-        mock.post(
-            url=harness_config.pv_send_url, repeat=True, callback=callback
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config, callback):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1474,8 +1368,7 @@ def test_send_test_files_with_simulator_process_safe() -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
+    with mock_pv_http_interface(harness_config):
         with TestHarnessPbar() as pbar:
             test = PerformanceTest(
                 test_file_generators=test_events,
@@ -1530,33 +1423,18 @@ def test_run_test_performance_kafka(
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    responses.get(
-        url=harness_config.log_urls["aer"]["getFileNames"],
-        json={"fileNames": ["Reception.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["aer"]["getFile"],
-        body=b"test log",
-    )
-    responses.get(
-        url=harness_config.log_urls["ver"]["getFileNames"],
-        json={"fileNames": ["Verifier.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["ver"]["getFile"],
-        body=b"test log",
-    )
-    test = PerformanceTest(
-        test_file_generators=test_events,
-        test_config=test_config,
-        harness_config=harness_config,
-    )
-    asyncio.run(test.run_test())
-    assert len(test.results) == 6
-    assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
-    assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
-    os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
-    os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+    with mock_pv_http_interface(harness_config):
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 6
+        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+        assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
+        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
+        os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
 
 
 @responses.activate
@@ -1573,8 +1451,7 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
+    with mock_pv_http_interface(harness_config):
         responses.add(
             responses.GET,
             harness_config.pv_grok_exporter_url,
@@ -1583,26 +1460,6 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
             headers={
                 "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
             },
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
         )
         test = PerformanceTest(
             test_file_generators=test_events,
@@ -1637,24 +1494,7 @@ def test_run_test_performance_profile_job_batch() -> None:
     profile = Profile(
         pd.DataFrame([[0, 3], [1, 3], [2, 3]], columns=["Time", "Number"])
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1689,24 +1529,7 @@ def test_run_test_performance_profile_shard() -> None:
     profile = Profile(
         pd.DataFrame([[0, 3], [1, 3], [2, 3]], columns=["Time", "Number"])
     )
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1817,24 +1640,7 @@ def test_run_test_performance_stop_test(
         [test_file_path], test_config=test_config
     )
     caplog.set_level(logging.INFO)
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -1872,24 +1678,7 @@ def test_run_test_performance_stop_test_async_test_stopper(
         [test_file_path], test_config=test_config
     )
     caplog.set_level(logging.INFO)
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test_stopper = AsyncTestStopper()
         test_stopper.set()
         test = PerformanceTest(
@@ -1938,24 +1727,7 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
         [test_file_path], test_config=test_config
     )
     caplog.set_level(logging.INFO)
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test_stopper = AsyncTestStopper()
         with TestHarnessPbar() as pbar:
             test = PerformanceTest(
@@ -2007,24 +1779,7 @@ def test_run_test_performance_no_logs(
         [test_file_path], test_config=test_config
     )
     caplog.set_level(logging.INFO)
-    with aioresponses() as mock:
-        mock.post(url=harness_config.pv_send_url, repeat=True)
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={"fileNames": ["Reception.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b"test log",
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={"fileNames": ["Verifier.log"]},
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b"test log",
-        )
+    with mock_pv_http_interface(harness_config):
         test = PerformanceTest(
             test_file_generators=test_events,
             test_config=test_config,
@@ -2073,39 +1828,25 @@ def test_run_test_performance_kafka_get_metrics_from_kafka(
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    responses.get(
-        url=harness_config.log_urls["aer"]["getFileNames"],
-        json={"fileNames": ["Reception.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["aer"]["getFile"],
-        body=b"test log",
-    )
-    responses.get(
-        url=harness_config.log_urls["ver"]["getFileNames"],
-        json={"fileNames": ["Verifier.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["ver"]["getFile"],
-        body=b"test log",
-    )
-    test = PerformanceTest(
-        test_file_generators=test_events,
-        test_config=test_config,
-        harness_config=harness_config,
-    )
-    asyncio.run(test.run_test())
-    assert len(test.results) == 6
-    for event_metrics in test.results.results.values():
-        for field in [
-            "time_sent", "AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"
-        ]:
-            assert field in event_metrics
-            assert isinstance(event_metrics[field], float)
-        assert event_metrics["response"] == ''
-    clean_directories(
-        [harness_config.report_file_store, harness_config.log_file_store]
-    )
+    with mock_pv_http_interface(harness_config):
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 6
+        for event_metrics in test.results.results.values():
+            for field in [
+                "time_sent", "AER_start", "AER_end", "AEOSVDC_start",
+                "AEOSVDC_end"
+            ]:
+                assert field in event_metrics
+                assert isinstance(event_metrics[field], float)
+            assert event_metrics["response"] == ''
+        clean_directories(
+            [harness_config.report_file_store, harness_config.log_file_store]
+        )
 
 
 @responses.activate
@@ -2139,39 +1880,25 @@ def test_run_test_performance_kafka_get_metrics_from_kafka_no_length(
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    responses.get(
-        url=harness_config.log_urls["aer"]["getFileNames"],
-        json={"fileNames": ["Reception.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["aer"]["getFile"],
-        body=b"test log",
-    )
-    responses.get(
-        url=harness_config.log_urls["ver"]["getFileNames"],
-        json={"fileNames": ["Verifier.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["ver"]["getFile"],
-        body=b"test log",
-    )
-    test = PerformanceTest(
-        test_file_generators=test_events,
-        test_config=test_config,
-        harness_config=harness_config,
-    )
-    asyncio.run(test.run_test())
-    assert len(test.results) == 6
-    for event_metrics in test.results.results.values():
-        for field in [
-            "time_sent", "AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"
-        ]:
-            assert field in event_metrics
-            assert isinstance(event_metrics[field], float)
-        assert event_metrics["response"] == ''
-    clean_directories(
-        [harness_config.report_file_store, harness_config.log_file_store]
-    )
+    with mock_pv_http_interface(harness_config):
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 6
+        for event_metrics in test.results.results.values():
+            for field in [
+                "time_sent", "AER_start", "AER_end", "AEOSVDC_start",
+                "AEOSVDC_end"
+            ]:
+                assert field in event_metrics
+                assert isinstance(event_metrics[field], float)
+            assert event_metrics["response"] == ''
+        clean_directories(
+            [harness_config.report_file_store, harness_config.log_file_store]
+        )
 
 
 @responses.activate
@@ -2205,52 +1932,38 @@ def test_run_test_performance_agg_during_test(
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    responses.get(
-        url=harness_config.log_urls["aer"]["getFileNames"],
-        json={"fileNames": ["Reception.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["aer"]["getFile"],
-        body=b"test log",
-    )
-    responses.get(
-        url=harness_config.log_urls["ver"]["getFileNames"],
-        json={"fileNames": ["Verifier.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["ver"]["getFile"],
-        body=b"test log",
-    )
-    test = PerformanceTest(
-        test_file_generators=test_events,
-        test_config=test_config,
-        harness_config=harness_config,
-    )
-    asyncio.run(test.run_test())
-    assert len(test.results) == 24
-    for event_metrics in test.results.results.values():
-        for field in [
-            "time_sent", "AER_start", "AER_end", "AEOSVDC_start", "AEOSVDC_end"
-        ]:
-            assert field in event_metrics
-            assert isinstance(event_metrics[field], float)
-        assert event_metrics["response"] == ''
-    # mirror results holder in a new instance of PVResults with
-    # agg_during_test set to False
-    mirrored_results = PVResultsDataFrame()
-    mirrored_results.results = test.results.results
-    test.results.calc_all_results()
-    mirrored_results.calc_all_results()
-    for index, row in test.results.agg_results.iterrows():
-        mirrored_row = mirrored_results.agg_results.loc[index]
-        for field in row.index:
-            if np.isnan(row[field]):
-                assert np.isnan(mirrored_row[field])
-            else:
-                assert row[field] == mirrored_row[field]
-    clean_directories(
-        [harness_config.report_file_store, harness_config.log_file_store]
-    )
+    with mock_pv_http_interface(harness_config):
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 24
+        for event_metrics in test.results.results.values():
+            for field in [
+                "time_sent", "AER_start", "AER_end", "AEOSVDC_start",
+                "AEOSVDC_end"
+            ]:
+                assert field in event_metrics
+                assert isinstance(event_metrics[field], float)
+            assert event_metrics["response"] == ''
+        # mirror results holder in a new instance of PVResults with
+        # agg_during_test set to False
+        mirrored_results = PVResultsDataFrame()
+        mirrored_results.results = test.results.results
+        test.results.calc_all_results()
+        mirrored_results.calc_all_results()
+        for index, row in test.results.agg_results.iterrows():
+            mirrored_row = mirrored_results.agg_results.loc[index]
+            for field in row.index:
+                if np.isnan(row[field]):
+                    assert np.isnan(mirrored_row[field])
+                else:
+                    assert row[field] == mirrored_row[field]
+        clean_directories(
+            [harness_config.report_file_store, harness_config.log_file_store]
+        )
 
 
 @responses.activate
@@ -2286,36 +1999,21 @@ def test_run_test_performance_agg_during_test_sample(
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    responses.get(
-        url=harness_config.log_urls["aer"]["getFileNames"],
-        json={"fileNames": ["Reception.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["aer"]["getFile"],
-        body=b"test log",
-    )
-    responses.get(
-        url=harness_config.log_urls["ver"]["getFileNames"],
-        json={"fileNames": ["Verifier.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["ver"]["getFile"],
-        body=b"test log",
-    )
-    test = PerformanceTest(
-        test_file_generators=test_events,
-        test_config=test_config,
-        harness_config=harness_config,
-    )
-    asyncio.run(test.run_test())
-    assert len(test.results) < 60
-    test.results.calc_all_results()
-    test.results.failures["num_tests"] = 60
-    test.results.failures["num_failures"] = 0
-    test.results.failures["num_errors"] = 0
-    clean_directories(
-        [harness_config.report_file_store, harness_config.log_file_store]
-    )
+    with mock_pv_http_interface(harness_config):
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) < 60
+        test.results.calc_all_results()
+        test.results.failures["num_tests"] = 60
+        test.results.failures["num_failures"] = 0
+        test.results.failures["num_errors"] = 0
+        clean_directories(
+            [harness_config.report_file_store, harness_config.log_file_store]
+        )
 
 
 @responses.activate
@@ -2350,36 +2048,21 @@ def test_run_test_performance_low_memory(
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
     )
-    responses.get(
-        url=harness_config.log_urls["aer"]["getFileNames"],
-        json={"fileNames": ["Reception.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["aer"]["getFile"],
-        body=b"test log",
-    )
-    responses.get(
-        url=harness_config.log_urls["ver"]["getFileNames"],
-        json={"fileNames": ["Verifier.log"]},
-    )
-    responses.post(
-        url=harness_config.log_urls["ver"]["getFile"],
-        body=b"test log",
-    )
-    test = PerformanceTest(
-        test_file_generators=test_events,
-        test_config=test_config,
-        harness_config=harness_config,
-    )
-    asyncio.run(test.run_test())
-    assert len(test.results) == 0
-    test.results.calc_all_results()
-    test.results.failures["num_tests"] = 60
-    test.results.failures["num_failures"] = 0
-    test.results.failures["num_errors"] = 0
-    clean_directories(
-        [harness_config.report_file_store, harness_config.log_file_store]
-    )
+    with mock_pv_http_interface(harness_config):
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 0
+        test.results.calc_all_results()
+        test.results.failures["num_tests"] = 60
+        test.results.failures["num_failures"] = 0
+        test.results.failures["num_errors"] = 0
+        clean_directories(
+            [harness_config.report_file_store, harness_config.log_file_store]
+        )
 
 
 def test_use_harness_config_instead_of_test_config() -> None:

@@ -17,7 +17,7 @@ from io import BytesIO
 
 import pytest
 import responses
-from aioresponses import aioresponses, CallbackResult
+from aioresponses import CallbackResult
 import pandas as pd
 import aiohttp
 
@@ -30,7 +30,7 @@ from test_harness.protocol_verifier import (
     full_pv_test
 )
 from test_harness.protocol_verifier.generate_test_files import TestJobFile
-from test_harness.utils import clean_directories
+from test_harness.utils import clean_directories, mock_pv_http_interface
 from test_harness.simulator.simulator_profile import Profile
 from test_harness import AsyncTestStopper
 
@@ -119,37 +119,7 @@ def test_puml_files_test() -> None:
             "invalid": False
         }
     })
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config):
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
@@ -196,38 +166,7 @@ def test_puml_files_test_send_as_pv_bytes() -> None:
         return CallbackResult(
             status=200,
         )
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config, call_back):
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
@@ -252,37 +191,7 @@ def test_puml_files_test_job_file_with_options() -> None:
     """
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config):
         puml_files_test(
             puml_file_paths=[test_uml_1_einv_path, test_uml_2_einv_path],
             test_output_directory=harness_config.report_file_store,
@@ -328,37 +237,7 @@ def test_puml_files_test_functional_extra_job_invariants() -> None:
             "invalid": False
         }
     })
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config):
         puml_files_test(
             puml_file_paths=[test_uml_1_einv_path, test_uml_2_einv_path],
             test_output_directory=harness_config.report_file_store,
@@ -445,39 +324,9 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
             {},
             "\n".join(reception_file).encode("utf-8")
         )
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.add_callback(
-            responses.POST,
-            url=harness_config.log_urls["aer"]["getFile"],
-            callback=reception_log_call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         puml_files_test(
             puml_file_paths=[test_uml_1_einv_path, test_uml_2_einv_path],
             test_output_directory=harness_config.report_file_store,
@@ -542,39 +391,9 @@ def test_puml_files_test_json_validity_tests_aer_log_file() -> None:
             "\n".join(reception_file).encode("utf-8")
         )
 
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.add_callback(
-            responses.POST,
-            url=harness_config.log_urls["aer"]["getFile"],
-            callback=reception_log_call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
@@ -628,48 +447,9 @@ def test_puml_files_test_json_validity_tests_ver_log_file() -> None:
             status=200,
         )
 
-    def reception_log_call_back(
-        *args, **kwargs
-    ) -> tuple[Literal[200], dict, bytes]:
-        return (
-            200,
-            {},
-            "\n".join(reception_file).encode("utf-8")
-        )
-
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.add_callback(
-            responses.POST,
-            url=harness_config.log_urls["aer"]["getFile"],
-            callback=reception_log_call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(
+        harness_config, call_back
+    ):
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
@@ -720,47 +500,9 @@ def test_puml_files_test_with_location_log_urls(
             "invalid": False
         }
     })
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
-        responses.post(
-            url=harness_config.log_urls["location"]["getFile"],
-            body=b'test log',
-        )
-        responses.add_callback(
-            method="POST",
-            url=harness_config.log_urls["location"]["getFileNames"],
-            callback=get_log_file_names_call_back,
-            content_type="application/json"
-        )
+    with mock_pv_http_interface(
+        harness_config, log_file_name_call_back=get_log_file_names_call_back
+    ):
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
@@ -878,7 +620,7 @@ def test_puml_files_performance_with_input_profile(
             "invalid": False
         }
     })
-    with aioresponses() as mock:
+    with mock_pv_http_interface(harness_config):
         responses.add(
             responses.GET,
             harness_config.pv_grok_exporter_url,
@@ -887,36 +629,6 @@ def test_puml_files_performance_with_input_profile(
             headers={
                 "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
             }
-        )
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
         )
         profile = Profile()
         profile.load_raw_profile_from_file_path(test_csv_file_path_1)
@@ -1004,37 +716,7 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
         test_uml_1_events,
         harness_config.test_file_store
     )
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config):
         puml_files_test(
             puml_file_paths=[test_uml_1_path],
             test_output_directory=harness_config.report_file_store,
@@ -1118,37 +800,7 @@ def test_puml_files_test_functional_test_timeout(
         }
     })
     caplog.set_level(logging.INFO)
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config):
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
@@ -1186,7 +838,7 @@ def test_puml_files_performance_test_timeout(
         }
     })
     caplog.set_level(logging.INFO)
-    with aioresponses() as mock:
+    with mock_pv_http_interface(harness_config):
         responses.add(
             responses.GET,
             harness_config.pv_grok_exporter_url,
@@ -1195,36 +847,6 @@ def test_puml_files_performance_test_timeout(
             headers={
                 "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
             }
-        )
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
         )
         profile = Profile()
         profile.load_raw_profile_from_file_path(test_csv_file_path_1)
@@ -1268,37 +890,7 @@ def test_puml_files_performance_test_async_stop(
         }
     })
     caplog.set_level(logging.INFO)
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config):
         profile = Profile()
         profile.load_raw_profile_from_file_path(test_csv_file_path_1)
         with NamedTemporaryFile(suffix='.db') as db_file:
@@ -1386,37 +978,7 @@ def test_full_pv_test_test_files_in_test_output_directory() -> None:
             "invalid": False
         }
     })
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config):
         with TemporaryDirectory() as tmp_dir:
             with ZipFile(
                 os.path.join(

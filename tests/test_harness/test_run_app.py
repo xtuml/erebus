@@ -11,7 +11,7 @@ import glob
 import re
 from multiprocessing import Manager, Process
 
-from aioresponses import aioresponses, CallbackResult
+from aioresponses import CallbackResult
 import responses
 import requests
 import aiohttp
@@ -20,7 +20,9 @@ import pandas as pd
 from test_harness.run_app import run_harness_app
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.requests.send_config import post_config_form_upload
-from test_harness.utils import clean_directories, check_dict_equivalency
+from test_harness.utils import (
+    clean_directories, check_dict_equivalency, mock_pv_http_interface
+)
 
 # get test config
 test_config_path = os.path.join(
@@ -155,39 +157,9 @@ def test_run_harness_app() -> None:
             "\n".join(reception_file).encode("utf-8")
         )
     responses.add_passthru("http://localhost:8800")
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.add_callback(
-            responses.POST,
-            url=harness_config.log_urls["aer"]["getFile"],
-            callback=reception_log_call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -332,39 +304,9 @@ def test_run_harness_app_uploaded_zip_file() -> None:
             "\n".join(reception_file).encode("utf-8")
         )
     responses.add_passthru("http://localhost:8800")
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.add_callback(
-            responses.POST,
-            url=harness_config.log_urls["aer"]["getFile"],
-            callback=reception_log_call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -529,39 +471,9 @@ def test_run_harness_app_2_workers() -> None:
             "\n".join(reception_file).encode("utf-8")
         )
     responses.add_passthru("http://localhost:8800")
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.add_callback(
-            responses.POST,
-            url=harness_config.log_urls["aer"]["getFile"],
-            callback=reception_log_call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -669,39 +581,9 @@ def test_run_harness_app_stop_test() -> None:
             "\n".join(reception_file).encode("utf-8")
         )
     responses.add_passthru("http://localhost:8800")
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.add_callback(
-            responses.POST,
-            url=harness_config.log_urls["aer"]["getFile"],
-            callback=reception_log_call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -810,39 +692,9 @@ def test_run_harness_app_2_workers_stop_test() -> None:
             "\n".join(reception_file).encode("utf-8")
         )
     responses.add_passthru("http://localhost:8800")
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True,
-            callback=call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.add_callback(
-            responses.POST,
-            url=harness_config.log_urls["aer"]["getFile"],
-            callback=reception_log_call_back
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,

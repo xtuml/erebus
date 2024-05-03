@@ -9,13 +9,12 @@ import re
 import shutil
 
 import responses
-from aioresponses import aioresponses
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.process_manager import (
     harness_test_manager
 )
-from test_harness.utils import clean_directories
+from test_harness.utils import clean_directories, mock_pv_http_interface
 
 # get test config
 test_config_path = os.path.join(
@@ -41,37 +40,7 @@ def test_harness_test_manager_uml_exists() -> None:
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
     shutil.copy(test_file_path, harness_config.uml_file_store)
-    with aioresponses() as mock:
-        responses.get(
-            url=harness_config.pv_clean_folders_url
-        )
-        responses.post(
-            url=harness_config.pv_send_job_defs_url
-        )
-        mock.post(
-            url=harness_config.pv_send_url,
-            repeat=True
-        )
-        responses.get(
-            url=harness_config.log_urls["aer"]["getFileNames"],
-            json={
-                "fileNames": ["Reception.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["aer"]["getFile"],
-            body=b'test log',
-        )
-        responses.get(
-            url=harness_config.log_urls["ver"]["getFileNames"],
-            json={
-                "fileNames": ["Verifier.log"]
-            },
-        )
-        responses.post(
-            url=harness_config.log_urls["ver"]["getFile"],
-            body=b'test log',
-        )
+    with mock_pv_http_interface(harness_config):
         success, _ = harness_test_manager(
             harness_config=harness_config,
             test_config=test_config,
