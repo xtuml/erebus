@@ -372,138 +372,6 @@ class ProcessGeneratorManager:
         return ProcessSafeSharedIterator(self.output_queue, self.receive_queue)
 
 
-# TODO: Test this code and remove the old code if performance is fine and it
-# works as expected
-# class ProcessSafeSharedIterator:
-#     """Class to create an iterator that can be shared between processes
-
-#     :param queue: The queue to use
-#     :type queue: :class:`multiprocessing`.`Queue`
-#     :param lock: The lock to use
-#     :type lock: :class:`multiprocessing`.`Lock`
-#     :param request_event: The request event to use
-#     :type request_event: :class:`multiprocessing`.`Event`
-#     :param stop_event: The stop event to use
-#     :type stop_event: :class:`multiprocessing`.`Event`
-#     :param response_event: The response event to use
-#     :type response_event: :class:`multiprocessing`.`Event`
-#     """
-#     def __init__(
-#         self,
-#         queue: Queue,
-#         lock: Lock,
-#         request_event: Event,
-#         stop_event: Event,
-#         response_event: Event
-#     ) -> None:
-#         """Constructor method
-#         """
-#         self.queue = queue
-#         self.lock = lock
-#         self.request_event = request_event
-#         self.stop_event = stop_event
-#         self.response_event = response_event
-
-#     def __iter__(self) -> Self:
-#         """Method to return self as the iterator
-#         """
-#         return self
-
-#     def __next__(self) -> Any:
-#         """Method to get the next item from the queue as an iterator
-
-#         :raises StopIteration: Raises a :class:`StopIteration` if the stop
-#         event is set
-#         :return: Returns the next item from the queue
-#         :rtype: `Any`
-#         """
-#         with self.lock:
-#             self.request_event.set()
-#             self.response_event.wait()
-#             self.response_event.clear()
-#             if self.stop_event.is_set():
-#                 self.response_event.set()
-#                 raise StopIteration
-#             return self.queue.get()
-
-
-# class ProcessGeneratorManager:
-#     """Class to manage a generator in a separate process
-
-#     :param generator: The generator to manage
-#     :type generator: :class:`Generator`[`Any`, `Any`, `Any`]
-#     """
-#     def __init__(
-#         self,
-#         generator: Generator[Any, Any, Any],
-#     ) -> None:
-#         """Constructor method
-#         """
-#         self.generator = generator
-#         self.receive_request_daemon = Thread(target=self.serve, daemon=True)
-#         self.lock = Lock()
-#         self.output_queue = Queue(maxsize=1)
-#         self.request_event = Event()
-#         self.request_event.clear()
-#         self.stop_event = Event()
-#         self.stop_event.clear()
-#         self.server_lock = Lock()
-#         self.response_event = Event()
-#         self.response_event.clear()
-
-#     def serve(self) -> None:
-#         """Method to serve the generator
-#         """
-#         while True:
-#             self.request_event.wait()
-#             try:
-#                 next_item = next(self.generator)
-#                 self.output_queue.put(next_item)
-#                 self.response_event.set()
-#             except StopIteration:
-#                 self.stop_event.set()
-#                 self.response_event.set()
-#                 break
-#             self.request_event.clear()
-
-#     def __enter__(self) -> ProcessSafeSharedIterator:
-#         """Method to enter the context manager
-
-#         :return: Returns a :class:`ProcessSafeSharedIterator` instance
-#         :rtype: :class:`ProcessSafeSharedIterator`
-#         """
-#         self.receive_request_daemon.start()
-#         return ProcessSafeSharedIterator(
-#             self.output_queue,
-#             self.lock,
-#             self.request_event,
-#             self.stop_event,
-#             self.response_event
-#         )
-
-#     def __exit__(
-#         self,
-#         exc_type: type[BaseException],
-#         exc_value: BaseException,
-#         traceback: Any
-#     ) -> None:
-#         """Method to exit the context manager
-
-#         :param exc_type: The type of exception raised if any
-#         :type exc_type: `type`[:class:`BaseException`]
-#         :param exc_value: The exception raised if any
-#         :type exc_value: :class:`BaseException`
-#         :param traceback: The traceback of the exception raised if any
-#         :type traceback: `Any`
-#         :raises exc_value: Raises the exception if any
-#         """
-#         self.stop_event.set()
-#         self.request_event.set()
-#         self.receive_request_daemon.join()
-#         if exc_type is not None:
-#             raise exc_value
-
-
 def wrap_kafka_future(future: FutureRecordMetadata) -> asyncio.Future[Any]:
     """Method to wrap a kafka future in an asyncio future
 
@@ -599,10 +467,15 @@ def choose_from_front_of_list(
 
 
 class PVLogFileNameCallback:
+    """Class to create a callback for the log file name
+
+    :param harness_config: The harness config
+    :type harness_config: :class:`HarnessConfig`"""
     def __init__(
         self,
         harness_config: HarnessConfig,
     ) -> None:
+        """Constructor method"""
         self.reception_log_file = (
             harness_config.log_urls["aer"]["prefix"] + ".log"
         )
@@ -613,6 +486,8 @@ class PVLogFileNameCallback:
     def call_back(
         self, request
     ) -> tuple[Literal[200], dict, str] | tuple[Literal[404], dict, str]:
+        """Method to create the callback
+        """
         payload = json.loads(request.body)
         if payload["location"] == "RECEPTION":
             return (
@@ -633,6 +508,25 @@ def mock_pv_http_interface(
     log_return_callback: Callable[..., tuple[int, dict, str]] | None = None,
     log_file_name_call_back: Callable[..., tuple[int, dict, str]] | None = None
 ) -> Generator[aioresponses, Any, None]:
+    """Context manager to mock the pv http interface
+
+    :param harness_config: The harness config
+    :type harness_config: :class:`HarnessConfig`
+    :param send_pv_callback: The callback for the send pv function, defaults to
+    `None`
+    :type send_pv_callback: :class:`Callable`[..., :class:`CallbackResult`],
+    optional
+    :param log_return_callback: The callback for the log return function,
+    defaults to `None`
+    :type log_return_callback: :class:`Callable`[..., `tuple`[`int`, `dict`,
+    `str`]], optional
+    :param log_file_name_call_back: The callback for the log file name
+    function, defaults to `None`
+    :type log_file_name_call_back: :class:`Callable`[..., `tuple`[`int`, `dict`
+    , `str`]], optional
+    :return: Yields the mock
+    :rtype: :class:`Generator`[:class:`aioresponses`, `Any`, `None`]
+    """
     if log_file_name_call_back is None:
         log_file_name_call_back = PVLogFileNameCallback(
             harness_config
