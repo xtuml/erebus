@@ -1071,7 +1071,7 @@ def test_run_test_functional() -> None:
 
 
 @responses.activate
-def test_calc_results_functional():
+def test_calc_results_functional() -> None:
     """Tests :class:`FunctionalTest`.`calc_results`"""
     harness_config = HarnessConfig(test_config_path)
     test_config = TestConfig()
@@ -1090,6 +1090,37 @@ def test_calc_results_functional():
         test.calc_results()
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+        files_to_remove = glob.glob(
+            "*.*", root_dir=harness_config.report_file_store
+        )
+        for file_name in files_to_remove:
+            os.remove(
+                os.path.join(harness_config.report_file_store, file_name)
+            )
+
+
+@responses.activate
+def test_calc_results_functional_different_prefix() -> None:
+    """Tests :class:`FunctionalTest`.`calc_results` for a different prefix for
+    the verifier log domain"""
+    harness_config = HarnessConfig(test_config_path)
+    harness_config.log_urls["ver"]["prefix"] = "pv"
+    test_config = TestConfig()
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    with mock_pv_http_interface(harness_config):
+        test = FunctionalTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+            test_output_directory=harness_config.report_file_store,
+
+        )
+        asyncio.run(test.run_test())
+        test.calc_results()
+        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
+        os.remove(os.path.join(harness_config.log_file_store, "pv.log"))
         files_to_remove = glob.glob(
             "*.*", root_dir=harness_config.report_file_store
         )
@@ -1202,6 +1233,37 @@ def test_run_test_performance() -> None:
         assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+
+
+@responses.activate
+def test_run_test_performance_different_prefix() -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` but with a different prefix
+    for the verifier log domain"""
+    harness_config = HarnessConfig(test_config_path)
+    harness_config.log_urls["ver"]["prefix"] = "pv"
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    with mock_pv_http_interface(harness_config):
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 6
+        assert test.pv_file_inspector.file_names["aer"][0] == "Reception.log"
+        assert test.pv_file_inspector.file_names["ver"][0] == "pv.log"
+        os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
+        os.remove(os.path.join(harness_config.log_file_store, "pv.log"))
 
 
 @responses.activate
