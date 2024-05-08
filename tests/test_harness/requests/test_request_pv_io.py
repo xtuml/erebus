@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from test_harness.requests.request_pv_io import (
+from test_harness.requests_th.request_pv_io import (
     get_request_json_response,
 )
 

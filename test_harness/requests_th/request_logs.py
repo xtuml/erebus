@@ -7,7 +7,7 @@ import logging
 
 import requests
 
-from test_harness.requests import (
+from test_harness.requests_th import (
     send_json_post_request,
     send_get_request,
     check_response_tuple_ok

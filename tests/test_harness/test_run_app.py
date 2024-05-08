@@ -19,7 +19,7 @@ import pandas as pd
 
 from test_harness.run_app import run_harness_app
 from test_harness.config.config import HarnessConfig, TestConfig
-from test_harness.requests.send_config import post_config_form_upload
+from test_harness.requests_th.send_config import post_config_form_upload
 from test_harness.utils import (
     clean_directories, check_dict_equivalency, mock_pv_http_interface
 )

@@ -61,7 +61,7 @@ from test_harness.reporting import create_report_files
 from test_harness.reporting.report_results import (
     generate_performance_test_reports,
 )
-from test_harness.requests import send_get_request
+from test_harness.requests_th import send_get_request
 from test_harness.async_management import (
     AsyncMPManager, AsyncKillManager, AsyncKillException
 )

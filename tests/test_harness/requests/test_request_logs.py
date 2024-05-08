@@ -8,7 +8,7 @@ import pytest
 import responses
 from responses import matchers
 
-from test_harness.requests.request_logs import (
+from test_harness.requests_th.request_logs import (
     get_verifier_log_file_names,
     get_verifier_log_file_data,
     get_log_files_raw_bytes,
