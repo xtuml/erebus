@@ -189,18 +189,26 @@ class HarnessConfig:
         self.log_urls = {
             "aer": {
                 "getFile": self.config_parser["non-default"][
-                    "aer_get_file_url"
+                    "get_log_file_url"
                 ],
                 "getFileNames": self.config_parser["non-default"][
-                    "aer_get_file_names_url"
+                    "get_log_file_names_url"
+                ],
+                "location": "RECEPTION",
+                "prefix": self.config_parser["non-default"][
+                    "aer_log_file_prefix"
                 ],
             },
             "ver": {
                 "getFile": self.config_parser["non-default"][
-                    "ver_get_file_url"
+                    "get_log_file_url"
                 ],
                 "getFileNames": self.config_parser["non-default"][
-                    "ver_get_file_names_url"
+                    "get_log_file_names_url"
+                ],
+                "location": "VERIFIER",
+                "prefix": self.config_parser["non-default"][
+                    "ver_log_file_prefix"
                 ],
             },
             "location": {

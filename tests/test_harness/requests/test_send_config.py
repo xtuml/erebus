@@ -5,7 +5,7 @@ from io import BytesIO
 
 import responses
 
-from test_harness.requests.send_config import post_config_form_upload
+from test_harness.requests_th.send_config import post_config_form_upload
 
 
 @responses.activate

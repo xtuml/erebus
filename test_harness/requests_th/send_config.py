@@ -5,7 +5,7 @@ from io import BytesIO
 
 import requests
 
-from test_harness.requests import (
+from test_harness.requests_th import (
     post_sync_file_bytes_in_form,
     build_upload_file_tuples
 )

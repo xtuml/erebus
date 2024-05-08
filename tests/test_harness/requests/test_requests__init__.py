@@ -7,7 +7,7 @@ import os
 
 import responses
 
-from test_harness.requests import (
+from test_harness.requests_th import (
     build_upload_file_tuple,
     build_upload_file_tuples,
     post_sync_file_bytes_in_form,

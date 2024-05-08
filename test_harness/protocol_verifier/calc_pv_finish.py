@@ -7,8 +7,8 @@ import os
 from typing import Any
 import logging
 
-from test_harness.requests.request_logs import get_log_files
-from test_harness.requests.request_pv_io import (
+from test_harness.requests_th.request_logs import get_log_files
+from test_harness.requests_th.request_pv_io import (
     gather_get_requests_json_response
 )
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -222,13 +222,22 @@ async def pv_finish_inspector_logs(
                 unreceived_log_file_names
             ) = handle_domain_log_file_reception_and_save(
                 urls=urls[domain],
-                domain_file_names=domain_file_names,
+                domain_file_names=[
+                    domain_file_name
+                    for domain_file_name in domain_file_names
+                    if ".gz" in domain_file_name
+                ],
                 log_file_store_path=log_file_store_path,
-                save_log_files=save_log_files
+                save_log_files=save_log_files,
+                file_prefix=urls[domain]["prefix"],
+                location=urls[domain]["location"]
             )
             # update domain variables
             most_current_log_file_names[domain] = current_log_file_name
             current_file_strings[domain] = current_log_file_string
+            if current_log_file_name:
+                if current_log_file_name not in domain_file_names:
+                    domain_file_names.append(current_log_file_name)
             domain_file_names.extend(unreceived_log_file_names)
             # calculate the domain finished parameters
             finished_params[domain] = calc_pv_finished_params(
@@ -242,10 +251,6 @@ async def pv_finish_inspector_logs(
             for domain_finish_params in finished_params.values()
             for param in domain_finish_params
         ):
-            for domain, domain_most_current_file_name in (
-                most_current_log_file_names.items()
-            ):
-                file_names[domain].append(domain_most_current_file_name)
             raise RuntimeError("Test has finished by given parameters")
         # update the last time changes if there has been a change this
         # iteration

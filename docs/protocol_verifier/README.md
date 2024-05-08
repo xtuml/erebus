@@ -105,10 +105,8 @@ To change default values of these files a parameter can be copied under the `[no
     * `requests_timeout` - The timeout in seconds of a sychronous request. Defaults to `10`
 * log reception and finishing time parameters
     * `log_calc_interval_time` (deprecated and can be set in test config under `test_finish` under subfield `metrics_get_interval` in the test config) - The interval time between requests for the log files. Defaults to `5`
-    * `aer_get_file_url` - The url of the endpoint that requests are sent to receive a named log files for AER. Defaults to  `http://host.docker.internal:9000/download/aerlog`
-    * `ver_get_file_url` - The url of the endpoint that requests are sent to receive a named log files for the Verifier. Defaults to `http://host.docker.internal:9000/download/verifierlog`
-    * `aer_get_file_names_url` - The url of the endpoint that requests are sent to to obtain the names of the AER log files. Defaults to `http://host.docker.internal:9000/download/aer-log-file-names`
-    * `ver_get_file_names_url` - The url of the endpoint that requests are sent to to obtain the names of the Verifier log files. Defaults to `http://host.docker.internal:9000/download/verifier-log-file-names`
+    * `aer_log_file_prefix` - The prefix of the log files in the AER log folder. Defaults to `Reception`
+    * `ver_log_file_prefix` - The prefix of the log files in the Verifier log folder. Defaults to `pv`
     * `get_log_file_names_url` - The url of the endpoint that requests are sent to to obtain the names of log files. Defaults to `http://host.docker.internal:9000/download/log-file-names`
     * `get_log_file_url` - The url of the endpoint that requests are sent to receive a named log file for a specified PV domain. Defaults to `http://host.docker.internal:9000/download/log-file`
 * Config relating to metrics collections
@@ -144,23 +142,22 @@ requests_timeout = 10
 
 # `log_calc_interval_time` will soon be deprecated and moved to test config
 log_calc_interval_time = 5
-aer_get_file_url = http://host.docker.internal:9000/download/aerlog
-ver_get_file_url = http://host.docker.internal:9000/download/verifierlog
-aer_get_file_names_url = http://host.docker.internal:9000/download/aer-log-file-names
-ver_get_file_names_url = http://host.docker.internal:9000/download/verifier-log-file-names
+aer_log_file_prefix = Reception
+ver_log_file_prefix = pv.log
 get_log_file_url = http://host.docker.internal:9000/download/log-file
 get_log_file_names_url = http://host.docker.internal:9000/download/log-file-names
 
 metrics_from_kafka = False
 kafka_metrics_host = host.docker.internal:9092
-kafka_metrics_topic = default.BenchmarkingProbe_service0
+kafka_metrics_topic = BenchmarkingProbe_service0
 kafka_metrics_collection_interval = 1
 
 message_bus_protocol = HTTP
 pv_send_url = http://host.docker.internal:9000/upload/events
 kafka_message_bus_host = host.docker.internal:9092
-kafka_message_bus_topic = default.AEReception_service0
+kafka_message_bus_topic = Protocol_Verifier_Reception
 pv_send_as_pv_bytes = False
+send_json_without_length_prefix = False
 
 pv_send_job_defs_url = http://host.docker.internal:9000/upload/job-definitions
 
