@@ -79,10 +79,37 @@ class TestKafka3MessageBus:
                 topic="test_topic"
             )
         assert len(sync_kafka_producer_mock) == 3
-        assert result == ""
+        assert result.value == ""
         assert sync_kafka_producer_mock[0] == "start"
         assert sync_kafka_producer_mock[1] == "send"
         assert sync_kafka_producer_mock[2] == "stop"
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_context_manager_error(
+        sync_kafka_producer_mock_error: list[str]
+    ) -> None:
+        """Tests `send` for kafka message bus with errors
+
+        :param sync_kafka_producer_mock: Mock kafka producer
+        :type sync_kafka_producer_mock: `list`[`str`]
+        """
+        errors = []
+
+        def _err_callback(*args, **kwargs):
+            errors.append("error")
+
+        async with Kafka3MessageBus(
+            bootstrap_servers="localhost:9092",
+            error_callback=_err_callback
+        ) as message_bus:
+            message = b"message"
+            for i in range(5):
+                await message_bus.send(
+                    message=message,
+                    topic="test_topic"
+                )
+                assert len(errors) == i + 1
 
 
 class TestHTTPMessageBus:
@@ -159,10 +186,37 @@ class TestMessageProducer:
             result = await kafka_message_producer.send_message(
                 b"message"
             )
-        assert result == ""
+        assert result.value == ""
         assert sync_kafka_producer_mock[0] == "start"
         assert sync_kafka_producer_mock[1] == "send"
         assert sync_kafka_producer_mock[2] == "stop"
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_send_message_sync_errors(
+        sync_kafka_producer_mock_error: list[str]
+    ) -> None:
+        """Tests `send` for kafka message bus with errors
+
+        :param sync_kafka_producer_mock: Mock kafka producer
+        :type sync_kafka_producer_mock: `list`[`str`]
+        """
+        errors = []
+
+        def _err_callback(*args, **kwargs):
+            errors.append("error")
+        async with Kafka3MessageBus(
+            bootstrap_servers="localhost:9092",
+            error_callback=_err_callback
+        ) as message_bus:
+            kafka_message_producer = message_bus.get_message_producer(
+                topic="test_topic"
+            )
+            for i in range(5):
+                await kafka_message_producer.send_message(
+                    b"message"
+                )
+                assert len(errors) == i + 1
 
     @staticmethod
     @pytest.mark.asyncio
@@ -242,7 +296,8 @@ class TestGetProducerContext:
             result = await producer.send_message(
                 b"message"
             )
-        assert result == ""
+        assert result.value == ""
+        print(sync_kafka_producer_mock)
         assert sync_kafka_producer_mock[0] == "start"
         assert sync_kafka_producer_mock[1] == "send"
         assert sync_kafka_producer_mock[2] == "stop"

@@ -1,7 +1,7 @@
 """Module for holding the message bus classes.
 """
 
-from typing import Any, Self, Literal, Generator
+from typing import Any, Self, Literal, AsyncGenerator, Callable
 from abc import ABC, abstractmethod
 import asyncio
 from contextlib import asynccontextmanager
@@ -9,8 +9,7 @@ from contextlib import asynccontextmanager
 from aiokafka import AIOKafkaProducer
 from kafka3 import KafkaProducer
 import aiohttp
-
-from test_harness.utils import wrap_kafka_future
+from kafka3.producer.future import FutureRecordMetadata
 
 
 class InputConverter(ABC):
@@ -282,15 +281,30 @@ class AIOKafkaMessageBus(KafkaMessageBus):
 
 
 class Kafka3MessageBus(KafkaMessageBus):
-    """Kafka3 message bus."""
+    """Kafka3 message bus.
+
+    :bootstrap_servers: The bootstrap servers
+    :type bootstrap_servers: `str`
+    :stop_timeout: The stop timeout
+    :type stop_timeout: `int`
+    :error_callback: The error callback
+    :type error_callback: `Callable[..., Any]`
+    """
 
     def __init__(
         self,
         bootstrap_servers: str,
         stop_timeout: int = 10,
+        error_callback: Callable[..., Any] | None = None,
     ) -> None:
         """Constructor method"""
         self.stop_timeout = stop_timeout
+        self.error_callback = error_callback
+        self._send_function = (
+            self._send_with_callback
+            if self.error_callback is not None
+            else self._send_without_callback
+        )
         super().__init__(
             bootstrap_servers=bootstrap_servers,
         )
@@ -319,10 +333,53 @@ class Kafka3MessageBus(KafkaMessageBus):
         if exc is not None:
             raise exc
 
-    async def _send_to_topic(self, message: bytes, topic: str) -> bytes:
-        """Send a message to a topic."""
-        return await wrap_kafka_future(
-            self.producer.send(topic=topic, value=message)
+    async def _send_to_topic(
+        self, message: bytes, topic: str
+    ) -> FutureRecordMetadata:
+        """Send a message to a topic.
+
+        :param message: The message to send
+        :type message: `bytes`
+        :param topic: The topic to send the message to
+        :type topic: `str`
+        :return: The future record metadata
+        :rtype: :class:`FutureRecordMetadata`
+        """
+        return self._send_function(message, topic)
+
+    def _send_with_callback(
+        self, message: bytes, topic: str
+    ) -> FutureRecordMetadata:
+        """Send a message to a topic with a callback.
+
+        :param message: The message to send
+        :type message: `bytes`
+        :param topic: The topic to send the message to
+        :type topic: `str`
+        :return: The future record metadata
+        :rtype: :class:`FutureRecordMetadata`
+        """
+        future: FutureRecordMetadata = self.producer.send(
+            topic=topic,
+            value=message,
+        )
+        future.add_errback(self.error_callback)
+        return future
+
+    def _send_without_callback(
+        self, message: bytes, topic: str
+    ) -> FutureRecordMetadata:
+        """Send a message to a topic without a callback.
+
+        :param message: The message to send
+        :type message: `bytes`
+        :param topic: The topic to send the message to
+        :type topic: `str`
+        :return: The future record metadata
+        :rtype: :class:`FutureRecordMetadata`"""
+        return self.producer.send(
+            topic=topic,
+            value=message,
         )
 
 
@@ -495,7 +552,7 @@ async def get_producer_context(
     message_bus: Literal["KAFKA", "HTTP", "KAFKA3"],
     message_bus_kwargs: dict[str, Any],
     producer_kwargs: dict[str, Any],
-) -> Generator[MessageProducer, Any, None]:
+) -> AsyncGenerator[MessageProducer, None]:
     """Function to get a producer instance in a context manager for a message
     bus.
 

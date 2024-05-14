@@ -65,7 +65,8 @@ def sync_kafka_producer_mock(
         action_list.append("start")
         return None
 
-    def mock_stop(*agrs, **kwargs):
+    def mock_stop(self: kafka3.KafkaProducer, timeout: int) -> None:
+        self._closed = True
         action_list.append("stop")
         return None
     monkeypatch.setattr(
@@ -78,3 +79,26 @@ def sync_kafka_producer_mock(
         kafka3.KafkaProducer, "close", mock_stop
     )
     return action_list
+
+
+@pytest.fixture
+def sync_kafka_producer_mock_error(
+    monkeypatch: pytest.MonkeyPatch,
+    sync_kafka_producer_mock: list[str],
+) -> list[str]:
+    """Fixture providing a mock kafka producer
+
+    :param monkeypatch: Pytest monkeypatch
+    :type monkeypatch: :class:`pytest`.`MonkeyPatch`
+    :return: List of actions performed
+    :rtype: `list`[`str`]
+    """
+    def mock_send(*args, **kwargs):
+        sync_kafka_producer_mock.append("send")
+        future = Future()
+        future.failure(ValueError("Error"))
+        return future
+    monkeypatch.setattr(
+        kafka3.KafkaProducer, "send", mock_send
+    )
+    return sync_kafka_producer_mock

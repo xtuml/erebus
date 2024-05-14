@@ -6,6 +6,7 @@ import asyncio
 from io import BytesIO
 from uuid import uuid4
 import logging
+import os
 
 import aiohttp
 from aiokafka.errors import KafkaTimeoutError as AIOKafkaTimeoutError
@@ -21,6 +22,39 @@ from test_harness.message_buses.message_buses import (
     MessageProducer, InputConverter, ResponseConverter,
     MessageExceptionHandler, MessageSender
 )
+from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
+
+
+class ErrorLogger:
+    """Class to log errors to a file
+
+    :param harness_config: The harness config
+    :type harness_config: :class:`HarnessConfig`
+    """
+    def __init__(self, harness_config: HarnessConfig) -> None:
+        """Constructor method
+        """
+        self.file_path = os.path.join(
+            harness_config.log_file_store,
+            ERROR_LOG_FILE_PREFIX + str(uuid4()) + ".txt"
+        )
+        self.logger = logging.getLogger("ErrorLogger")
+        self.file_handler = logging.FileHandler(
+            self.file_path, mode="a"
+        )
+        self.file_handler.setLevel(logging.ERROR)
+        self.file_handler.setFormatter(
+            logging.getLogger().handlers[0].formatter
+        )
+        self.logger.addHandler(self.file_handler)
+
+    def log_error(self, error: Exception) -> None:
+        """Method to log an error
+
+        :param error: The error
+        :type error: :class:`Exception`
+        """
+        self.logger.error(str(error))
 
 
 def get_message_bus_kwargs(
@@ -36,9 +70,13 @@ def get_message_bus_kwargs(
     """
     match harness_config.message_bus_protocol:
         case "KAFKA" | "KAFKA3":
-            return {
+            kwargs = {
                 "bootstrap_servers": harness_config.kafka_message_bus_host,
             }
+            if harness_config.message_bus_protocol == "KAFKA3":
+                error_callback = ErrorLogger(harness_config).log_error
+                kwargs["error_callback"] = error_callback
+            return kwargs
         case "HTTP":
             return {}
         case _:

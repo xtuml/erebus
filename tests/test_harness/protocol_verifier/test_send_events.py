@@ -543,6 +543,10 @@ class TestPVMessageSender:
         :type monkeypatch: `pytest.MonkeyPatch`
         """
         timeout_error = KafkaTimeoutError3("timeout")
+        errors = []
+
+        def _err_callback(err):
+            errors.append(str(err))
 
         def mock_send(*args, **kwargs):
             sync_kafka_producer_mock.append("send")
@@ -555,6 +559,7 @@ class TestPVMessageSender:
         )
         message_bus_kwargs = dict(
             bootstrap_servers="localhost:9092",
+            error_callback=_err_callback
         )
         producer_kwargs = dict(
             topic="test_topic",
@@ -588,7 +593,12 @@ class TestPVMessageSender:
         ))
         assert results[2] == job_id
         assert results[3] == job_info
-        assert results[4] == str(timeout_error) * len(job_list)
+        assert not results[4] == str(timeout_error) * len(job_list)
+        assert len(errors) == len(job_list)
+        assert all(
+            error == str(timeout_error)
+            for error in errors
+        )
         assert isinstance(results[5], datetime)
         assert sync_kafka_producer_mock[0] == "start"
         assert sync_kafka_producer_mock[-1] == "stop"

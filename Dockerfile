@@ -24,4 +24,4 @@ RUN --mount=type=ssh chmod +x /test_harness_app/scripts/install_repositories.sh 
 
 EXPOSE 8800
 
-ENTRYPOINT [ "python", "-W", "'ignore'", "-m", "test_harness.run_app", "--harness-config-path", "/config/config.config" ]
+ENTRYPOINT [ "python", "-W", "ignore", "-m", "test_harness.run_app", "--harness-config-path", "/config/config.config" ]
