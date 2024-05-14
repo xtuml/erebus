@@ -633,6 +633,16 @@ class PVPerformanceResults(PVResults):
             }
         return self._aggregation_map
 
+    def update_errors(self, num_errors: int) -> None:
+        """Method to add errors to the results holder
+
+        :param num_errors: The number of errors to add
+        :type num_errors: `int`
+        """
+        if self.failures is None:
+            raise ValueError("Have not calculated other results yet")
+        self.failures["num_errors"] += num_errors
+
     def _filter_out_events_not_from_test(self):
         """Method to filter out events that are not from the current test"""
         self.results.filter_rows_on_field_value(field="time_sent", value=None)

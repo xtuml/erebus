@@ -80,7 +80,8 @@ from .types import (
     TemplateOptions,
     MetricsRetriverKwargsPairAndHandlerKwargsPair,
     MetricsRetrieverKwargsPair,
-    ResultsHandlerKwargsPair
+    ResultsHandlerKwargsPair,
+    ERROR_LOG_FILE_PREFIX
 )
 from .send_events import (
     get_message_bus_kwargs, get_producer_kwargs, PVMessageSender
@@ -990,6 +991,24 @@ class PerformanceTest(Test):
         """Method to read and calculate al simulation data"""
         self.get_pv_sim_data()
         self.results.calc_all_results()
+        if self.harness_config.message_bus_protocol == "KAFKA3":
+            self.add_errors_from_error_log_files()
+
+    def add_errors_from_error_log_files(self) -> None:
+        """Method to add errors from the error log files"""
+        files = glob.glob(
+            (
+                os.path.join(
+                    self.harness_config.log_file_store,
+                    ERROR_LOG_FILE_PREFIX + "*"
+                )
+            )
+        )
+        for file in files:
+            with open(file, "r", encoding="utf-8") as error_file:
+                self.results.update_errors(
+                    len(error_file.readlines())
+                )
 
     def get_pv_sim_data(self) -> None:
         """Method to get the PV sim data from the grok endpoint and read into
