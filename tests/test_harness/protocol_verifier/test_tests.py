@@ -28,6 +28,9 @@ from aioresponses import CallbackResult
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from pygrok import Grok
+import kafka3
+from kafka3.future import Future
+from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
 
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.protocol_verifier.generate_test_files import (
@@ -55,6 +58,7 @@ from test_harness.utils import (
 )
 from test_harness.results.results import DictResultsHolder, ResultsHolder
 from test_harness import AsyncTestStopper
+from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
 
 # get test config
 test_config_path = os.path.join(
@@ -1497,6 +1501,76 @@ def test_run_test_performance_kafka(
         assert test.pv_file_inspector.file_names["ver"][0] == "Verifier.log"
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
+
+
+@responses.activate
+def test_run_test_performance_kafka_with_errors(
+    sync_kafka_producer_mock: list[str],
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
+    mocked out
+
+    :param sync_kafka_producer_mock: Fixture providing a mocked kafka producer
+    :type sync_kafka_producer_mock: `None`
+    :param monkeypatch: Fixture to patch the kafka producer send method
+    :type monkeypatch: :class:`pytest.MonkeyPatch`
+    """
+    timeout_error = KafkaTimeoutError3("timeout")
+
+    def mock_send(*args, **kwargs):
+        sync_kafka_producer_mock.append("send")
+        future = Future()
+        future.failure(timeout_error)
+        return future
+
+    monkeypatch.setattr(
+        kafka3.KafkaProducer, "send", mock_send
+    )
+    harness_config = HarnessConfig(test_config_path)
+    harness_config.message_bus_protocol = "KAFKA3"
+    harness_config.kafka_message_bus_host = "localhost:9092"
+    harness_config.kafka_message_bus_topic = "test"
+    harness_config.pv_send_as_pv_bytes = True
+    test_config = TestConfig()
+    test_config.parse_from_dict(
+        {
+            "event_gen_options": {"invalid": False},
+            "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
+        }
+    )
+    test_events = generate_test_events_from_puml_files(
+        [test_file_path], test_config=test_config
+    )
+    with mock_pv_http_interface(harness_config):
+        test = PerformanceTest(
+            test_file_generators=test_events,
+            test_config=test_config,
+            harness_config=harness_config,
+        )
+        asyncio.run(test.run_test())
+        assert len(test.results) == 6
+        error_files = glob.glob(
+            os.path.join(
+                harness_config.log_file_store,
+                ERROR_LOG_FILE_PREFIX + "*"
+            )
+        )
+        assert error_files
+        error_count = 0
+        for error_file in error_files:
+            with open(error_file, "r", encoding="utf-8") as file:
+                for line in file.readlines():
+                    error_count += 1
+                    assert str(timeout_error) in line
+        test.get_all_simulation_data()
+        assert test.results.failures["num_errors"] == 6
+        clean_directories(
+            [
+                harness_config.report_file_store,
+                harness_config.log_file_store,
+            ]
+        )
 
 
 @responses.activate
