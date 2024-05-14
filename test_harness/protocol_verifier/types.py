@@ -13,6 +13,9 @@ from test_harness.metrics.metrics import MetricsRetriever
 from test_harness.simulator.simulator import ResultsHandler
 
 
+ERROR_LOG_FILE_PREFIX = "error_log_"
+
+
 class AveragesDict(TypedDict):
     """Dictionary of averages"""
 
