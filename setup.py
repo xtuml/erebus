@@ -5,12 +5,12 @@ from setuptools import setup
 
 setup(
     name='test_harness',
-    version='1.0.0',
+    version='1.1.3',
     description=(
         'General purpose Test Harness supporting the munin project software'
     ),
     author='Freddie Mather',
-    author_email='freddie.mather@smartdcs.co.uk',
+    author_email='freddie.mather@smartdcsit.co.uk',
     packages=[
         'test_harness',
         'test_harness.simulator',
@@ -21,7 +21,7 @@ setup(
         'test_harness.metrics',
         'test_harness.async_management',
         'test_harness.reporting',
-        'test_harness.requests',
+        'test_harness.requests_th',
         'test_harness.results',
         'test_harness.process_manager',
     ],
