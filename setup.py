@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='test_harness',
-    version='1.1.3',
+    version='1.1.4',
     description=(
         'General purpose Test Harness supporting the munin project software'
     ),
