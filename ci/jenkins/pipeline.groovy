@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 pipeline {
     agent any
     stages {
@@ -9,7 +11,7 @@ pipeline {
                     env.OUTPUTS           = "$JENKINS_HOME/workspace/test-harness-pipeline-test"
                     env.PV_BOX            = "172.16.0.21"
                     env.TH_BOX            = "172.16.0.16:8800"
-                    env.PV_DEPLOY_PATH    = "/home/itoperations/munin_1.3.0/deploy"
+                    env.PV_DEPLOY_PATH    = "/home/itoperations/munin_1.3.1-midstage2/deploy"
                     env.WAIT_INTERVAL     = "10"
                     env.CONFIG_FILE_NAME  = "test_config.yaml"
 
@@ -174,7 +176,14 @@ pipeline {
                             fileNames.each{
                                 fileDetails[it] = extractFromStringUsingPrefixes(env.FILE_SELECT, it + "={", prefixes).replaceAll(" ","")
                             }
-                            addInfo = extractFromStringUsingPrefixes(env.FILE_SELECT, addInfoLabel, prefixes)
+                            addInfo = extractFromStringUsingPrefixes(env.FILE_SELECT, addInfoLabel, prefixes).trim()
+                            if(addInfo != ""){
+                                try{
+                                    def slurped = new JsonSlurper().parseText(addInfo)
+                                } catch (Exception e){
+                                    error("Invalid 'additional info' JSON provided. Please try again.")
+                                }
+                            }
                             
                             fileDetails.each{ key, value ->
 
@@ -377,7 +386,7 @@ def extractFromStringUsingPrefixes(String overall, String targetPrefix, prefixes
     }
 
     if(smallestDistance == 999999){
-        return removeLastCharIf(overall[endIndex..overall.size() - 2], ",")
+        return removeLastCharIf(overall[endIndex..overall.size() - 1], ",")
     }
 
     if(smallestDistance < 2){
