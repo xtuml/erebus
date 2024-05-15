@@ -1,4 +1,4 @@
-# Test Harness
+# Test Harness (v1.1.4)
 Package that runs a test harness for arbitrary system functional and performance testing. Provides base functionality to set up tests and send test files.
 
 ## Installation and Image Build
@@ -9,7 +9,7 @@ On MacOS, you can run the test harness with:
 ssh-add --apple-use-keychain ~/.ssh/id_rsa # Add your private key used for SSH to apple keychain
 docker compose up --build
 ```
-NOTE: If the above doesn't work, check that you can access gitlab via git without user interaction (e.g. if you've added your SSH key to the apple keychain).
+NOTE: If the above doesn't work, check that you can access github via git without user interaction (e.g. if you've added your SSH key to the apple keychain).
 
 ### <b>Pre-requisites</b>
 To install and build this project one must have the following pre-requisites:

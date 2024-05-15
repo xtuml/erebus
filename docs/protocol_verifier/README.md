@@ -1,5 +1,5 @@
 # Protocol Verifier
-The specific deployment, configuration and usage options for the Test Harness when testing the Protocol Verifier.
+The specific deployment, configuration and usage options for the Test Harness when testing the Protocol Verifier. The test harness is able to test the Protocol Verifier up to the specific release version  https://github.com/xtuml/munin/releases/tag/1.3.1-midstage2
 ## Installation and Image Build
 
 ### Quickstart
@@ -126,6 +126,7 @@ To change default values of these files a parameter can be copied under the `[no
     * Config relating to sending files to the HTTP server (if `message_bus_protocol` is set to "HTTP") TODO: Change this to reflect an arbitrary test
         * `pv_send_url` - The url of the endpoint that requests are sent to to upload events for reception and verification. Defaults to `http://host.docker.internal:9000/upload/events`
     * `pv_send_as_pv_bytes` - Boolean indicating whether to send data as pv bytes (True) or not (False). If the final destination is the kafka ingestion by the PV this is always set to True regardless of user input otherwise it should just be set to False. If set to True this will split all sent files into discrete json events and will add a byte array of length 4 in big endian of the integer size of the sent payload in byte.
+    * `send_json_without_length_prefix` - Boolean indicating whether to send the json without the length prefix. If set to `True` the json will be sent without the length prefix. If set to `False` the json will be sent with the length prefix. Defaults to `False`.
 * `pv_send_job_defs_url` - The url of the endpoint that requests are sent to to upload job definitions to. Defaults to `http://host.docker.internal:9000/upload/job-definitions`
 * Config that is dependent on the config set on the Protocol Verifier
     * `pv_config_update_time` - The amount of time to wait for the uploaded job definition to be seen by the Protocol Verifier. Defaults to `60` (seconds). This should be greater than the field `SpecUpdateRate` of the PV
