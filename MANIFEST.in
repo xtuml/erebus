@@ -1,3 +1,0 @@
-include test_harness/plus2json.pyz
-include test_harness/config/*.config
-include test_harness/config/*.yaml
