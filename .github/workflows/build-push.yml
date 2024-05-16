@@ -1,0 +1,48 @@
+name: Build and Push Docker Image
+on:
+    workflow_dispatch:
+    push:
+      branches:
+        - 'main'
+      tags:
+        - 'v*'
+
+jobs:
+  build-and-push:
+    if: |
+        github.repository == 'SmartDCSITlimited/test-harness'
+            && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    env:
+      SSH_AUTH_SOCK: $SSH_AUTH_SOCK
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+            ssh-private-key: ${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+            images: ghcr.io/SmartDCSITlimited/test-harness
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+            context: .
+            ssh: |
+                default
+            push: true
+            tags: ${{ steps.meta.outputs.tags }}
+            labels: ${{ steps.meta.outputs.labels }}
