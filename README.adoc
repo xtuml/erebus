@@ -1,3 +1,0 @@
-= Erebus
-
-General purpose message driving Test Harness

@@ -1,5 +1,0 @@
-@startuml
-group "Single Event sub graph"
-    :C;
-end group
-@enduml

@@ -1,8 +1,0 @@
-@startuml
-participant Client as "Client"
-participant HTTP as "HTTP Server"
-database LogFiles as "Mounted Job\n Defintions Folder"
-Client -> HTTP : POST request with\njob def file
-HTTP -> LogFiles : Save job def file to folder
-HTTP -> Client : 200 OK
-@enduml

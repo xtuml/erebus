@@ -1,8 +1,0 @@
-@startuml
-partition "intra" {
-    group "intra"
-        :A,IINV,name=testIINV;
-        :B,IINV,USER,name=testIINV;
-    end group
-}
-@enduml

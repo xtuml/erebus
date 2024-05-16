@@ -1,6 +1,0 @@
-@startuml
-group "Branch event"
-    #green:A;
-    :B,BCNT,name=Y;
-end group
-@enduml
