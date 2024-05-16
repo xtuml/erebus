@@ -1,0 +1,13 @@
+{
+    "SpecUpdateRate": "PT2M",
+    "IncomingDirectory": "./incoming",
+    "ProcessingDirectory": "./processing",
+    "ProcessedDirectory": "./processed",
+    "OutgoingDirectory": "./outgoing",
+    "EventThrottleRate": "PT0S",
+    "ReceptionDeletionTime": "PT10M",
+    "MaxEventsPerFile": "0",
+    "ConcurrentReceptionLimit": "1",
+    "SchemaValidate": "false",
+    "SchemaValidateFrequency": "1"
+}

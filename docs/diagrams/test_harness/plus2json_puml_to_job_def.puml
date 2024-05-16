@@ -1,0 +1,9 @@
+@startuml
+component TestHarness as "Test Harness"{
+    component Plus2Json as "plus2json"
+    file plantuml as "PlantUML"
+    file jobdef as "Job Def"
+}
+Plus2Json -down-> jobdef : Output
+plantuml -down-> Plus2Json : Input
+@enduml

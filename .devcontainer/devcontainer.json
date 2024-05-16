@@ -1,0 +1,59 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+	"name": "Test Harness",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	"features": {},
+
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"black-formatter.args": [
+					"--preview",
+					"--line-length",
+					"79"
+				],
+				"[python]":{
+					"editor.rulers": [
+						{
+							"column": 79
+						}
+					]
+				}
+			},
+			"extensions": [
+				"ms-python.black-formatter",
+				"ms-python.vscode-pylance",
+				"ms-python.python",
+				"GitHub.copilot-chat",
+				"GitHub.copilot"
+			]
+		}
+	},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": {
+        "1": "pip3 install --user -r requirements.txt",
+        "2": "echo 'export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH' >> ~/.bashrc",
+        "3": "bash scripts/install_repositories.sh"
+    },
+
+    // Add repo to safe directories
+    "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+	
+    // Configure tool-specific properties.
+	// "customizations": {},
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
+	"mounts": [
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+		// "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached"
+	]
+}

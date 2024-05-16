@@ -1,0 +1,15 @@
+@startuml
+title SIP Call Activity Diagram
+
+start
+: Caller initiates a SIP request to the SIP server;
+: SIP server sends a response to the caller;
+: SIP server locates the callee;
+: SIP server sends an INVITE request to the callee;
+: Callee sends a response to the SIP server;
+: SIP server forwards the response to the caller;
+: Caller sends an ACK message to the SIP server;
+: SIP server sends an ACK message to the callee;
+: RTP packets are exchanged between the caller and the callee;
+stop
+@enduml

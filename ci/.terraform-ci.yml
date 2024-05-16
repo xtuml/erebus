@@ -1,0 +1,29 @@
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .terraform
+
+variables:
+  GL_ASDF_TFLINT_VERSION: "0.41.0"
+  GL_ASDF_TERRAFORM_VERSION: "1.3.7"
+  # Exclude vendor and files directories from validation
+  COMMON_TASK_VALIDATIONS_EXCLUDES_REGEXP: '^\.(/vendor/|/files/|/examples)'
+
+tfsec:
+  stage: lint
+  image: 
+    name: tfsec/tfsec-ci:latest
+    entrypoint:
+      - '/usr/bin/env'
+      - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  script:
+    - tfsec -f junit --out tfsec.test
+  artifacts:
+    paths:
+      - tfsec.test
+    reports:
+      junit: "tfsec.test"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - changes:
+      - "*.{tf}"

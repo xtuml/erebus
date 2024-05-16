@@ -1,0 +1,33 @@
+@startuml deployment
+cloud VPC {
+    actor User
+    node "System" as EC2PV {
+        interface "Interface" as PVMBusPort
+        interface "Interface" as MetricsPort
+        component "System" as PV
+    }
+    node "Message Bus" as MBus {
+        port "port_no" as MBusPortin
+        interface "Interface" as MBusPortout
+    }
+    node "Metrics Collection" as Metrics {
+        port "port_no" as MetricsPortin
+        interface "Interface" as MetricsPortOut
+    }
+    node "Test Harness Server" as EC2Harness {
+        port "8800" as ec2_8800
+        component "Test Harness Container" as TH {
+            portin "8800" as TH_8800
+            portout "Dynamic" as TH_Dynamic_message
+            portout "Dynamic" as TH_Dynamic_metrics
+        }
+    }
+}
+ec2_8800 --> TH_8800 : Forward HTTP Requests
+User --> ec2_8800 : Send HTTP Requests
+TH_Dynamic_message --> MBusPortin : Send Message Bus Requests
+MBusPortout --> PVMBusPort : Forward messages
+TH_Dynamic_metrics <--> MetricsPortin : Request Metrics
+MetricsPortOut <--> MetricsPort: Collect Metrics
+
+@enduml

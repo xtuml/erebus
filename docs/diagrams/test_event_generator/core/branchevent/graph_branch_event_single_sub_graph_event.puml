@@ -1,0 +1,12 @@
+@startuml
+group "Sequence with Branch"
+    #green:A;
+    :B,BCNT,name=Y;
+    if (XOR) then (true)
+        :D;
+    else (false)
+        :E;
+    endif
+    #red:F;
+end group
+@enduml

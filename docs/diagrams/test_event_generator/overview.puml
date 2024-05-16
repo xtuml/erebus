@@ -1,0 +1,21 @@
+@startuml
+file PlantUML as "Job Def\nPlantUML"
+component TestEvGen as "Test\nEvent\nGenerator"
+frame ValEv as "Valid Events"{
+    file Val1 as "Valid 1"
+    file Val2 as "Valid 2"
+    file ValN as "Valid n"
+    Val1 -[hidden]-> Val2
+    Val2 -[hidden]-> ValN
+}
+frame InvEv as "Invalid Events"{
+    file Inv1 as "Invalid 1"
+    file Inv2 as "Invalid 2"
+    file InvM as "Invalid m"
+    Inv1 -[hidden]-> Inv2
+    Inv2 -[hidden]-> InvM
+}
+PlantUML --> TestEvGen : Input
+TestEvGen --> InvEv : Output
+TestEvGen --> ValEv : Output
+@enduml
