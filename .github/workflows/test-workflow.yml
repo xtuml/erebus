@@ -8,15 +8,15 @@ on:
       'main'
 jobs:
   sast:
-    uses: SmartDCSITlimited/actions-store/.github/workflows/SAST.yml@main
+    uses: xtuml/janus/.github/workflows/SAST.yml@main
   secret-detection:
-    uses: SmartDCSITlimited/actions-store/.github/workflows/SecretDetection.yml@main
+    uses: xtuml/janus/.github/workflows/SecretDetection.yml@main
   python-linting:
-    uses: SmartDCSITlimited/actions-store/.github/workflows/PythonLinting.yml@main
+    uses: xtuml/janus/.github/workflows/PythonLinting.yml@main
 
   run-tests:
     if: |
-        github.repository == 'SmartDCSITlimited/test-harness'
+        github.repository == 'xtuml/erebus'
     runs-on: ubuntu-latest
     steps:
       - name: Setup Checkout
@@ -25,8 +25,7 @@ jobs:
       - name: Setup Checkout (external)
         uses: actions/checkout@v4
         with:
-          repository: SmartDCSITlimited/test-event-generator
-          ssh-key: ${{ secrets.TESTKEY }}
+          repository: xtuml/janus
           path: external
 
       - name: Setup Python
@@ -54,5 +53,5 @@ jobs:
 
       - name: Run Tests
         run: |
-          export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
+          export PYTHONPATH=/workspaces/erebus:$PYTHONPATH
           pytest 
