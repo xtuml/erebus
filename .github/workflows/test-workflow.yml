@@ -53,5 +53,5 @@ jobs:
 
       - name: Run Tests
         run: |
-          export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH
+          export PYTHONPATH=/workspaces/erebus:$PYTHONPATH
           pytest 
