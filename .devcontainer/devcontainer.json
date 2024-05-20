@@ -40,7 +40,7 @@
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": {
         "1": "pip3 install --user -r requirements.txt",
-        "2": "echo 'export PYTHONPATH=/workspaces/test-harness:$PYTHONPATH' >> ~/.bashrc",
+        "2": "echo 'export PYTHONPATH=/workspaces/erebus:$PYTHONPATH' >> ~/.bashrc",
         "3": "bash scripts/install_repositories.sh"
     },
 
