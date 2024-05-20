@@ -386,26 +386,33 @@ def extractFromStringUsingPrefixes(String overall, String targetPrefix, prefixes
     }
 
     if(smallestDistance == 999999){
-        return removeLastCharIf(overall[endIndex..overall.size() - 1], ",")
+        return removeLastCharsIf(overall[endIndex..overall.size() - 1], ",}")
     }
 
     if(smallestDistance < 2){
         return ""
     }
 
-    return removeLastCharIf(overall[endIndex..endIndex + smallestDistance - 2], ",")
+    return removeLastCharsIf(overall[endIndex..endIndex + smallestDistance - 2], ",")
 }
 
-def removeLastCharIf(String input, String lastChar){
+def removeLastCharsIf(String input, String lastChars){
 
-    if(input.size() > 0 && input[input.size()-1] == lastChar){
-        if(input.size() == 1){
-            return ""
+    output = input
+    lastChars.each{
+
+        if(output.size() > 0 && lastChars.contains(output[output.size()-1]) ){
+            if(output.size() == 1){
+                output = ""
+            } else {
+                output = output[0..output.size()-2]
+            }
+        } else {
+            output = output
         }
-        return input[0..input.size()-2]
-    } else {
-        return input
     }
+
+    return output
 }
 
 def putInNestedMap(Map Input, List<String> Location, int Depth, int MaxDepth ){
