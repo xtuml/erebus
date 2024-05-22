@@ -58,9 +58,6 @@ from test_harness.utils import (
     clean_directories,
     ProcessGeneratorManager,
 )
-from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
-    mock_pv_http_interface,
-)
 from test_harness.protocol_verifier.mocks.mock_pv_http_interface \
       import mock_pv_http_interface
 from test_harness.results.results import DictResultsHolder, ResultsHolder

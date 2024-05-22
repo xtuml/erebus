@@ -379,7 +379,7 @@ class Test(ABC):
                     args=(
                         results_handler,
                         process_generator_manager.create_iterator(),
-                        self.delay_times[i :: self.test_config.num_workers],
+                        self.delay_times[i:: self.test_config.num_workers],
                         self.harness_config,
                         self.pbar,
                         time_sync,
