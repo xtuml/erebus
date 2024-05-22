@@ -1,16 +1,13 @@
 """
 Config class for the Protocol Verifier
 """
-
-from configparser import ConfigParser
-from pathlib import Path
-import sys
-from typing import Optional
-
 # Determine the project root and add it to the Python path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-
+from typing import Optional
+import sys
+from pathlib import Path
+from configparser import ConfigParser
 from test_harness.config.config import HarnessConfig
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 
 class ProtocolVerifierConfig(HarnessConfig):
@@ -19,6 +16,7 @@ class ProtocolVerifierConfig(HarnessConfig):
     :param config_path: The path to the config file, defaults to None
     :type config_path: Optional[str], optional
     """
+
     def __init__(self, config_path: Optional[str] = None) -> None:
         # Initialise HarnessConfig to inherit attributes
         super().__init__(config_path)
@@ -30,7 +28,8 @@ class ProtocolVerifierConfig(HarnessConfig):
     def parse_pv_config(self):
         """Method to set config path, read from config file and set attributes"""
         if self.config_path is None:
-            self.config_path = str(Path(__file__).parent / "default_config.config")
+            self.config_path = str(
+                Path(__file__).parent / "default_config.config")
         self.config_parser.read(self.config_path)
         self.parse_pv_config_to_attributes()
 
@@ -50,7 +49,8 @@ class ProtocolVerifierConfig(HarnessConfig):
         self.pv_clean_folders_read_timeout = int(
             self.config_parser["non-default"]["pv_clean_folders_read_timeout"]
         )
-        self.pv_test_timeout = int(self.config_parser["non-default"]["pv_test_timeout"])
+        self.pv_test_timeout = int(
+            self.config_parser["non-default"]["pv_test_timeout"])
 
     def parse_log_retrieval_config(self):
         """Method to parse log retrieval config from config file"""

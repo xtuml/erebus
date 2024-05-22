@@ -1,3 +1,6 @@
+"""Utility classes for the Protocol Verifier
+"""
+
 import json
 from typing import Literal
 
