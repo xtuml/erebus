@@ -1,17 +1,30 @@
+<<<<<<< HEAD
 from configparser import ConfigParser
 from pathlib import Path
 import sys
+=======
+import sys
+from configparser import ConfigParser
+from pathlib import Path
+>>>>>>> 6251c3e (update config.py)
 from typing import Optional
 
 # Determine the project root and add it to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6251c3e (update config.py)
 from test_harness.config.config import HarnessConfig
 
 
 class ProtocolVerifierConfig(HarnessConfig):
     def __init__(self, config_path: Optional[str] = None) -> None:
+<<<<<<< HEAD
         # Initialize the parent class
+=======
+        # Initialise HarnessConfig to inherit attributes
+>>>>>>> 6251c3e (update config.py)
         super().__init__(config_path)
 
         self.config_parser = ConfigParser()
@@ -25,11 +38,16 @@ class ProtocolVerifierConfig(HarnessConfig):
         self.parse_pv_config_to_attributes()
 
     def parse_pv_config_to_attributes(self):
+<<<<<<< HEAD
         # parse config log retrieval
         self.parse_log_retrieval_config()
         # message bus
         self.parse_pv_message_bus_config()
         # url send pv job defs
+=======
+        self.parse_log_retrieval_config()
+        self.parse_pv_message_bus_config()
+>>>>>>> 6251c3e (update config.py)
         self.pv_send_job_defs_url = self.config_parser["non-default"][
             "pv_send_job_defs_url"
         ]
@@ -42,11 +60,18 @@ class ProtocolVerifierConfig(HarnessConfig):
         self.pv_clean_folders_read_timeout = int(
             self.config_parser["non-default"]["pv_clean_folders_read_timeout"]
         )
+<<<<<<< HEAD
         # test timeout
         self.pv_test_timeout = int(self.config_parser["non-default"]["pv_test_timeout"])
 
     def parse_log_retrieval_config(self):
         """TODO docstring."""
+=======
+        self.pv_test_timeout = int(self.config_parser["non-default"]["pv_test_timeout"])
+
+    def parse_log_retrieval_config(self):
+        """Method to parse log retrieval config from config file"""
+>>>>>>> 6251c3e (update config.py)
         self.pv_finish_interval = int(
             self.config_parser["non-default"]["pv_finish_interval"]
         )
