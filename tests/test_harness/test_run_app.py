@@ -27,8 +27,10 @@ from test_harness.requests_th.send_config import post_config_form_upload
 from test_harness.utils import clean_directories, check_dict_equivalency
 from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
     mock_pv_http_interface,
-)
 
+)
+from test_harness.protocol_verifier.mocks.mock_pv_http_interface \
+      import mock_pv_http_interface
 # get test config
 test_config_path = os.path.join(Path(__file__).parent, "config/run_app_test.config")
 

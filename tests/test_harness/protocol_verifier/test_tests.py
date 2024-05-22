@@ -61,6 +61,8 @@ from test_harness.utils import (
 from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
     mock_pv_http_interface,
 )
+from test_harness.protocol_verifier.mocks.mock_pv_http_interface \
+      import mock_pv_http_interface
 from test_harness.results.results import DictResultsHolder, ResultsHolder
 from test_harness import AsyncTestStopper
 from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
