@@ -53,9 +53,10 @@ from test_harness import TestHarnessPbar
 from test_harness.protocol_verifier.types import PVResultsHandlerItem
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.utils import (
-    check_dict_equivalency, clean_directories, ProcessGeneratorManager,
-    mock_pv_http_interface
+    check_dict_equivalency, clean_directories, ProcessGeneratorManager
 )
+from test_harness.protocol_verifier.tests.mock_pv_http_interface \
+      import mock_pv_http_interface
 from test_harness.results.results import DictResultsHolder, ResultsHolder
 from test_harness import AsyncTestStopper
 from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
