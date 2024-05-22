@@ -10,14 +10,11 @@ import asyncio
 import shutil
 from threading import Thread
 from multiprocessing import Queue
-import json
 
 import flatdict
 from tqdm import tqdm
 import numpy as np
 from kafka3.producer.future import FutureRecordMetadata
-
-from test_harness.config.config import HarnessConfig
 
 T = TypeVar("T")
 
@@ -445,31 +442,3 @@ def choose_from_front_of_list(list_to_choose_from: list[T]) -> T:
     :rtype: `T`
     """
     return list_to_choose_from[0]
-
-
-# TODO move to PV utils
-class PVLogFileNameCallback:
-    """Class to create a callback for the log file name
-
-    :param harness_config: The harness config
-    :type harness_config: :class:`HarnessConfig`"""
-
-    def __init__(
-        self,
-        harness_config: HarnessConfig,
-    ) -> None:
-        """Constructor method"""
-        self.reception_log_file = harness_config.log_urls["aer"]["prefix"] + ".log"
-        self.verifier_log_file = harness_config.log_urls["ver"]["prefix"] + ".log"
-
-    def call_back(
-        self, request
-    ) -> tuple[Literal[200], dict, str] | tuple[Literal[404], dict, str]:
-        """Method to create the callback"""
-        payload = json.loads(request.body)
-        if payload["location"] == "RECEPTION":
-            return (200, {}, json.dumps({"fileNames": [self.reception_log_file]}))
-        elif payload["location"] == "VERIFIER":
-            return (200, {}, json.dumps({"fileNames": [self.verifier_log_file]}))
-        else:
-            return 404, {}, json.dumps({})
