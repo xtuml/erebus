@@ -15,7 +15,7 @@ from test_harness.process_manager import (
     harness_test_manager
 )
 from test_harness.utils import clean_directories
-from test_harness.protocol_verifier.tests.mock_pv_http_interface \
+from test_harness.protocol_verifier.mocks.mock_pv_http_interface \
       import mock_pv_http_interface
 
 # get test config
