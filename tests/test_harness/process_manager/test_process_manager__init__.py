@@ -14,7 +14,9 @@ from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.process_manager import (
     harness_test_manager
 )
-from test_harness.utils import clean_directories, mock_pv_http_interface
+from test_harness.utils import clean_directories
+from test_harness.protocol_verifier.mocks.mock_pv_http_interface \
+      import mock_pv_http_interface
 
 # get test config
 test_config_path = os.path.join(
