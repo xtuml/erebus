@@ -19,7 +19,7 @@ import aiohttp
 import pandas as pd
 
 from test_harness.run_app import run_harness_app
-from test_harness.config.config import TestConfig
+from test_harness.config.config import TestConfig, HarnessConfig
 
 # TODO will need to investigate this to remove references to PV in the future
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig

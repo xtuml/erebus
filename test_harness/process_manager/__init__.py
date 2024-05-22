@@ -9,7 +9,7 @@ import sys
 
 from tqdm import tqdm
 
-from test_harness.config.config import TestConfig
+from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.protocol_verifier import full_pv_test
 from test_harness.utils import clean_directories
@@ -17,7 +17,7 @@ from test_harness import AsyncTestStopper
 
 
 def harness_test_manager(
-    harness_config: ProtocolVerifierConfig,
+    harness_config: HarnessConfig,
     test_config: TestConfig,
     test_output_directory: str,
     pbar: tqdm | None = None,
