@@ -172,7 +172,8 @@ class HarnessApp(Flask):
         """Function to handle starting a test"""
         try:
             json_dict = request.get_json()
-            success, json_response = self.handle_start_test_json_request(json_dict)
+            success, json_response = self.handle_start_test_json_request(
+                json_dict)
             return jsonify(json_response), 200 if success else 400
         except BadRequest as error:
             return error.get_response()
@@ -213,7 +214,8 @@ class HarnessApp(Flask):
         :rtype: `tuple`[`bool`, `dict`[`str`, `dict`[`str`, `Any`]]]
         """
         test_to_run = {}
-        unknown_keys = set(request_json.keys()).difference(self.valid_json_dict_keys)
+        unknown_keys = set(request_json.keys()).difference(
+            self.valid_json_dict_keys)
         if unknown_keys:
             return (
                 False,
@@ -326,7 +328,8 @@ class HarnessApp(Flask):
             return (f"Test with name {test_name} does not exist\n", 400)
         with TemporaryDirectory() as temp_dir:
             zip_file_path = os.path.join(temp_dir, f"{test_name}.zip")
-            create_zip_file_from_folder(test_output_directory_path, zip_file_path)
+            create_zip_file_from_folder(
+                test_output_directory_path, zip_file_path)
             return send_file(
                 zip_file_path,
                 mimetype="application/zip",
