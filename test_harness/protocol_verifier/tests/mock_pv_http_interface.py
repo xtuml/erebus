@@ -7,6 +7,7 @@ from test_harness.config.config import HarnessConfig
 from aioresponses import aioresponses, CallbackResult
 from test_harness.utils import PVLogFileNameCallback
 
+
 @contextmanager
 def mock_pv_http_interface(
     harness_config: HarnessConfig,

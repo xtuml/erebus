@@ -30,9 +30,11 @@ from test_harness.protocol_verifier import (
     full_pv_test
 )
 from test_harness.protocol_verifier.generate_test_files import TestJobFile
-from test_harness.utils import clean_directories, mock_pv_http_interface
+from test_harness.utils import clean_directories
 from test_harness.simulator.simulator_profile import Profile
 from test_harness import AsyncTestStopper
+from test_harness.protocol_verifier.tests.mock_pv_http_interface \
+      import mock_pv_http_interface
 
 # get test config
 test_config_path = os.path.join(
