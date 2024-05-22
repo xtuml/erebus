@@ -9,14 +9,15 @@ import sys
 
 from tqdm import tqdm
 
-from test_harness.config.config import TestConfig, HarnessConfig
+from test_harness.config.config import TestConfig
+from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.protocol_verifier import full_pv_test
 from test_harness.utils import clean_directories
 from test_harness import AsyncTestStopper
 
 
 def harness_test_manager(
-    harness_config: HarnessConfig,
+    harness_config: ProtocolVerifierConfig,
     test_config: TestConfig,
     test_output_directory: str,
     pbar: tqdm | None = None,
@@ -26,7 +27,7 @@ def harness_test_manager(
     encounterd will log the error and return the error to the function user
 
     :param harness_config: The config for the test harness
-    :type harness_config: :class:`HarnessConfig`
+    :type harness_config: :class:`ProtocolVerifierConfig`
     :param test_config: The config for the specific test
     :type test_config: :class:`TestConfig`
     :param test_output_directory: The directory where output files are stored
