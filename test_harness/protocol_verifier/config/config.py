@@ -5,6 +5,7 @@ from typing import Optional
 
 # Determine the project root and add it to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+
 from test_harness.config.config import HarnessConfig
 
 
