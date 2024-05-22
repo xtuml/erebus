@@ -110,7 +110,8 @@ class HarnessApp(Flask):
         """
         # requests must be of type multipart/form-data
         if request.mimetype != "multipart/form-data":
-            return make_response("mime-type must be multipart/form-data\n", 400)
+            return make_response(
+                "mime-type must be multipart/form-data\n", 400)
         # get files
         uploaded_files: list[FileStorage] = [
             request.files[uploaded_file_identifier]
@@ -120,8 +121,11 @@ class HarnessApp(Flask):
         uploaded_files_names = list(map(lambda x: x.filename, uploaded_files))
 
         # check for files without file name
-        if any(uploaded_file_name == "" for uploaded_file_name in uploaded_files_names):
-            return make_response("One of the uploaded files has no filename\n", 400)
+        if any(
+                uploaded_file_name == ""
+                for uploaded_file_name in uploaded_files_names):
+            return make_response(
+                "One of the uploaded files has no filename\n", 400)
 
         # check if some of the files have the same name
         if len(set(uploaded_files_names)) < len(uploaded_files_names):
@@ -233,10 +237,11 @@ class HarnessApp(Flask):
         )
         test_to_run["TestOutputDirectory"] = test_output_directory
         response_json["TestOutputFolder"] = (
-            f"Tests under name {test_name} in the directory" f"{test_output_directory}"
-        )
+            f"Tests under name {test_name} in the directory"
+            f"{test_output_directory}")
         test_config = TestConfig()
-        if os.path.exists(os.path.join(test_output_directory, "test_config.yaml")):
+        if os.path.exists(
+                os.path.join(test_output_directory, "test_config.yaml")):
             test_config.parse_from_yaml(
                 os.path.join(test_output_directory, "test_config.yaml")
             )
@@ -257,7 +262,8 @@ class HarnessApp(Flask):
         """
         # requests must be of type multipart/form-data
         if request.mimetype != "multipart/form-data":
-            return make_response("mime-type must be multipart/form-data\n", 400)
+            return make_response(
+                "mime-type must be multipart/form-data\n", 400)
         # handle zip files
         try:
             for uploaded_file_identifier, file in request.files.items():
