@@ -1,3 +1,7 @@
+"""
+Config class for the Protocol Verifier
+"""
+
 from configparser import ConfigParser
 from pathlib import Path
 import sys
@@ -10,6 +14,11 @@ from test_harness.config.config import HarnessConfig
 
 
 class ProtocolVerifierConfig(HarnessConfig):
+    """Class to hold the config for the Protocol Verifier
+
+    :param config_path: The path to the config file, defaults to None
+    :type config_path: Optional[str], optional
+    """
     def __init__(self, config_path: Optional[str] = None) -> None:
         # Initialise HarnessConfig to inherit attributes
         super().__init__(config_path)
@@ -19,12 +28,14 @@ class ProtocolVerifierConfig(HarnessConfig):
         self.parse_pv_config()
 
     def parse_pv_config(self):
+        """Method to set config path, read from config file and set attributes"""
         if self.config_path is None:
             self.config_path = str(Path(__file__).parent / "default_config.config")
         self.config_parser.read(self.config_path)
         self.parse_pv_config_to_attributes()
 
     def parse_pv_config_to_attributes(self):
+        """Method to set attributes from config file"""
         self.parse_log_retrieval_config()
         self.parse_pv_message_bus_config()
         self.pv_send_job_defs_url = self.config_parser["non-default"][
