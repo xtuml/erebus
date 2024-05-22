@@ -33,9 +33,11 @@ class HarnessConfig:
         default_config.config in same directory
         """
         if not self.config_path:
-            self.config_path = str(Path(__file__).parent / "default_config.config")
+            self.config_path = str(
+                Path(__file__).parent / "default_config.config")
         if not self.store_config_path:
-            self.store_config_path = str(Path(__file__).parent / "store_config.config")
+            self.store_config_path = str(
+                Path(__file__).parent / "store_config.config")
         self.config_parser.read([self.config_path, self.store_config_path])
         self.parse_config_to_attributes()
 
@@ -43,10 +45,12 @@ class HarnessConfig:
         """Method to parse config to attributes"""
         # parse uml file store
         uml_file_store_path = self.config_parser["non-default"]["uml_file_store"]
-        self.uml_file_store = self.calc_path(uml_file_store_path, "uml_file_store")
+        self.uml_file_store = self.calc_path(
+            uml_file_store_path, "uml_file_store")
         # parse uml file store
         profile_store_path = self.config_parser["non-default"]["profile_store"]
-        self.profile_store = self.calc_path(profile_store_path, "profile_store")
+        self.profile_store = self.calc_path(
+            profile_store_path, "profile_store")
         # parse report filestore path
         report_file_store_path = self.config_parser["non-default"]["report_file_store"]
         self.report_file_store = self.calc_path(
@@ -54,10 +58,12 @@ class HarnessConfig:
         )
         # parse log filestore path
         log_file_store_path = self.config_parser["non-default"]["log_file_store"]
-        self.log_file_store = self.calc_path(log_file_store_path, "log_file_store")
+        self.log_file_store = self.calc_path(
+            log_file_store_path, "log_file_store")
         # parse test filestore path
         test_file_store_path = self.config_parser["non-default"]["test_file_store"]
-        self.test_file_store = self.calc_path(test_file_store_path, "test_file_store")
+        self.test_file_store = self.calc_path(
+            test_file_store_path, "test_file_store")
 
         # parse config for request to server
         self.parse_requests_config()
@@ -135,7 +141,8 @@ class HarnessConfig:
         if os.path.isabs(given_path):
             calculated_path = given_path
         else:
-            calculated_path = str(Path(__file__).parent.parent.parent / given_path)
+            calculated_path = str(
+                Path(__file__).parent.parent.parent / given_path)
         if not os.path.exists(calculated_path):
             raise RuntimeError(
                 f"The given path '{given_path}' does not exist for the config "
