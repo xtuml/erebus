@@ -1,5 +1,6 @@
 """Module to send events to the protocol verifier
 """
+
 from typing import Any, Callable, Literal
 from datetime import datetime
 import asyncio
@@ -12,15 +13,18 @@ import aiohttp
 from aiokafka.errors import KafkaTimeoutError as AIOKafkaTimeoutError
 from kafka3.errors import KafkaTimeoutError as Kafka3TimeoutError
 
-from test_harness.config.config import HarnessConfig
+from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.protocol_verifier.simulator_data import (
     convert_list_dict_to_json_io_bytes,
     convert_list_dict_to_pv_json_io_bytes,
-    convert_list_dict_to_pv_json_io_bytes_without_prefix
+    convert_list_dict_to_pv_json_io_bytes_without_prefix,
 )
 from test_harness.message_buses.message_buses import (
-    MessageProducer, InputConverter, ResponseConverter,
-    MessageExceptionHandler, MessageSender
+    MessageProducer,
+    InputConverter,
+    ResponseConverter,
+    MessageExceptionHandler,
+    MessageSender,
 )
 from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
 
@@ -29,23 +33,18 @@ class ErrorLogger:
     """Class to log errors to a file
 
     :param harness_config: The harness config
-    :type harness_config: :class:`HarnessConfig`
+    :type harness_config: :class:`ProtocolVerifierConfig`
     """
-    def __init__(self, harness_config: HarnessConfig) -> None:
-        """Constructor method
-        """
+
+    def __init__(self, harness_config: ProtocolVerifierConfig) -> None:
+        """Constructor method"""
         self.file_path = os.path.join(
-            harness_config.log_file_store,
-            ERROR_LOG_FILE_PREFIX + str(uuid4()) + ".txt"
+            harness_config.log_file_store, ERROR_LOG_FILE_PREFIX + str(uuid4()) + ".txt"
         )
         self.logger = logging.getLogger("ErrorLogger")
-        self.file_handler = logging.FileHandler(
-            self.file_path, mode="a"
-        )
+        self.file_handler = logging.FileHandler(self.file_path, mode="a")
         self.file_handler.setLevel(logging.ERROR)
-        self.file_handler.setFormatter(
-            logging.getLogger().handlers[0].formatter
-        )
+        self.file_handler.setFormatter(logging.getLogger().handlers[0].formatter)
         self.logger.addHandler(self.file_handler)
 
     def log_error(self, error: Exception) -> None:
@@ -57,13 +56,11 @@ class ErrorLogger:
         self.logger.error(str(error))
 
 
-def get_message_bus_kwargs(
-    harness_config: HarnessConfig
-) -> dict[str, Any]:
+def get_message_bus_kwargs(harness_config: ProtocolVerifierConfig) -> dict[str, Any]:
     """Function to get the message bus kwargs
 
     :param harness_config: The harness config
-    :type harness_config: :class:`HarnessConfig`
+    :type harness_config: :class:`ProtocolVerifierConfig`
     :raises ValueError: If the message bus protocol is not recognised
     :return: Returns the message bus kwargs
     :rtype: `dict`[`str`, `Any`]
@@ -81,18 +78,15 @@ def get_message_bus_kwargs(
             return {}
         case _:
             raise ValueError(
-                f"Message bus {harness_config.message_bus_protocol} "
-                "not recognised"
+                f"Message bus {harness_config.message_bus_protocol} " "not recognised"
             )
 
 
-def get_producer_kwargs(
-    harness_config: HarnessConfig
-) -> dict[str, Any]:
+def get_producer_kwargs(harness_config: ProtocolVerifierConfig) -> dict[str, Any]:
     """Function to get the producer kwargs
 
     :param harness_config: The harness config
-    :type harness_config: :class:`HarnessConfig`
+    :type harness_config: :class:`ProtocolVerifierConfig`
     :raises ValueError: If the message bus protocol is not recognised
     :return: Returns the producer kwargs
     :rtype: `dict`[`str`, `Any`]
@@ -103,21 +97,16 @@ def get_producer_kwargs(
         ),
         "exception_converter": PVMessageExceptionHandler(
             message_bus=harness_config.message_bus_protocol
-        )
+        ),
     }
     match harness_config.message_bus_protocol:
         case "KAFKA" | "KAFKA3":
-            producer_kwargs[
-                "topic"
-            ] = harness_config.kafka_message_bus_topic
+            producer_kwargs["topic"] = harness_config.kafka_message_bus_topic
         case "HTTP":
-            producer_kwargs[
-                "url"
-            ] = harness_config.pv_send_url
+            producer_kwargs["url"] = harness_config.pv_send_url
         case _:
             raise ValueError(
-                f"Message bus {harness_config.message_bus_protocol} "
-                "not recognised"
+                f"Message bus {harness_config.message_bus_protocol} " "not recognised"
             )
     return producer_kwargs
 
@@ -126,17 +115,16 @@ class PVMessageSender(MessageSender):
     """Class to handle sending messages to the protocol verifier given a
     message producer relating to a message bus
     """
+
     def __init__(
         self,
         message_producer: MessageProducer,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
-        harness_config: HarnessConfig
+        harness_config: ProtocolVerifierConfig,
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         input_converter = PVInputConverter(
-            message_bus=message_bus,
-            harness_config=harness_config
+            message_bus=message_bus, harness_config=harness_config
         )
         response_converter = PVResponseConverter()
         super().__init__(
@@ -155,12 +143,7 @@ class PVMessageSender(MessageSender):
         :rtype: `Any`
         """
         return await asyncio.gather(
-            *[
-                self.message_producer.send_message(
-                    message
-                )
-                for message in converted_data
-            ]
+            *[self.message_producer.send_message(message) for message in converted_data]
         )
 
 
@@ -170,13 +153,13 @@ class PVInputConverter(InputConverter):
     :param message_bus: The message bus
     :type message_bus: :class:`Literal`["KAFKA", "KAFKA3", "HTTP"]
     """
+
     def __init__(
         self,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
-        harness_config: HarnessConfig
+        harness_config: ProtocolVerifierConfig,
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         super().__init__()
         self._message_bus = message_bus
         self._set_data_conversion_function(harness_config=harness_config)
@@ -185,10 +168,8 @@ class PVInputConverter(InputConverter):
         self,
         list_dict: list[dict[str, Any]],
         job_id: str,
-        job_info: dict[str, str | None]
-    ) -> tuple[
-        list[Any], tuple[Any, ...], dict, tuple[Any, ...], dict[str, Any]
-    ]:
+        job_info: dict[str, str | None],
+    ) -> tuple[list[Any], tuple[Any, ...], dict, tuple[Any, ...], dict[str, Any]]:
         """Method to convert the input data to the PVMessageSender `send`
         method
 
@@ -206,16 +187,16 @@ class PVInputConverter(InputConverter):
         ]
         """
         output_data = self.data_conversion_function(list_dict)
-        return output_data, (), {}, (), {
-            "list_dict": list_dict,
-            "job_id": job_id,
-            "job_info": job_info
-        }
+        return (
+            output_data,
+            (),
+            {},
+            (),
+            {"list_dict": list_dict, "job_id": job_id, "job_info": job_info},
+        )
 
     @property
-    def data_conversion_function(self) -> Callable[
-        [list[dict[str, Any]]], list[Any]
-    ]:
+    def data_conversion_function(self) -> Callable[[list[dict[str, Any]]], list[Any]]:
         """Property to get the data conversion function
 
         :return: Returns the data conversion function
@@ -224,14 +205,12 @@ class PVInputConverter(InputConverter):
         return self._data_conversion_function
 
     def _set_data_conversion_function(
-        self,
-        harness_config: HarnessConfig
+        self, harness_config: ProtocolVerifierConfig
     ) -> None:
-        """Private method to set the data conversion function
-        """
+        """Private method to set the data conversion function"""
         match self._message_bus:
             case "KAFKA" | "KAFKA3":
-                if (harness_config.send_json_without_length_prefix):
+                if harness_config.send_json_without_length_prefix:
                     self._data_conversion_function = (
                         convert_list_dict_to_pv_json_io_bytes_without_prefix
                     )
@@ -240,13 +219,9 @@ class PVInputConverter(InputConverter):
                         convert_list_dict_to_pv_json_io_bytes
                     )
             case "HTTP":
-                self._data_conversion_function = (
-                    self._http_conversion_function
-                )
+                self._data_conversion_function = self._http_conversion_function
             case _:
-                raise ValueError(
-                    f"Message bus {self._message_bus} not recognised"
-                )
+                raise ValueError(f"Message bus {self._message_bus} not recognised")
 
     @staticmethod
     def _http_conversion_function(
@@ -268,20 +243,19 @@ class PVInputConverter(InputConverter):
                 name="upload",
                 value=BytesIO(form_bytes),
                 filename=str(uuid4) + ".json",
-                content_type='application/octet-stream',
+                content_type="application/octet-stream",
             )
             form_data_list.append(form_data())
         return form_data_list
 
 
 class PVResponseConverter(ResponseConverter):
-    """Class to handle converting the response from the PVMessageSender
-    """
+    """Class to handle converting the response from the PVMessageSender"""
+
     def __init__(
         self,
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         super().__init__()
 
     def convert(
@@ -289,10 +263,8 @@ class PVResponseConverter(ResponseConverter):
         responses: list[str],
         list_dict: list[dict[str, Any]],
         job_id: str,
-        job_info: dict[str, str | None]
-    ) -> tuple[
-        list[dict[str, Any]], str, str, dict[str, str | None], str, datetime
-    ]:
+        job_info: dict[str, str | None],
+    ) -> tuple[list[dict[str, Any]], str, str, dict[str, str | None], str, datetime]:
         """Method to convert the response from the PVMessageSender `send`
         method
 
@@ -313,10 +285,7 @@ class PVResponseConverter(ResponseConverter):
         time_completed = datetime.now()
         file_name = str(uuid4()) + ".json"
         result = "".join(responses)
-        return (
-            list_dict, file_name, job_id, job_info, result,
-            time_completed
-        )
+        return (list_dict, file_name, job_id, job_info, result, time_completed)
 
 
 class PVMessageResponseConverter(ResponseConverter):
@@ -326,6 +295,7 @@ class PVMessageResponseConverter(ResponseConverter):
     :param message_bus: The message bus
     :type message_bus: :class:`Literal`["KAFKA", "KAFKA3", "HTTP"]
     """
+
     def __init__(
         self,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
@@ -335,9 +305,7 @@ class PVMessageResponseConverter(ResponseConverter):
         self._set_data_conversion_function()
 
     @property
-    def data_conversion_function(self) -> Callable[
-        [Any], str
-    ]:
+    def data_conversion_function(self) -> Callable[[Any], str]:
         """Property to get the data conversion function
 
         :return: Returns the data conversion function
@@ -345,10 +313,7 @@ class PVMessageResponseConverter(ResponseConverter):
         """
         return self._data_conversion_function
 
-    def convert(
-        self,
-        response: Any
-    ) -> str:
+    def convert(self, response: Any) -> str:
         """Method to convert the response from the :class:`MessageProducer`
         `send` method
 
@@ -359,29 +324,18 @@ class PVMessageResponseConverter(ResponseConverter):
         """
         return self.data_conversion_function(response)
 
-    def _set_data_conversion_function(
-        self
-    ) -> None:
-        """Private method to set the data conversion function
-        """
+    def _set_data_conversion_function(self) -> None:
+        """Private method to set the data conversion function"""
         match self._message_bus:
             case "KAFKA" | "KAFKA3":
-                self._data_conversion_function = (
-                    self._kafka_conversion_function
-                )
+                self._data_conversion_function = self._kafka_conversion_function
             case "HTTP":
-                self._data_conversion_function = (
-                    self._http_conversion_function
-                )
+                self._data_conversion_function = self._http_conversion_function
             case _:
-                raise ValueError(
-                    f"Message bus {self._message_bus} not recognised"
-                )
+                raise ValueError(f"Message bus {self._message_bus} not recognised")
 
     @staticmethod
-    def _http_conversion_function(
-        response: aiohttp.ClientResponse
-    ) -> str:
+    def _http_conversion_function(response: aiohttp.ClientResponse) -> str:
         """Method to convert the response from the :class:`MessageProducer`
         `send` method for the HTTP message bus
 
@@ -392,15 +346,11 @@ class PVMessageResponseConverter(ResponseConverter):
         """
         if response.ok:
             return ""
-        logging.getLogger().warning(
-            "Error sending http payload: %s", response.reason
-        )
+        logging.getLogger().warning("Error sending http payload: %s", response.reason)
         return response.reason
 
     @staticmethod
-    def _kafka_conversion_function(
-        *_
-    ) -> str:
+    def _kafka_conversion_function(*_) -> str:
         """Method to convert the response from the :class:`MessageProducer`
         `send` method for the kafka message bus
 
@@ -416,12 +366,12 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
     :param message_bus: The message bus
     :type message_bus: :class:`Literal`["KAFKA", "KAFKA3", "HTTP"]
     """
+
     def __init__(
         self,
         message_bus: Literal["KAFKA", "KAFKA3", "HTTP"],
     ) -> None:
-        """Constructor method
-        """
+        """Constructor method"""
         super().__init__()
         self._message_bus = message_bus
         self._set_exception_handler()
@@ -446,22 +396,17 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
         return self._exception_handler(exception)
 
     def _set_exception_handler(self) -> None:
-        """Private method to set the exception handler
-        """
+        """Private method to set the exception handler"""
         match self._message_bus:
             case "KAFKA" | "KAFKA3":
                 self._exception_handler = self._kafka_exception_handler
             case "HTTP":
                 self._exception_handler = self._http_exception_handler
             case _:
-                raise ValueError(
-                    f"Message bus {self._message_bus} not recognised"
-                )
+                raise ValueError(f"Message bus {self._message_bus} not recognised")
 
     @staticmethod
-    def _kafka_exception_handler(
-        exception: Exception
-    ) -> str:
+    def _kafka_exception_handler(exception: Exception) -> str:
         """Method to handle an exception for the kafka message bus
 
         :param exception: The exception
@@ -469,19 +414,13 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
         :return: Returns the exception message
         :rtype: `str`
         """
-        if isinstance(exception, (
-            AIOKafkaTimeoutError, Kafka3TimeoutError
-        )):
-            logging.getLogger().warning(
-                "Error sending payload to kafka: %s", exception
-            )
+        if isinstance(exception, (AIOKafkaTimeoutError, Kafka3TimeoutError)):
+            logging.getLogger().warning("Error sending payload to kafka: %s", exception)
             return str(exception)
         raise exception
 
     @staticmethod
-    def _http_exception_handler(
-        exception: Exception
-    ) -> str:
+    def _http_exception_handler(exception: Exception) -> str:
         """Method to handle an exception for the HTTP message bus
 
         :param exception: The exception
@@ -489,9 +428,7 @@ class PVMessageExceptionHandler(MessageExceptionHandler):
         :return: Returns the exception message
         :rtype: `str`
         """
-        logging.getLogger().warning(
-            "Error sending http payload: %s", exception
-        )
+        logging.getLogger().warning("Error sending http payload: %s", exception)
         if isinstance(exception, asyncio.TimeoutError):
             return "timed out"
         if isinstance(exception, aiohttp.ClientConnectionError):
