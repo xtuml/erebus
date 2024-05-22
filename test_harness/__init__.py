@@ -110,9 +110,7 @@ class HarnessApp(Flask):
         """
         # requests must be of type multipart/form-data
         if request.mimetype != "multipart/form-data":
-            return make_response(
-                "mime-type must be multipart/form-data\n", 400
-            )
+            return make_response("mime-type must be multipart/form-data\n", 400)
         # get files
         uploaded_files: list[FileStorage] = [
             request.files[uploaded_file_identifier]
@@ -122,13 +120,8 @@ class HarnessApp(Flask):
         uploaded_files_names = list(map(lambda x: x.filename, uploaded_files))
 
         # check for files without file name
-        if any(
-            uploaded_file_name == ""
-            for uploaded_file_name in uploaded_files_names
-        ):
-            return make_response(
-                "One of the uploaded files has no filename\n", 400
-            )
+        if any(uploaded_file_name == "" for uploaded_file_name in uploaded_files_names):
+            return make_response("One of the uploaded files has no filename\n", 400)
 
         # check if some of the files have the same name
         if len(set(uploaded_files_names)) < len(uploaded_files_names):
@@ -179,9 +172,7 @@ class HarnessApp(Flask):
         """Function to handle starting a test"""
         try:
             json_dict = request.get_json()
-            success, json_response = self.handle_start_test_json_request(
-                json_dict
-            )
+            success, json_response = self.handle_start_test_json_request(json_dict)
             return jsonify(json_response), 200 if success else 400
         except BadRequest as error:
             return error.get_response()
@@ -195,9 +186,7 @@ class HarnessApp(Flask):
             the percentage of completion.
         """
         if self.harness_progress_manager.test_is_running.value:
-            percentage_done = (
-                self.harness_progress_manager.get_progress_percentage()
-            )
+            percentage_done = self.harness_progress_manager.get_progress_percentage()
             returnVal: Flask.response_class = (
                 jsonify(
                     {
@@ -224,9 +213,7 @@ class HarnessApp(Flask):
         :rtype: `tuple`[`bool`, `dict`[`str`, `dict`[`str`, `Any`]]]
         """
         test_to_run = {}
-        unknown_keys = set(request_json.keys()).difference(
-            self.valid_json_dict_keys
-        )
+        unknown_keys = set(request_json.keys()).difference(self.valid_json_dict_keys)
         if unknown_keys:
             return (
                 False,
@@ -238,44 +225,24 @@ class HarnessApp(Flask):
                 },
             )
         response_json = {}
-        test_name = (
-            request_json["TestName"] if "TestName" in request_json else None
-        )
-        test_name, test_output_directory = (
-            create_test_output_directory(
-                base_output_path=self.harness_config.report_file_store,
-                test_name=test_name
-            )
+        test_name = request_json["TestName"] if "TestName" in request_json else None
+        test_name, test_output_directory = create_test_output_directory(
+            base_output_path=self.harness_config.report_file_store, test_name=test_name
         )
         test_to_run["TestOutputDirectory"] = test_output_directory
         response_json["TestOutputFolder"] = (
-            f"Tests under name {test_name} in the directory"
-            f"{test_output_directory}"
+            f"Tests under name {test_name} in the directory" f"{test_output_directory}"
         )
         test_config = TestConfig()
-        if os.path.exists(
-            os.path.join(
-                test_output_directory,
-                "test_config.yaml"
-            )
-        ):
+        if os.path.exists(os.path.join(test_output_directory, "test_config.yaml")):
             test_config.parse_from_yaml(
-                os.path.join(
-                    test_output_directory,
-                    "test_config.yaml"
-                )
+                os.path.join(test_output_directory, "test_config.yaml")
             )
         if "TestConfig" in request_json:
             test_config.parse_from_dict(request_json["TestConfig"])
         test_to_run["TestConfig"] = test_config
         response_json["TestConfig"] = test_config.config_to_dict()
-        with open(
-            os.path.join(
-                test_output_directory,
-                "used_config.yaml"
-            ),
-            "w"
-        ) as file:
+        with open(os.path.join(test_output_directory, "used_config.yaml"), "w") as file:
             yaml.dump(response_json["TestConfig"], file)
         self.test_to_run = test_to_run
         return (True, response_json)
@@ -288,9 +255,7 @@ class HarnessApp(Flask):
         """
         # requests must be of type multipart/form-data
         if request.mimetype != "multipart/form-data":
-            return make_response(
-                "mime-type must be multipart/form-data\n", 400
-            )
+            return make_response("mime-type must be multipart/form-data\n", 400)
         # handle zip files
         try:
             for uploaded_file_identifier, file in request.files.items():
@@ -301,9 +266,8 @@ class HarnessApp(Flask):
                 )
         except Exception as error:
             return (
-                f"Error uploading zip"
-                f"file {uploaded_file_identifier}: {error}\n",
-                400
+                f"Error uploading zip" f"file {uploaded_file_identifier}: {error}\n",
+                400,
             )
         return "Zip archives uploaded successfully\n", 200
 
@@ -315,15 +279,11 @@ class HarnessApp(Flask):
         """
         try:
             json_dict = request.get_json()
-            return self._handle_stop_test_json_request(
-                json_dict
-            )
+            return self._handle_stop_test_json_request(json_dict)
         except BadRequest as error:
             return error.get_response()
 
-    def _handle_stop_test_json_request(
-        self, request_json: dict
-    ) -> Response:
+    def _handle_stop_test_json_request(self, request_json: dict) -> Response:
         """Handler for stopping a test given a json POST request
 
         :param request_json: The request json sent as a python dictionary
@@ -342,9 +302,7 @@ class HarnessApp(Flask):
         """
         try:
             json_dict = request.get_json()
-            return self._handle_get_test_output_folder_json_request(
-                json_dict
-            )
+            return self._handle_get_test_output_folder_json_request(json_dict)
         except BadRequest as error:
             return error.get_response()
 
@@ -359,32 +317,21 @@ class HarnessApp(Flask):
         :rtype: `Response`
         """
         if "TestName" not in request_json:
-            return (
-                "Field 'TestName' not in request json\n", 400
-            )
+            return ("Field 'TestName' not in request json\n", 400)
         test_name = request_json["TestName"]
         test_output_directory_path = os.path.join(
-            self.harness_config.report_file_store,
-            test_name
+            self.harness_config.report_file_store, test_name
         )
         if not os.path.exists(test_output_directory_path):
-            return (
-                f"Test with name {test_name} does not exist\n", 400
-            )
+            return (f"Test with name {test_name} does not exist\n", 400)
         with TemporaryDirectory() as temp_dir:
-            zip_file_path = os.path.join(
-                temp_dir,
-                f"{test_name}.zip"
-            )
-            create_zip_file_from_folder(
-                test_output_directory_path,
-                zip_file_path
-            )
+            zip_file_path = os.path.join(temp_dir, f"{test_name}.zip")
+            create_zip_file_from_folder(test_output_directory_path, zip_file_path)
             return send_file(
                 zip_file_path,
                 mimetype="application/zip",
                 as_attachment=True,
-                download_name=f"{test_name}.zip"
+                download_name=f"{test_name}.zip",
             )
 
     @property
@@ -499,9 +446,7 @@ def handle_single_file_upload(
     :rtype: :class:`Response`
     """
     if len(uploaded_files) > 1:
-        return (
-            "More than two files uploaded. A single file is required\n", 400
-        )
+        return ("More than two files uploaded. A single file is required\n", 400)
     return handle_multiple_file_uploads(uploaded_files, save_file_dir_path)
 
 
@@ -569,9 +514,7 @@ def handle_uploaded_zip_file(
         zip_file.extractall(test_output_directory_path)
         if common_path == "":
             return
-        extracted_path = os.path.join(
-            test_output_directory_path, common_path
-        )
+        extracted_path = os.path.join(test_output_directory_path, common_path)
         # move contents from extracted path into the correct folder and remove
         # extracted folder
         for path in glob.glob(
@@ -580,7 +523,7 @@ def handle_uploaded_zip_file(
         ):
             shutil.move(
                 os.path.join(extracted_path, path),
-                os.path.join(test_output_directory_path, path)
+                os.path.join(test_output_directory_path, path),
             )
         shutil.rmtree(extracted_path)
 
@@ -627,9 +570,7 @@ def create_test_output_directory(
     """
     if not test_name:
         test_name = str(uuid4())
-    test_output_directory_path = os.path.join(
-        base_output_path, test_name
-    )
+    test_output_directory_path = os.path.join(base_output_path, test_name)
     if not os.path.exists(test_output_directory_path):
         os.makedirs(test_output_directory_path)
     return (test_name, test_output_directory_path)
@@ -811,9 +752,7 @@ class TestHarnessProgessManager:
 class AsyncTestStopper:
     """Class to stop a test"""
 
-    def __init__(
-        self
-    ) -> None:
+    def __init__(self) -> None:
         """Constructor method"""
         self.stop_test = False
         self.lock = Lock()
