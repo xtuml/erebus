@@ -23,8 +23,7 @@ from werkzeug.exceptions import BadRequest
 from tqdm import tqdm
 import yaml
 
-from test_harness.config.config import TestConfig
-from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
+from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.async_management import AsyncKillException
 from test_harness.utils import create_zip_file_from_folder
 
@@ -80,12 +79,7 @@ class HarnessApp(Flask):
         root_path: Optional[str] = None,
     ) -> None:
         """Constructor method"""
-        # TODO move config_parser object to top level to be passed down
-        # to HarnessConfig and PVConfig
-        # self.harness_config = HarnessConfig(config_path=harness_config_path)
-        self.harness_config = ProtocolVerifierConfig(
-            config_path=harness_config_path
-        )
+        self.harness_config = HarnessConfig(config_path=harness_config_path)
         self.harness_progress_manager = TestHarnessProgessManager()
         super().__init__(
             import_name,
