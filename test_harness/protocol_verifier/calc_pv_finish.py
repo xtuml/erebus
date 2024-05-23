@@ -1,6 +1,5 @@
 # pylint: disable=R0914
-"""Requests to pv for files
-"""
+"""Requests to pv for files"""
 import asyncio
 from time import time
 import os
@@ -8,7 +7,9 @@ from typing import Any
 import logging
 
 from test_harness.requests_th.request_logs import get_log_files
-from test_harness.requests_th.request_pv_io import gather_get_requests_json_response
+from test_harness.requests_th.request_pv_io import (
+    gather_get_requests_json_response,
+)
 from test_harness.config.config import TestConfig
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 
@@ -110,7 +111,9 @@ async def pv_inspector_io(
     """
     while True:
         t_1 = time()
-        await handle_coords_request(coords=coords, urls=urls, read_timeout=read_timeout)
+        await handle_coords_request(
+            coords=coords, urls=urls, read_timeout=read_timeout
+        )
         t_2 = time()
         interval = calc_interval(t_1, t_2, io_calc_interval_time)
         await asyncio.sleep(interval)
@@ -273,11 +276,15 @@ def handle_domain_log_file_reception_and_save(
         location=location,
         file_prefix=file_prefix,
     )
-    return save_log_file_strings(log_files, log_file_store_path, save_log_files)
+    return save_log_file_strings(
+        log_files, log_file_store_path, save_log_files
+    )
 
 
 def save_log_file_strings(
-    log_files: dict[str, str], log_file_store_path: str, save_log_files: bool = True
+    log_files: dict[str, str],
+    log_file_store_path: str,
+    save_log_files: bool = True,
 ) -> tuple[str, str, list[str]]:
     """Method to save the log file strings to file and returns
     the current log file string, the log files that were received excluding
@@ -302,7 +309,9 @@ def save_log_file_strings(
     for file_name, file_string in log_files.items():
         if save_log_files:
             with open(
-                os.path.join(log_file_store_path, file_name), "w", encoding="utf-8"
+                os.path.join(log_file_store_path, file_name),
+                "w",
+                encoding="utf-8",
             ) as file:
                 file.write(file_string)
         if ".gz" in file_name:
@@ -351,7 +360,9 @@ class PVFileInspector:
             pv_finish_inspector_logs(
                 file_names=self.file_names,
                 urls=self.harness_config.log_urls,
-                interval_time=self.test_config.test_finish["metric_get_interval"],
+                interval_time=self.test_config.test_finish[
+                    "metric_get_interval"
+                ],
                 required_time_interval=(
                     self.test_config.test_finish["finish_interval"]
                 ),
@@ -396,7 +407,9 @@ class PVFileInspector:
         :rtype: `int`
         """
         end_time = domain_coords[-1][0]
-        for coord, coord_prev in zip(domain_coords[-1:0:-1], domain_coords[-2::-1]):
+        for coord, coord_prev in zip(
+            domain_coords[-1:0:-1], domain_coords[-2::-1]
+        ):
             difference = coord[1] - coord_prev[1]
             if difference != 0:
                 end_time = coord[0]
@@ -431,5 +444,9 @@ class PVFileInspector:
             for index, coord in enumerate(coords):
                 coords[index] = (
                     coord[0] - self.test_boundaries[0],
-                    coord[1] - coords_start[1] if domain == "ver" else coord[1],
+                    (
+                        coord[1] - coords_start[1]
+                        if domain == "ver"
+                        else coord[1]
+                    ),
                 )

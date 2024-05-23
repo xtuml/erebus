@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from configparser import ConfigParser
 from test_harness.config.config import HarnessConfig
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 
@@ -26,10 +27,13 @@ class ProtocolVerifierConfig(HarnessConfig):
         self.parse_pv_config()
 
     def parse_pv_config(self):
-        """Method to set config path, read from config file and set attributes"""
+        """
+        Method to set config path, read from config file and set attributes
+        """
         if self.config_path is None:
             self.config_path = str(
-                Path(__file__).parent / "default_config.config")
+                Path(__file__).parent / "default_config.config"
+            )
         self.config_parser.read(self.config_path)
         self.parse_pv_config_to_attributes()
 
@@ -50,7 +54,8 @@ class ProtocolVerifierConfig(HarnessConfig):
             self.config_parser["non-default"]["pv_clean_folders_read_timeout"]
         )
         self.pv_test_timeout = int(
-            self.config_parser["non-default"]["pv_test_timeout"])
+            self.config_parser["non-default"]["pv_test_timeout"]
+        )
 
     def parse_log_retrieval_config(self):
         """Method to parse log retrieval config from config file"""
@@ -62,23 +67,33 @@ class ProtocolVerifierConfig(HarnessConfig):
         )
         self.log_urls = {
             "aer": {
-                "getFile": self.config_parser["non-default"]["get_log_file_url"],
+                "getFile": self.config_parser["non-default"][
+                    "get_log_file_url"
+                ],
                 "getFileNames": self.config_parser["non-default"][
                     "get_log_file_names_url"
                 ],
                 "location": "RECEPTION",
-                "prefix": self.config_parser["non-default"]["aer_log_file_prefix"],
+                "prefix": self.config_parser["non-default"][
+                    "aer_log_file_prefix"
+                ],
             },
             "ver": {
-                "getFile": self.config_parser["non-default"]["get_log_file_url"],
+                "getFile": self.config_parser["non-default"][
+                    "get_log_file_url"
+                ],
                 "getFileNames": self.config_parser["non-default"][
                     "get_log_file_names_url"
                 ],
                 "location": "VERIFIER",
-                "prefix": self.config_parser["non-default"]["ver_log_file_prefix"],
+                "prefix": self.config_parser["non-default"][
+                    "ver_log_file_prefix"
+                ],
             },
             "location": {
-                "getFile": self.config_parser["non-default"]["get_log_file_url"],
+                "getFile": self.config_parser["non-default"][
+                    "get_log_file_url"
+                ],
                 "getFileNames": self.config_parser["non-default"][
                     "get_log_file_names_url"
                 ],
@@ -93,23 +108,27 @@ class ProtocolVerifierConfig(HarnessConfig):
         pv_send_as_pv_bytes_raw = self.config_parser["non-default"][
             "pv_send_as_pv_bytes"
         ]
-        send_json_without_length_prefix_raw = self.config_parser["non-default"][
-            "send_json_without_length_prefix"
-        ]
+        send_json_without_length_prefix_raw = self.config_parser[
+            "non-default"
+        ]["send_json_without_length_prefix"]
         self.pv_send_as_pv_bytes = (
             True if pv_send_as_pv_bytes_raw.lower() == "true" else False
         )
         self.send_json_without_length_prefix = (
-            True if send_json_without_length_prefix_raw.lower() == "true" else False
+            True if send_json_without_length_prefix_raw.lower() == "true"
+            else False
         )
         match self.message_bus_protocol:
             case "KAFKA" | "KAFKA3":
                 self.pv_send_as_pv_bytes = True
             case "HTTP":
-                self.pv_send_url = self.config_parser["non-default"]["pv_send_url"]
+                self.pv_send_url = self.config_parser["non-default"][
+                    "pv_send_url"
+                ]
             case _:
                 raise ValueError(
-                    f"Invalid message bus protocol '{self.message_bus_protocol}'"
+                    f"Invalid message bus protocol \
+                        '{self.message_bus_protocol}'"
                 )
 
 

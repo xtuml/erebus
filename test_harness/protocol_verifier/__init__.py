@@ -1,8 +1,7 @@
 # pylint: disable=W0718
 # pylint: disable=R0801
 # pylint: disable=R0913
-"""Full end to end process manager
-"""
+"""Full end to end process manager"""
 import glob
 import os
 import asyncio
@@ -18,7 +17,10 @@ from test_harness.protocol_verifier.generate_test_files import (
     get_test_events_from_test_file_jsons,
 )
 from test_harness.protocol_verifier.send_job_defs import send_job_defs_from_uml
-from test_harness.protocol_verifier.tests import FunctionalTest, PerformanceTest
+from test_harness.protocol_verifier.tests import (
+    FunctionalTest,
+    PerformanceTest,
+)
 from test_harness.simulator.simulator_profile import Profile
 from test_harness import AsyncTestStopper
 
@@ -96,7 +98,9 @@ def puml_files_test(
     :type test_stopper: :class:`AsyncTestStopper` | `None`, optional
     """
     # choose test from test config and run test
-    test_class = FunctionalTest if test_config.type == "Functional" else PerformanceTest
+    test_class = (
+        FunctionalTest if test_config.type == "Functional" else PerformanceTest
+    )
     if test_class == FunctionalTest and profile:
         profile = None
         logging.getLogger().warning(
@@ -128,7 +132,8 @@ def puml_files_test(
         harness_config=harness_config,
     )
     logging.getLogger().info(
-        "Waiting %ds for job defs to load", harness_config.pv_config_update_time
+        "Waiting %ds for job defs to load",
+        harness_config.pv_config_update_time,
     )
     time.sleep(harness_config.pv_config_update_time)
 
@@ -140,7 +145,9 @@ def puml_files_test(
         test_output_directory=test_output_directory,
         test_profile=profile,
         pbar=pbar,
-        test_graceful_kill_functions=[test_stopper.stop] if test_stopper else None,
+        test_graceful_kill_functions=(
+            [test_stopper.stop] if test_stopper else None
+        ),
     )
     logging.getLogger().info("Beggining test")
     asyncio.run(test.run_test())
@@ -172,7 +179,9 @@ def get_puml_file_paths(uml_file_store_path: str) -> list[str]:
         for file_name in glob.glob("*.*", root_dir=uml_file_store_path)
     ]
     if not puml_file_paths:
-        raise RuntimeError("There are no puml files within the uml file store path")
+        raise RuntimeError(
+            "There are no puml files within the uml file store path"
+        )
     return puml_file_paths
 
 

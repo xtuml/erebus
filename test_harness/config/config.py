@@ -44,24 +44,34 @@ class HarnessConfig:
     def parse_config_to_attributes(self) -> None:
         """Method to parse config to attributes"""
         # parse uml file store
-        uml_file_store_path = self.config_parser["non-default"]["uml_file_store"]
+        uml_file_store_path = self.config_parser[
+            "non-default"
+            ]["uml_file_store"]
         self.uml_file_store = self.calc_path(
             uml_file_store_path, "uml_file_store")
         # parse uml file store
-        profile_store_path = self.config_parser["non-default"]["profile_store"]
+        profile_store_path = self.config_parser[
+            "non-default"
+            ]["profile_store"]
         self.profile_store = self.calc_path(
             profile_store_path, "profile_store")
         # parse report filestore path
-        report_file_store_path = self.config_parser["non-default"]["report_file_store"]
+        report_file_store_path = self.config_parser[
+            "non-default"
+            ]["report_file_store"]
         self.report_file_store = self.calc_path(
             report_file_store_path, "report_file_store"
         )
         # parse log filestore path
-        log_file_store_path = self.config_parser["non-default"]["log_file_store"]
+        log_file_store_path = self.config_parser[
+            "non-default"
+            ]["log_file_store"]
         self.log_file_store = self.calc_path(
             log_file_store_path, "log_file_store")
         # parse test filestore path
-        test_file_store_path = self.config_parser["non-default"]["test_file_store"]
+        test_file_store_path = self.config_parser[
+            "non-default"
+            ]["test_file_store"]
         self.test_file_store = self.calc_path(
             test_file_store_path, "test_file_store")
 
@@ -75,7 +85,9 @@ class HarnessConfig:
     def parse_kafka_metrics_config(self) -> None:
         """Method to parse kafka metrics config from config file"""
         # flag to get metrics from kafka
-        metrics_from_kafka_raw = self.config_parser["non-default"]["metrics_from_kafka"]
+        metrics_from_kafka_raw = self.config_parser[
+            "non-default"
+            ]["metrics_from_kafka"]
         self.metrics_from_kafka = (
             True if metrics_from_kafka_raw.lower() == "true" else False
         )
@@ -86,7 +98,9 @@ class HarnessConfig:
             "kafka_metrics_topic"
         ]
         self.kafka_metrics_collection_interval = int(
-            self.config_parser["non-default"]["kafka_metrics_collection_interval"]
+            self.config_parser[
+                "non-default"
+                ]["kafka_metrics_collection_interval"]
         )
 
     def parse_message_bus_config(self) -> None:
@@ -97,12 +111,12 @@ class HarnessConfig:
         match message_bus_protocol:
             case "KAFKA" | "KAFKA3":
                 self.message_bus_protocol = message_bus_protocol
-                self.kafka_message_bus_host = self.config_parser["non-default"][
-                    "kafka_message_bus_host"
-                ]
-                self.kafka_message_bus_topic = self.config_parser["non-default"][
-                    "kafka_message_bus_topic"
-                ]
+                self.kafka_message_bus_host = self.config_parser[
+                    "non-default"
+                    ]["kafka_message_bus_host"]
+                self.kafka_message_bus_topic = self.config_parser[
+                    "non-default"
+                    ]["kafka_message_bus_topic"]
             case "HTTP":
                 self.message_bus_protocol = message_bus_protocol
             case _:
@@ -255,9 +269,13 @@ class TestConfig:
             "test_finish": self.test_finish,
         }
         if self.type != "Functional":
-            config_dict_to_return["performance_options"] = self.performance_options
+            config_dict_to_return[
+                "performance_options"
+                ] = self.performance_options
         else:
-            config_dict_to_return["functional_options"] = self.functional_options
+            config_dict_to_return[
+                "functional_options"
+                ] = self.functional_options
         return config_dict_to_return
 
 
