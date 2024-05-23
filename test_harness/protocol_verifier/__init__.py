@@ -10,7 +10,7 @@ import time
 
 from tqdm import tqdm
 
-from test_harness.config.config import TestConfig
+from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_files,
@@ -22,8 +22,7 @@ from test_harness.protocol_verifier.tests import (
     PerformanceTest,
 )
 from test_harness.simulator.simulator_profile import Profile
-
-from test_harness.__init__ import AsyncTestStopper
+# from test_harness import AsyncTestStopper
 
 
 def full_pv_test(
@@ -31,7 +30,7 @@ def full_pv_test(
     test_config: TestConfig,
     test_output_directory: str,
     pbar: tqdm | None = None,
-    test_stopper: AsyncTestStopper | None = None,
+    # test_stopper: AsyncTestStopper | None = None,
 ) -> None:
     """Full protocol verifier test for the config provided
 
@@ -47,6 +46,8 @@ def full_pv_test(
     `None`
     :type test_stopper: :class:`AsyncTestStopper` | `None`, optional
     """
+    from test_harness import AsyncTestStopper
+    test_stopper = AsyncTestStopper()
     # select stores to use based on test output directory contents
     store_paths = select_store_paths(test_output_directory, harness_config)
 
@@ -76,7 +77,7 @@ def puml_files_test(
     profile: Profile | None = None,
     test_file_paths: list[str] | None = None,
     pbar: tqdm | None = None,
-    test_stopper: AsyncTestStopper | None = None,
+    # test_stopper: AsyncTestStopper | None = None,
 ) -> None:
     """Method to perform and end to end test
 
@@ -98,6 +99,9 @@ def puml_files_test(
     `None`
     :type test_stopper: :class:`AsyncTestStopper` | `None`, optional
     """
+    from test_harness import AsyncTestStopper
+
+    test_stopper = AsyncTestStopper()
     # choose test from test config and run test
     test_class = (
         FunctionalTest if test_config.type == "Functional" else PerformanceTest
@@ -244,7 +248,7 @@ def get_all_file_paths_in_folder(folder_path: str) -> list[str]:
 
 
 def select_store_paths(
-    test_output_directory: str, harness_config: ProtocolVerifierConfig
+    test_output_directory: str, harness_config: HarnessConfig
 ) -> dict[str, str]:
     """Method to select the store paths to use based on the contents of the
     test output directory
@@ -252,7 +256,7 @@ def select_store_paths(
     :param test_output_directory: The directory where output files are stored
     :type test_output_directory: `str`
     :param harness_config: The config for the test harness
-    :type harness_config: :class:`ProtocolVerifierConfig`
+    :type harness_config: :class:`HarnessConfig`
     :return: Returns a dictionary of the store paths to use
     :rtype: `dict`[`str`, `str`]
     """
