@@ -1,5 +1,4 @@
-"""Tests for `test_harness.run_app` module
-"""
+"""Tests for `test_harness.run_app` module"""
 
 from pathlib import Path
 import os
@@ -19,19 +18,25 @@ import aiohttp
 import pandas as pd
 
 from test_harness.run_app import run_harness_app
-from test_harness.config.config import TestConfig, HarnessConfig
+from test_harness.config.config import TestConfig
 
 # TODO will need to investigate this to remove references to PV in the future
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.requests_th.send_config import post_config_form_upload
 from test_harness.utils import clean_directories, check_dict_equivalency
-from test_harness.protocol_verifier.mocks.mock_pv_http_interface \
-      import mock_pv_http_interface
+from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
+    mock_pv_http_interface,
+)
+
 # get test config
-test_config_path = os.path.join(Path(__file__).parent, "config/run_app_test.config")
+test_config_path = os.path.join(
+    Path(__file__).parent, "config/run_app_test.config"
+)
 
 # get path of tests uml file
-test_file_path = os.path.join(Path(__file__).parent / "test_files", "test_uml_1.puml")
+test_file_path = os.path.join(
+    Path(__file__).parent / "test_files", "test_uml_1.puml"
+)
 
 # get path of test zip file
 test_file_zip_path = os.path.join(
@@ -62,7 +67,9 @@ def run_performance_test_requests(
     response = requests.get(url="http://localhost:8800/isTestRunning")
     results_capture["first_is_running_check"] = response.json()
     post_config_form_upload(
-        file_bytes_file_names=[(open(test_file_path, "rb"), "test_uml_1.puml")],
+        file_bytes_file_names=[
+            (open(test_file_path, "rb"), "test_uml_1.puml")
+        ],
         url="http://localhost:8800/uploadUML",
     )
     requests.post(
@@ -77,7 +84,9 @@ def run_performance_test_requests(
     for _ in range(round((50 * 2) / 10)):
         time.sleep(1)
         response = requests.get(url="http://localhost:8800/isTestRunning")
-        results_capture["intermediate_is_running_check"].append(response.json())
+        results_capture["intermediate_is_running_check"].append(
+            response.json()
+        )
     time.sleep(length_of_post_send_wait_time + 5)
     response = requests.get(url="http://localhost:8800/isTestRunning")
     results_capture["final_is_running_check"] = response.json()
@@ -127,11 +136,15 @@ def test_run_harness_app() -> None:
             status=200,
         )
 
-    def reception_log_call_back(*args, **kwargs) -> tuple[Literal[200], dict, bytes]:
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
         return (200, {}, "\n".join(reception_file).encode("utf-8"))
 
     responses.add_passthru("http://localhost:8800")
-    with mock_pv_http_interface(harness_config, call_back, reception_log_call_back):
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -165,18 +178,24 @@ def test_run_harness_app() -> None:
         assert response_results["second_is_running_check"]["running"]
         assert (
             float(
-                response_results["second_is_running_check"]["details"]["percent_done"]
+                response_results["second_is_running_check"]["details"][
+                    "percent_done"
+                ]
             )
             == 0
         )
         assert not response_results["final_is_running_check"]["running"]
     data = pd.read_csv(
         os.path.join(
-            harness_config.report_file_store, "PerformanceTest", "AggregatedResults.csv"
+            harness_config.report_file_store,
+            "PerformanceTest",
+            "AggregatedResults.csv",
         )
     )
     assert data["Cumulative Events Sent"].iloc[-1] == 100
-    clean_directories([harness_config.report_file_store, harness_config.uml_file_store])
+    clean_directories(
+        [harness_config.report_file_store, harness_config.uml_file_store]
+    )
 
 
 def run_performance_test_requests_zip_file_upload(
@@ -190,7 +209,9 @@ def run_performance_test_requests_zip_file_upload(
     """
     # this will post the file under the name "upload"
     response = post_config_form_upload(
-        file_bytes_file_names=[(open(test_file_zip_path, "rb"), "test_zip_file.zip")],
+        file_bytes_file_names=[
+            (open(test_file_zip_path, "rb"), "test_zip_file.zip")
+        ],
         url="http://localhost:8800/upload/named-zip-files",
     )[2]
     results_capture["upload zip response status"] = response.status_code
@@ -257,11 +278,15 @@ def test_run_harness_app_uploaded_zip_file() -> None:
             status=200,
         )
 
-    def reception_log_call_back(*args, **kwargs) -> tuple[Literal[200], dict, bytes]:
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
         return (200, {}, "\n".join(reception_file).encode("utf-8"))
 
     responses.add_passthru("http://localhost:8800")
-    with mock_pv_http_interface(harness_config, call_back, reception_log_call_back):
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -316,19 +341,26 @@ def test_run_harness_app_uploaded_zip_file() -> None:
     assert data["Cumulative Events Sent"].iloc[-1] == 76
     # load in json file from test output directory
     with open(
-        os.path.join(test_output_path, "test_file_store", "test_uml_1_events.json"), "r"
+        os.path.join(
+            test_output_path, "test_file_store", "test_uml_1_events.json"
+        ),
+        "r",
     ) as file:
         template_json_file = json.load(file)["job_file"]
     for file in files:
         file_in_files = file in expected_files
-        is_uuid = bool(uuid4hex.match(file.replace("-", "").replace(".json", "")))
+        is_uuid = bool(
+            uuid4hex.match(file.replace("-", "").replace(".json", ""))
+        )
         assert file_in_files ^ is_uuid
         if is_uuid:
             with open(os.path.join(test_output_path, file), "r") as file:
                 json_file = json.load(file)
             for temp_event, actual_event in zip(template_json_file, json_file):
                 assert temp_event["eventType"] == (actual_event["eventType"])
-    clean_directories([harness_config.report_file_store, harness_config.uml_file_store])
+    clean_directories(
+        [harness_config.report_file_store, harness_config.uml_file_store]
+    )
 
 
 @responses.activate
@@ -378,11 +410,15 @@ def test_run_harness_app_2_workers() -> None:
             status=200,
         )
 
-    def reception_log_call_back(*args, **kwargs) -> tuple[Literal[200], dict, bytes]:
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
         return (200, {}, "\n".join(reception_file).encode("utf-8"))
 
     responses.add_passthru("http://localhost:8800")
-    with mock_pv_http_interface(harness_config, call_back, reception_log_call_back):
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -417,18 +453,24 @@ def test_run_harness_app_2_workers() -> None:
         assert response_results["second_is_running_check"]["running"]
         assert (
             float(
-                response_results["second_is_running_check"]["details"]["percent_done"]
+                response_results["second_is_running_check"]["details"][
+                    "percent_done"
+                ]
             )
             == 0
         )
         assert not response_results["final_is_running_check"]["running"]
     data = pd.read_csv(
         os.path.join(
-            harness_config.report_file_store, "PerformanceTest", "AggregatedResults.csv"
+            harness_config.report_file_store,
+            "PerformanceTest",
+            "AggregatedResults.csv",
         )
     )
     assert data["Cumulative Events Sent"].iloc[-1] == 100
-    clean_directories([harness_config.report_file_store, harness_config.uml_file_store])
+    clean_directories(
+        [harness_config.report_file_store, harness_config.uml_file_store]
+    )
 
 
 @responses.activate
@@ -475,11 +517,15 @@ def test_run_harness_app_stop_test() -> None:
             status=200,
         )
 
-    def reception_log_call_back(*args, **kwargs) -> tuple[Literal[200], dict, bytes]:
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
         return (200, {}, "\n".join(reception_file).encode("utf-8"))
 
     responses.add_passthru("http://localhost:8800")
-    with mock_pv_http_interface(harness_config, call_back, reception_log_call_back):
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -513,12 +559,16 @@ def test_run_harness_app_stop_test() -> None:
         thread_1.terminate()
     data = pd.read_csv(
         os.path.join(
-            harness_config.report_file_store, "PerformanceTest", "AggregatedResults.csv"
+            harness_config.report_file_store,
+            "PerformanceTest",
+            "AggregatedResults.csv",
         )
     )
     assert data["Cumulative Events Sent"].iloc[-1] > 0
     assert data["Cumulative Events Sent"].iloc[-1] < 100
-    clean_directories([harness_config.report_file_store, harness_config.uml_file_store])
+    clean_directories(
+        [harness_config.report_file_store, harness_config.uml_file_store]
+    )
 
 
 @responses.activate
@@ -569,11 +619,15 @@ def test_run_harness_app_2_workers_stop_test() -> None:
             status=200,
         )
 
-    def reception_log_call_back(*args, **kwargs) -> tuple[Literal[200], dict, bytes]:
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
         return (200, {}, "\n".join(reception_file).encode("utf-8"))
 
     responses.add_passthru("http://localhost:8800")
-    with mock_pv_http_interface(harness_config, call_back, reception_log_call_back):
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         response_results = {}
         thread_1 = Process(
             target=run_harness_app,
@@ -608,9 +662,13 @@ def test_run_harness_app_2_workers_stop_test() -> None:
         thread_1.terminate()
     data = pd.read_csv(
         os.path.join(
-            harness_config.report_file_store, "PerformanceTest", "AggregatedResults.csv"
+            harness_config.report_file_store,
+            "PerformanceTest",
+            "AggregatedResults.csv",
         )
     )
     assert data["Cumulative Events Sent"].iloc[-1] > 0
     assert data["Cumulative Events Sent"].iloc[-1] < 100
-    clean_directories([harness_config.report_file_store, harness_config.uml_file_store])
+    clean_directories(
+        [harness_config.report_file_store, harness_config.uml_file_store]
+    )

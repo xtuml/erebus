@@ -54,7 +54,9 @@ def create_file_io_file_name_tuple_with_file_path(
     return file_io_file_name
 
 
-def divide_chunks(list_to_chunk: list, chunk_size: int) -> Generator[list, Any, None]:
+def divide_chunks(
+    list_to_chunk: list, chunk_size: int
+) -> Generator[list, Any, None]:
     """Method to split list into chunks
 
     :param list_to_chunk: The list ot chunk
@@ -65,7 +67,7 @@ def divide_chunks(list_to_chunk: list, chunk_size: int) -> Generator[list, Any, 
     :rtype: :class:`Generator`[`list`, `Any`, `None`]
     """
     for index in range(0, len(list_to_chunk), chunk_size):
-        yield list_to_chunk[index: index + chunk_size]
+        yield list_to_chunk[index : index + chunk_size]
 
 
 def clean_directories(directory_paths: list[str]) -> None:
@@ -109,7 +111,9 @@ def check_dict_equivalency(dict_1: dict, dict_2: dict) -> None:
     ):
         # check sorted values are the same
         # for floats check if nan first
-        if isinstance(sub_1_item[1], float) and isinstance(sub_2_item[1], float):
+        if isinstance(sub_1_item[1], float) and isinstance(
+            sub_2_item[1], float
+        ):
             if np.isnan(sub_1_item[1]) and np.isnan(sub_2_item[1]):
                 assert True
             else:
@@ -117,7 +121,9 @@ def check_dict_equivalency(dict_1: dict, dict_2: dict) -> None:
         else:
             assert sub_1_item[1] == sub_2_item[1]
         # check the value lies at the correct depth
-        assert (len(sub_1_item[0].split(":"))) == (len(sub_2_item[0].split(":")))
+        assert (len(sub_1_item[0].split(":"))) == (
+            len(sub_2_item[0].split(":"))
+        )
 
 
 class FilterException(Exception):
@@ -161,7 +167,11 @@ class ErrorFilter(logging.Filter):
 
 
 def collect_error_logs_from_func(
-    logger: logging.Logger, filter: ErrorFilter, func: Callable, *args, **kwargs
+    logger: logging.Logger,
+    filter: ErrorFilter,
+    func: Callable,
+    *args,
+    **kwargs,
 ) -> None:
     """Collects errors logs and raises exception when found. Filters any other
     logs
@@ -401,7 +411,8 @@ class RollOverChoice:
         self.roll_over_value = roll_over_value
         if roll_over_value < 1:
             raise ValueError(
-                "The roll over value must be an integer greater than or equal" "to 1"
+                "The roll over value must be an integer greater than or equal"
+                "to 1"
             )
         self._counter = 0
 

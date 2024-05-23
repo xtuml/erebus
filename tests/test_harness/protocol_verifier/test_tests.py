@@ -3,8 +3,7 @@
 # pylint: disable=C2801
 # pylint: disable=C0302
 # pylint: disable=R0904
-"""Tests for tests.py
-"""
+"""Tests for tests.py"""
 import asyncio
 import glob
 import logging
@@ -58,8 +57,9 @@ from test_harness.utils import (
     clean_directories,
     ProcessGeneratorManager,
 )
-from test_harness.protocol_verifier.mocks.mock_pv_http_interface \
-      import mock_pv_http_interface
+from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
+    mock_pv_http_interface,
+)
 from test_harness.results.results import DictResultsHolder, ResultsHolder
 from test_harness import AsyncTestStopper
 from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
@@ -124,7 +124,9 @@ class TestPVResultsDataFrame:
         """
         results = PVResultsDataFrame()
         results.create_event_result_row("event_id")
-        results.update_event_results_with_event_id("event_id", {"job_id": "job_id"})
+        results.update_event_results_with_event_id(
+            "event_id", {"job_id": "job_id"}
+        )
         assert "job_id" in results.results["event_id"]
         assert results.results["event_id"]["job_id"] == "job_id"
 
@@ -135,8 +137,12 @@ class TestPVResultsDataFrame:
         """
         results = PVResultsDataFrame()
         results.create_event_result_row("event_id")
-        results.update_event_results_with_event_id("event_id", {"job_id": "job_id"})
-        results.update_event_results_with_job_id("job_id", {"response": "a response"})
+        results.update_event_results_with_event_id(
+            "event_id", {"job_id": "job_id"}
+        )
+        results.update_event_results_with_job_id(
+            "job_id", {"response": "a response"}
+        )
         assert "response" in results.results["event_id"]
         assert results.results["event_id"]["response"] == "a response"
 
@@ -197,8 +203,13 @@ class TestPVResultsDataFrame:
         for values in results.results.values():
             assert values["job_id"] == "job_id"
             assert values["response"] == "a response"
-            assert values["time_sent"] == (time_completed - start_time).total_seconds()
-        assert set(results.results.keys()) == set(event["eventId"] for event in events)
+            assert (
+                values["time_sent"]
+                == (time_completed - start_time).total_seconds()
+            )
+        assert set(results.results.keys()) == set(
+            event["eventId"] for event in events
+        )
 
     @staticmethod
     def test_update_pv_sim_time_field(
@@ -231,8 +242,12 @@ class TestPVResultsDataFrame:
     @staticmethod
     @given(
         st.datetimes(datetime(1000, 1, 1)),
-        st.lists(st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))),
-        st.lists(st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
     )
     def test_add_error_process_field(
         starting_time: datetime,
@@ -289,8 +304,12 @@ class TestPVResultsDataFrame:
     @staticmethod
     @given(
         st.datetimes(datetime(1000, 1, 1)),
-        st.lists(st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))),
-        st.lists(st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
     )
     @settings(deadline=None)
     def test_calc_processing_errors_counts(
@@ -336,8 +355,12 @@ class TestPVResultsDataFrame:
     @staticmethod
     @given(
         st.datetimes(datetime(1000, 1, 1)),
-        st.lists(st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))),
-        st.lists(st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
+        st.lists(
+            st.timedeltas(timedelta(seconds=0), max_value=timedelta(days=100))
+        ),
     )
     @settings(deadline=None)
     def test_calc_processing_errors_time_series(
@@ -433,7 +456,10 @@ class TestPVResultsDataFrame:
         for event_job_response_time_dict in event_job_response_time_dicts:
             results.add_first_event_data(**event_job_response_time_dict)
         results.read_groked_string_io(groked_string_io)
-        assert "AER_start" in results.results["205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497"]
+        assert (
+            "AER_start"
+            in results.results["205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497"]
+        )
         for event_id, values in results.results.items():
             if event_id != "205d5d7e-4eb7-4b8a-a638-1bd0a2ae6497":
                 assert "AER_start" not in values
@@ -645,7 +671,9 @@ class TestPVResultsDataFrame:
             time_window=1
         )
         assert len(aggregated_results) == 13
-        for time_floor_val, time_val in enumerate(aggregated_results["Time (s)"]):
+        for time_floor_val, time_val in enumerate(
+            aggregated_results["Time (s)"]
+        ):
             assert time_val == time_floor_val + 0.5
         expected_agg_sent_per_second = [1.0] * 10 + [0.0] * 3
         check_numpy_expected_vs_actual(
@@ -676,7 +704,9 @@ class TestPVResultsDataFrame:
             expected_cum_sent_per_second,
             aggregated_results["Cumulative Events Sent"],
         )
-        expected_cum_events_per_second = np.cumsum(expected_agg_events_per_second)
+        expected_cum_events_per_second = np.cumsum(
+            expected_agg_events_per_second
+        )
         check_numpy_expected_vs_actual(
             expected_cum_events_per_second,
             aggregated_results["Cumulative Events Processed"],
@@ -731,8 +761,12 @@ class TestPVResultsDataFrame:
         pv_results.add_results_from_log_files(
             [test_files_path / "Verifier_test1.log"], grok_priority_patterns
         )
-        for expected_verifier_pv_added_result in expected_verifier_pv_added_results:
-            assert not expected_verifier_pv_added_result["event_ids"].difference(
+        for (
+            expected_verifier_pv_added_result
+        ) in expected_verifier_pv_added_results:
+            assert not expected_verifier_pv_added_result[
+                "event_ids"
+            ].difference(
                 set(
                     pv_results.job_id_event_id_map[
                         expected_verifier_pv_added_result["job_id"]
@@ -764,8 +798,12 @@ class TestPVResultsDataFrame:
         pv_results.add_verifier_results_from_log_files(
             [test_files_path / "Verifier_test1.log"]
         )
-        for expected_verifier_pv_added_result in expected_verifier_pv_added_results:
-            assert not expected_verifier_pv_added_result["event_ids"].difference(
+        for (
+            expected_verifier_pv_added_result
+        ) in expected_verifier_pv_added_results:
+            assert not expected_verifier_pv_added_result[
+                "event_ids"
+            ].difference(
                 set(
                     pv_results.job_id_event_id_map[
                         expected_verifier_pv_added_result["job_id"]
@@ -831,7 +869,9 @@ class TestPVResultsDataFrame:
             [test_files_path / "Reception_test1.log"]
         )
         # add grok file to pv_results_2
-        pv_results_2.get_and_read_grok_metrics(test_files_path / "grok_test1.txt")
+        pv_results_2.get_and_read_grok_metrics(
+            test_files_path / "grok_test1.txt"
+        )
         check_dict_equivalency(pv_results_1.results, pv_results_2.results)
 
 
@@ -875,7 +915,9 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler`.`__enter__`"""
         harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
-        results_handler = PVResultsHandler(results, harness_config.report_file_store)
+        results_handler = PVResultsHandler(
+            results, harness_config.report_file_store
+        )
         results_handler.__enter__()
         assert results_handler.daemon_thread.is_alive()
 
@@ -884,7 +926,9 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler`.`__exit__`"""
         harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
-        results_handler = PVResultsHandler(results, harness_config.report_file_store)
+        results_handler = PVResultsHandler(
+            results, harness_config.report_file_store
+        )
         results_handler.__enter__()
         results_handler.__exit__(None, None, None)
         assert not results_handler.daemon_thread.is_alive()
@@ -896,7 +940,9 @@ class TestPVResultsHandler:
         """
         harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
-        results_handler = PVResultsHandler(results, harness_config.report_file_store)
+        results_handler = PVResultsHandler(
+            results, harness_config.report_file_store
+        )
         results_handler.__enter__()
         with pytest.raises(RuntimeError) as e_info:
             error = RuntimeError("An error")
@@ -920,7 +966,9 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler`.`handle_result`"""
         harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
-        results_handler = PVResultsHandler(results, harness_config.report_file_store)
+        results_handler = PVResultsHandler(
+            results, harness_config.report_file_store
+        )
         assert results_handler.queue.qsize() == 0
         object_in_queue = {}
         results_handler.handle_result({})
@@ -934,7 +982,9 @@ class TestPVResultsHandler:
         """
         harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
-        results_handler = PVResultsHandler(results, harness_config.report_file_store)
+        results_handler = PVResultsHandler(
+            results, harness_config.report_file_store
+        )
         job_info = {"info": "some_info"}
         named_items = ["a_file_name", "jobId", job_info, "", None]
         attributes = [
@@ -1047,9 +1097,13 @@ def test_calc_results_functional() -> None:
         test.calc_results()
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
-        files_to_remove = glob.glob("*.*", root_dir=harness_config.report_file_store)
+        files_to_remove = glob.glob(
+            "*.*", root_dir=harness_config.report_file_store
+        )
         for file_name in files_to_remove:
-            os.remove(os.path.join(harness_config.report_file_store, file_name))
+            os.remove(
+                os.path.join(harness_config.report_file_store, file_name)
+            )
 
 
 @responses.activate
@@ -1073,9 +1127,13 @@ def test_calc_results_functional_different_prefix() -> None:
         test.calc_results()
         os.remove(os.path.join(harness_config.log_file_store, "Reception.log"))
         os.remove(os.path.join(harness_config.log_file_store, "pv.log"))
-        files_to_remove = glob.glob("*.*", root_dir=harness_config.report_file_store)
+        files_to_remove = glob.glob(
+            "*.*", root_dir=harness_config.report_file_store
+        )
         for file_name in files_to_remove:
-            os.remove(os.path.join(harness_config.report_file_store, file_name))
+            os.remove(
+                os.path.join(harness_config.report_file_store, file_name)
+            )
 
 
 def test_send_test_files_performance() -> None:
@@ -1323,7 +1381,10 @@ def test_run_test_performance_round_robin_zero_gap() -> None:
         }
     )
     test_events = generate_test_events_from_puml_files(
-        [test_files_path / "test_uml_1.puml", test_files_path / "test_uml_2.puml"],
+        [
+            test_files_path / "test_uml_1.puml",
+            test_files_path / "test_uml_2.puml",
+        ],
         test_config=test_config,
     )
     events = []
@@ -1353,7 +1414,9 @@ def test_run_test_performance_round_robin_zero_gap() -> None:
         os.remove(os.path.join(harness_config.log_file_store, "Verifier.log"))
 
 
-@pytest.mark.skip(reason="Will implement when functionality is working correctly")
+@pytest.mark.skip(
+    reason="Will implement when functionality is working correctly"
+)
 @responses.activate
 def test_send_test_files_with_simulator_process_safe() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files_with_simulator`
@@ -1486,7 +1549,9 @@ def test_run_test_performance_kafka_with_errors(
         asyncio.run(test.run_test())
         assert len(test.results) == 6
         error_files = glob.glob(
-            os.path.join(harness_config.log_file_store, ERROR_LOG_FILE_PREFIX + "*")
+            os.path.join(
+                harness_config.log_file_store, ERROR_LOG_FILE_PREFIX + "*"
+            )
         )
         assert error_files
         error_count = 0
@@ -1525,7 +1590,9 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
             harness_config.pv_grok_exporter_url,
             body=grok_exporter_string.encode("utf-8"),
             status=200,
-            headers={"Content-Type": "text/plain; version=0.0.4; charset=utf-8"},
+            headers={
+                "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
+            },
         )
         test = PerformanceTest(
             test_file_generators=test_events,

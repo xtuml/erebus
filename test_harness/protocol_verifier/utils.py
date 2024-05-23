@@ -1,5 +1,4 @@
-"""Utility classes for the Protocol Verifier
-"""
+"""Utility classes for the Protocol Verifier"""
 
 import json
 from typing import Literal
@@ -18,8 +17,12 @@ class PVLogFileNameCallback:
         harness_config: ProtocolVerifierConfig,
     ) -> None:
         """Constructor method"""
-        self.reception_log_file = harness_config.log_urls["aer"]["prefix"] + ".log"
-        self.verifier_log_file = harness_config.log_urls["ver"]["prefix"] + ".log"
+        self.reception_log_file = (
+            harness_config.log_urls["aer"]["prefix"] + ".log"
+        )
+        self.verifier_log_file = (
+            harness_config.log_urls["ver"]["prefix"] + ".log"
+        )
 
     def call_back(
         self, request
@@ -27,8 +30,16 @@ class PVLogFileNameCallback:
         """Method to create the callback"""
         payload = json.loads(request.body)
         if payload["location"] == "RECEPTION":
-            return (200, {}, json.dumps({"fileNames": [self.reception_log_file]}))
+            return (
+                200,
+                {},
+                json.dumps({"fileNames": [self.reception_log_file]}),
+            )
         elif payload["location"] == "VERIFIER":
-            return (200, {}, json.dumps({"fileNames": [self.verifier_log_file]}))
+            return (
+                200,
+                {},
+                json.dumps({"fileNames": [self.verifier_log_file]}),
+            )
         else:
             return 404, {}, json.dumps({})

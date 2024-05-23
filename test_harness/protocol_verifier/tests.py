@@ -4,8 +4,7 @@
 # pylint: disable=W0246
 # pylint: disable=W0613
 # pylint: disable=C0302
-"""Methods and classes relating to tests
-"""
+"""Methods and classes relating to tests"""
 from typing import Generator, Any, Callable, Iterable, Iterator, Awaitable
 from abc import ABC, abstractmethod
 from random import choice, choices
@@ -47,8 +46,15 @@ from test_harness.protocol_verifier.simulator_data import (
     generate_single_events,
     job_sequencer,
 )
-from test_harness.simulator.simulator import SimDatum, Simulator, MultiProcessDateSync
-from test_harness.simulator.simulator_profile import Profile, InterpolatedProfile
+from test_harness.simulator.simulator import (
+    SimDatum,
+    Simulator,
+    MultiProcessDateSync,
+)
+from test_harness.simulator.simulator_profile import (
+    Profile,
+    InterpolatedProfile,
+)
 from test_harness.message_buses.message_buses import get_producer_context
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
@@ -79,7 +85,11 @@ from .types import (
     ResultsHandlerKwargsPair,
     ERROR_LOG_FILE_PREFIX,
 )
-from .send_events import get_message_bus_kwargs, get_producer_kwargs, PVMessageSender
+from .send_events import (
+    get_message_bus_kwargs,
+    get_producer_kwargs,
+    PVMessageSender,
+)
 
 
 class Test(ABC):
@@ -162,9 +172,12 @@ class Test(ABC):
         self.sim_data_generator: Generator[SimDatum, Any, None] | None = None
         if save_files and not test_output_directory:
             logging.getLogger().warning(
-                "Save files has been set but there is not output directory" " for tests"
+                "Save files has been set but there is not output directory"
+                " for tests"
             )
-        self.save_files = save_files if save_files and test_output_directory else False
+        self.save_files = (
+            save_files if save_files and test_output_directory else False
+        )
         # set up requires attributes
         self.job_templates: list[Job] = []
         self.results = self.set_results_holder()
@@ -188,7 +201,9 @@ class Test(ABC):
             else []
         )
         self.graceful_kill_functions = [self.timeout_test] + (
-            test_graceful_kill_functions if test_graceful_kill_functions else []
+            test_graceful_kill_functions
+            if test_graceful_kill_functions
+            else []
         )
         if self.test_config.num_workers >= 1:
             kill_event = Event()
@@ -199,12 +214,18 @@ class Test(ABC):
     def _check_config_test_finish_values(self):
         """Method to check the configs for the test"""
         for harness_config_attr, test_config_finish_val_field in zip(
-            ["pv_test_timeout", "pv_finish_interval", "log_calc_interval_time"],
+            [
+                "pv_test_timeout",
+                "pv_finish_interval",
+                "log_calc_interval_time",
+            ],
             ["timeout", "finish_interval", "metric_get_interval"],
         ):
-            if test_config_finish_val_field not in (self.test_config.test_finish):
-                self.test_config.test_finish[test_config_finish_val_field] = getattr(
-                    self.harness_config, harness_config_attr
+            if test_config_finish_val_field not in (
+                self.test_config.test_finish
+            ):
+                self.test_config.test_finish[test_config_finish_val_field] = (
+                    getattr(self.harness_config, harness_config_attr)
                 )
 
     @abstractmethod
@@ -229,12 +250,17 @@ class Test(ABC):
             chooser = choose_from_front_of_list
         else:
             chooser = choice
-        while counter < (self.test_config.max_different_sequences) and flattened_keys:
+        while (
+            counter < (self.test_config.max_different_sequences)
+            and flattened_keys
+        ):
             counter += 1
             try:
                 flattened_key = chooser(flattened_keys)
                 try:
-                    job_sequence = next(flattened_test_files[flattened_key][0])[0]
+                    job_sequence = next(
+                        flattened_test_files[flattened_key][0]
+                    )[0]
                     job_name_sol_type = flattened_key.split(":")
                     job_info = {
                         "SequenceName": job_name_sol_type[0],
@@ -245,7 +271,8 @@ class Test(ABC):
                     if len(flattened_test_files[flattened_key]) == 3:
                         job_options = flattened_test_files[flattened_key][2]
                     job = Job(
-                        job_info=job_info, job_options=TemplateOptions(**job_options)
+                        job_info=job_info,
+                        job_options=TemplateOptions(**job_options),
                     )
 
                     job.parse_input_jobfile(job_sequence)
@@ -269,7 +296,9 @@ class Test(ABC):
         """Method to calculate and set the total number of events of the
         simulation
         """
-        self.total_number_of_events = sum(len(job.events) for job in self.jobs_to_send)
+        self.total_number_of_events = sum(
+            len(job.events) for job in self.jobs_to_send
+        )
 
     def _set_delay_profile(self) -> None:
         """Method to set the delay profile for the test. If no test profile
@@ -277,27 +306,35 @@ class Test(ABC):
         divided by the `interval` attribute
         """
         if self.test_profile is None:
-            num_per_sec = min(self.total_number_of_events, round(1 / self.interval))
+            num_per_sec = min(
+                self.total_number_of_events, round(1 / self.interval)
+            )
             self.test_profile = Profile(
                 pd.DataFrame(
                     [
                         [sim_time, num_per_sec]
                         for sim_time in range(
-                            math.ceil((self.total_number_of_events + 1) / num_per_sec)
+                            math.ceil(
+                                (self.total_number_of_events + 1) / num_per_sec
+                            )
                             + 1
                         )
                     ]
                 )
             )
             self.test_profile.transform_raw_profile()
-        self.delay_times = self.test_profile.delay_times[: self.total_number_of_events]
+        self.delay_times = self.test_profile.delay_times[
+            : self.total_number_of_events
+        ]
 
     def _get_min_interval(self) -> float | int:
         """Method to get the minimum interval between events"""
         return 1 / self.delay_times.get_max_num_per_sec()
 
     @abstractmethod
-    def _get_sim_data(self, jobs_to_send: list[Job]) -> Generator[SimDatum, Any, None]:
+    def _get_sim_data(
+        self, jobs_to_send: list[Job]
+    ) -> Generator[SimDatum, Any, None]:
         """Abstract method to get the sim data for the test
 
         :param jobs_to_send: A list of the template jobs to send
@@ -371,7 +408,9 @@ class Test(ABC):
         with ProcessGeneratorManager(
             generator=self.sim_data_generator
         ) as process_generator_manager:
-            time_sync = MultiProcessDateSync(num_processes=self.test_config.num_workers)
+            time_sync = MultiProcessDateSync(
+                num_processes=self.test_config.num_workers
+            )
             async_mp_manager = AsyncMPManager()
             for i in range(self.test_config.num_workers):
                 async_mp_manager.add_process(
@@ -379,7 +418,7 @@ class Test(ABC):
                     args=(
                         results_handler,
                         process_generator_manager.create_iterator(),
-                        self.delay_times[i:: self.test_config.num_workers],
+                        self.delay_times[i :: self.test_config.num_workers],
                         self.harness_config,
                         self.pbar,
                         time_sync,
@@ -497,7 +536,9 @@ class Test(ABC):
         :raises RuntimeError: Raises a :class:`RuntimeError` when the test has
         been cancelled
         """
-        await asyncio.gather(*[func() for func in self.graceful_kill_functions])
+        await asyncio.gather(
+            *[func() for func in self.graceful_kill_functions]
+        )
 
     async def run_test(self) -> None:
         """Asynchronous method to run the test"""
@@ -505,7 +546,9 @@ class Test(ABC):
             results_holder=self.results,
             test_output_directory=self.test_output_directory,
             save_files=self.save_files,
-            queue_type=queue.Queue if self.test_config.num_workers <= 1 else (Queue),
+            queue_type=(
+                queue.Queue if self.test_config.num_workers <= 1 else (Queue)
+            ),
         ) as pv_results_handler:
             async with AsyncExitStack() as metrics_stack:
                 metrics_retrievers_awaitables = []
@@ -514,7 +557,9 @@ class Test(ABC):
                     async_metrics_handler,
                 ) in self.async_metrics_retrievers_and_handlers:
                     metrics_handler = metrics_stack.enter_context(
-                        async_metrics_handler.handler_class(results_holder=self.results)
+                        async_metrics_handler.handler_class(
+                            results_holder=self.results
+                        )
                     )
                     metrics_retrievers = await metrics_stack.enter_async_context(
                         async_metrics_retriever_kwargs_pair.metric_retriever_class(
@@ -582,7 +627,9 @@ class Test(ABC):
 
     def clean_directories(self) -> None:
         """Method to clean up log and uml file store directories"""
-        results_db_path = os.path.join(self.test_output_directory, "results.db")
+        results_db_path = os.path.join(
+            self.test_output_directory, "results.db"
+        )
         if os.path.exists(results_db_path):
             os.remove(results_db_path)
         clean_directories(
@@ -688,7 +735,9 @@ class FunctionalTest(Test):
     def set_results_holder(self) -> PVResults:
         return super().set_results_holder()
 
-    def _get_sim_data(self, jobs_to_send: list[Job]) -> Generator[SimDatum, Any, None]:
+    def _get_sim_data(
+        self, jobs_to_send: list[Job]
+    ) -> Generator[SimDatum, Any, None]:
         """Method to get the sim data for the test
 
         :param jobs_to_send: A list of the template jobs to send
@@ -758,7 +807,9 @@ class FunctionalTest(Test):
             .reset_index()
         )
         aggregated_df.columns = ["Category", "TestResult", "Count"]
-        fig = px.bar(aggregated_df, x="TestResult", y="Count", color="Category")
+        fig = px.bar(
+            aggregated_df, x="TestResult", y="Count", color="Category"
+        )
         fig.add_hline(len(results_df))
         return fig
 
@@ -850,7 +901,9 @@ class PerformanceTest(Test):
             test_profile=test_profile,
             pbar=pbar,
             save_log_files=test_config.performance_options["save_logs"],
-            async_metrics_retrievers_and_handlers=(metrics_retriever_and_handlers),
+            async_metrics_retrievers_and_handlers=(
+                metrics_retriever_and_handlers
+            ),
             test_graceful_kill_functions=test_graceful_kill_functions,
         )
 
@@ -862,7 +915,9 @@ class PerformanceTest(Test):
             low_memory=self.test_config.low_memory,
         )
 
-    def _get_sim_data(self, jobs_to_send: list[Job]) -> Generator[SimDatum, Any, None]:
+    def _get_sim_data(
+        self, jobs_to_send: list[Job]
+    ) -> Generator[SimDatum, Any, None]:
         """Method to get the sim data for the test
 
         :param jobs_to_send: A list of the template jobs to send
@@ -918,7 +973,9 @@ class PerformanceTest(Test):
         """Method to set the test interval at the default value of 0.1 seconds
         and shard attribute
         """
-        self.interval = 1 / self.test_config.performance_options["num_files_per_sec"]
+        self.interval = (
+            1 / self.test_config.performance_options["num_files_per_sec"]
+        )
         self.shard = self.test_config.performance_options["shard"]
 
     def get_all_simulation_data(self) -> None:
@@ -933,7 +990,8 @@ class PerformanceTest(Test):
         files = glob.glob(
             (
                 os.path.join(
-                    self.harness_config.log_file_store, ERROR_LOG_FILE_PREFIX + "*"
+                    self.harness_config.log_file_store,
+                    ERROR_LOG_FILE_PREFIX + "*",
                 )
             )
         )
@@ -978,8 +1036,12 @@ class PerformanceTest(Test):
                 **self.results.reception_event_counts,
                 **self.results.process_errors_counts,
                 **{
-                    "test_start_time": self.time_start.strftime("%Y/%m/%d, %H:%M:%S"),
-                    "test_end_time": self.time_end.strftime("%Y/%m/%d, %H:%M:%S"),
+                    "test_start_time": self.time_start.strftime(
+                        "%Y/%m/%d, %H:%M:%S"
+                    ),
+                    "test_end_time": self.time_end.strftime(
+                        "%Y/%m/%d, %H:%M:%S"
+                    ),
                 },
             },
         )
@@ -1046,11 +1108,15 @@ class PerformanceTest(Test):
                 "Report.xml": xml_report,
                 "Report.html": html_report,
                 "EventsSentVSProcessed.html": sent_vs_processed,
-                "CumulativeEventsSentVSProcessed.html": (cumulative_sent_vs_processed),
+                "CumulativeEventsSentVSProcessed.html": (
+                    cumulative_sent_vs_processed
+                ),
                 "ResponseAndQueueTime.html": reponse_vs_queue,
                 "AggregatedResults.csv": self.results.agg_results,
                 "ProcessingErrors.html": processing_errors,
-                "AggregatedErrors.csv": (self.results.process_errors_agg_results),
+                "AggregatedErrors.csv": (
+                    self.results.process_errors_agg_results
+                ),
             },
             output_directory=self.test_output_directory,
         )

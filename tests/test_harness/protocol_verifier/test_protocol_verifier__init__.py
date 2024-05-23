@@ -1,6 +1,5 @@
 # pylint: disable=R0801
-"""Tests for __init__.py
-"""
+"""Tests for __init__.py"""
 
 from pathlib import Path
 import os
@@ -84,7 +83,8 @@ test_file_path_einv = os.path.join(
     Path(__file__).parent.parent / "test_files", "test_event_file_EINV.json"
 )
 test_file_path_einv_options = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_event_file_EINV_options.json"
+    Path(__file__).parent.parent / "test_files",
+    "test_event_file_EINV_options.json",
 )
 
 # valid test file json validity path
@@ -124,13 +124,17 @@ def test_puml_files_test() -> None:
         ]
         for file in files:
             file_in_files = file in expected_files
-            is_uuid = bool(uuid4hex.match(file.replace("-", "").replace(".json", "")))
+            is_uuid = bool(
+                uuid4hex.match(file.replace("-", "").replace(".json", ""))
+            )
             assert any([file_in_files, is_uuid])
 
         clean_directories([harness_config.report_file_store])
 
 
-@pytest.mark.skip(reason="This test is deprecated and will be removed in the future")
+@pytest.mark.skip(
+    reason="This test is deprecated and will be removed in the future"
+)
 @responses.activate
 def test_puml_files_test_send_as_pv_bytes() -> None:
     """Tests method `puml_test_files` with send as pv bytes set to true"""
@@ -184,7 +188,9 @@ def test_puml_files_test_job_file_with_options() -> None:
         files = glob.glob("*.*", root_dir=harness_config.report_file_store)
         events_list = []
         for file in files:
-            is_uuid = bool(uuid4hex.match(file.replace("-", "").replace(".json", "")))
+            is_uuid = bool(
+                uuid4hex.match(file.replace("-", "").replace(".json", ""))
+            )
             if is_uuid:
                 with open(
                     os.path.join(harness_config.report_file_store, file), "r"
@@ -192,8 +198,12 @@ def test_puml_files_test_job_file_with_options() -> None:
                     events_list.extend(json.load(json_file))
         assert "testEINV" in events_list[0] and "testEINV" in events_list[2]
         assert events_list[0]["testEINV"] != events_list[2]["testEINV"]
-        assert events_list[0]["testEINV"][:36] == (events_list[0]["testEINV"][36:])
-        assert events_list[2]["testEINV"][:36] == (events_list[2]["testEINV"][36:])
+        assert events_list[0]["testEINV"][:36] == (
+            events_list[0]["testEINV"][36:]
+        )
+        assert events_list[2]["testEINV"][:36] == (
+            events_list[2]["testEINV"][36:]
+        )
         clean_directories([harness_config.report_file_store])
 
 
@@ -225,7 +235,9 @@ def test_puml_files_test_functional_extra_job_invariants() -> None:
         invariants = []
         event_types = []
         for file in files:
-            is_uuid = bool(uuid4hex.match(file.replace("-", "").replace(".json", "")))
+            is_uuid = bool(
+                uuid4hex.match(file.replace("-", "").replace(".json", ""))
+            )
             if is_uuid:
                 with open(
                     os.path.join(harness_config.report_file_store, file), "r"
@@ -272,17 +284,22 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
             )
         else:
             reception_file.append(
-                "reception_event_invalid : EventId = " f"{event_payload['eventId']}"
+                "reception_event_invalid : EventId = "
+                f"{event_payload['eventId']}"
             )
 
         return CallbackResult(
             status=200,
         )
 
-    def reception_log_call_back(*args, **kwargs) -> tuple[Literal[200], dict, bytes]:
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
         return (200, {}, "\n".join(reception_file).encode("utf-8"))
 
-    with mock_pv_http_interface(harness_config, call_back, reception_log_call_back):
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         puml_files_test(
             puml_file_paths=[test_uml_1_einv_path, test_uml_2_einv_path],
             test_output_directory=harness_config.report_file_store,
@@ -291,7 +308,9 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
             test_file_paths=[test_file_path_einv],
         )
         results = pd.read_csv(
-            os.path.join(harness_config.report_file_store, "AggregatedResults.csv")
+            os.path.join(
+                harness_config.report_file_store, "AggregatedResults.csv"
+            )
         )
 
         assert results.iloc[-1]["Cumulative Events Sent"] == 80.0
@@ -325,17 +344,22 @@ def test_puml_files_test_json_validity_tests_aer_log_file() -> None:
             )
         else:
             reception_file.append(
-                "reception_event_invalid : EventId = " f"{event_payload['eventId']}"
+                "reception_event_invalid : EventId = "
+                f"{event_payload['eventId']}"
             )
 
         return CallbackResult(
             status=200,
         )
 
-    def reception_log_call_back(*args, **kwargs) -> tuple[Literal[200], dict, bytes]:
+    def reception_log_call_back(
+        *args, **kwargs
+    ) -> tuple[Literal[200], dict, bytes]:
         return (200, {}, "\n".join(reception_file).encode("utf-8"))
 
-    with mock_pv_http_interface(harness_config, call_back, reception_log_call_back):
+    with mock_pv_http_interface(
+        harness_config, call_back, reception_log_call_back
+    ):
         puml_files_test(
             puml_file_paths=[test_file_path],
             test_output_directory=harness_config.report_file_store,
@@ -377,7 +401,8 @@ def test_puml_files_test_json_validity_tests_ver_log_file() -> None:
             )
         else:
             reception_file.append(
-                "reception_event_invalid : EventId = " f"{event_payload['eventId']}"
+                "reception_event_invalid : EventId = "
+                f"{event_payload['eventId']}"
             )
 
         return CallbackResult(
@@ -413,7 +438,7 @@ def test_puml_files_test_with_location_log_urls(
         tuple[Literal[400], dict, Literal["Error response"]]
         | tuple[Literal[400], dict, str]
         | tuple[Literal[200], dict, str],
-    ]
+    ],
 ) -> None:
     """Tests method `puml_test_files` with location log files urls added
 
@@ -455,7 +480,9 @@ def test_puml_files_test_with_location_log_urls(
         ]
         for file in files:
             file_in_files = file in expected_files
-            is_uuid = bool(uuid4hex.match(file.replace("-", "").replace(".json", "")))
+            is_uuid = bool(
+                uuid4hex.match(file.replace("-", "").replace(".json", ""))
+            )
             assert any([file_in_files, is_uuid])
 
         clean_directories([harness_config.report_file_store])
@@ -523,7 +550,9 @@ def test_get_test_profile_no_file() -> None:
 
 
 @responses.activate
-def test_puml_files_performance_with_input_profile(grok_exporter_string: str) -> None:
+def test_puml_files_performance_with_input_profile(
+    grok_exporter_string: str,
+) -> None:
     """Tests method `puml_test_files` for a performance test using a profile"""
     harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.pv_finish_interval = 8
@@ -537,7 +566,9 @@ def test_puml_files_performance_with_input_profile(grok_exporter_string: str) ->
             harness_config.pv_grok_exporter_url,
             body=grok_exporter_string.encode("utf-8"),
             status=200,
-            headers={"Content-Type": "text/plain; version=0.0.4; charset=utf-8"},
+            headers={
+                "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
+            },
         )
         profile = Profile()
         profile.load_raw_profile_from_file_path(test_csv_file_path_1)
@@ -566,7 +597,9 @@ def test_puml_files_performance_with_input_profile(grok_exporter_string: str) ->
         ]
         for file in files:
             file_in_files = file in expected_files
-            is_uuid = bool(uuid4hex.match(file.replace("-", "").replace(".json", "")))
+            is_uuid = bool(
+                uuid4hex.match(file.replace("-", "").replace(".json", ""))
+            )
             assert file_in_files ^ is_uuid
         clean_directories(
             [harness_config.report_file_store, harness_config.log_file_store]
@@ -620,7 +653,9 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
         ]
         for file in files:
             file_in_files = file in expected_files
-            is_uuid = bool(uuid4hex.match(file.replace("-", "").replace(".json", "")))
+            is_uuid = bool(
+                uuid4hex.match(file.replace("-", "").replace(".json", ""))
+            )
             assert file_in_files ^ is_uuid
 
         # load the test file for comparisons
@@ -628,7 +663,9 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
             test_uml_1_job_file: TestJobFile = json.load(file)
         # check that the saved job event list json has the same event types as
         # the input test file
-        sent_file_names = [file for file in files if file not in expected_files]
+        sent_file_names = [
+            file for file in files if file not in expected_files
+        ]
         assert len(sent_file_names) == 1
         with open(
             os.path.join(harness_config.report_file_store, sent_file_names[0]),
@@ -647,9 +684,17 @@ def test_puml_files_test_with_test_files_uploaded() -> None:
             os.path.join(harness_config.report_file_store, "Results.csv")
         )
         assert len(results_csv) == 1
-        assert test_uml_1_job_file["job_name"] == results_csv.loc[0, "SequenceName"]
-        assert test_uml_1_job_file["sequence_type"] == results_csv.loc[0, "Category"]
-        assert test_uml_1_job_file["validity"] == results_csv.loc[0, "Validity"]
+        assert (
+            test_uml_1_job_file["job_name"]
+            == results_csv.loc[0, "SequenceName"]
+        )
+        assert (
+            test_uml_1_job_file["sequence_type"]
+            == results_csv.loc[0, "Category"]
+        )
+        assert (
+            test_uml_1_job_file["validity"] == results_csv.loc[0, "Validity"]
+        )
 
         clean_directories(
             [harness_config.report_file_store, harness_config.test_file_store]
@@ -702,7 +747,9 @@ def test_puml_files_performance_test_timeout(
             harness_config.pv_grok_exporter_url,
             body=grok_exporter_string.encode("utf-8"),
             status=200,
-            headers={"Content-Type": "text/plain; version=0.0.4; charset=utf-8"},
+            headers={
+                "Content-Type": "text/plain; version=0.0.4; charset=utf-8"
+            },
         )
         profile = Profile()
         profile.load_raw_profile_from_file_path(test_csv_file_path_1)
@@ -770,7 +817,11 @@ def test_select_store_paths_all_exist() -> None:
         store_paths = select_store_paths(
             os.path.join(tmp_dir, "test_zip_file"), harness_config
         )
-        for file_store in ["uml_file_store", "profile_store", "test_file_store"]:
+        for file_store in [
+            "uml_file_store",
+            "profile_store",
+            "test_file_store",
+        ]:
             assert store_paths[file_store] == os.path.join(
                 tmp_dir, "test_zip_file", file_store
             )
@@ -781,8 +832,14 @@ def test_select_store_paths_none_exist() -> None:
     harness_config = ProtocolVerifierConfig(test_config_path)
     with TemporaryDirectory() as tmp_dir:
         store_paths = select_store_paths(tmp_dir, harness_config)
-        for file_store in ["uml_file_store", "profile_store", "test_file_store"]:
-            assert store_paths[file_store] == getattr(harness_config, file_store)
+        for file_store in [
+            "uml_file_store",
+            "profile_store",
+            "test_file_store",
+        ]:
+            assert store_paths[file_store] == getattr(
+                harness_config, file_store
+            )
 
 
 @responses.activate
@@ -829,7 +886,9 @@ def test_full_pv_test_test_files_in_test_output_directory() -> None:
             # load in json file from test output directory
             with open(
                 os.path.join(
-                    test_output_directory, "test_file_store", "test_uml_1_events.json"
+                    test_output_directory,
+                    "test_file_store",
+                    "test_uml_1_events.json",
                 ),
                 "r",
             ) as file:
@@ -841,10 +900,19 @@ def test_full_pv_test_test_files_in_test_output_directory() -> None:
                 )
                 assert file_in_files ^ is_uuid
                 if is_uuid:
-                    with open(os.path.join(test_output_directory, file), "r") as file:
+                    with open(
+                        os.path.join(test_output_directory, file), "r"
+                    ) as file:
                         json_file = json.load(file)
-                    for temp_event, actual_event in zip(template_json_file, json_file):
-                        assert temp_event["eventType"] == (actual_event["eventType"])
+                    for temp_event, actual_event in zip(
+                        template_json_file, json_file
+                    ):
+                        assert temp_event["eventType"] == (
+                            actual_event["eventType"]
+                        )
             clean_directories(
-                [harness_config.report_file_store, harness_config.log_file_store]
+                [
+                    harness_config.report_file_store,
+                    harness_config.log_file_store,
+                ]
             )
