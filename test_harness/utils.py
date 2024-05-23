@@ -67,7 +67,7 @@ def divide_chunks(
     :rtype: :class:`Generator`[`list`, `Any`, `None`]
     """
     for index in range(0, len(list_to_chunk), chunk_size):
-        yield list_to_chunk[index : index + chunk_size]
+        yield list_to_chunk[index: index + chunk_size]
 
 
 def clean_directories(directory_paths: list[str]) -> None:

@@ -1,11 +1,13 @@
 """
 Config class for the Protocol Verifier
 """
+
 # Determine the project root and add it to the Python path
 from typing import Optional
 import sys
 from pathlib import Path
 from configparser import ConfigParser
+
 from test_harness.config.config import HarnessConfig
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
@@ -115,7 +117,8 @@ class ProtocolVerifierConfig(HarnessConfig):
             True if pv_send_as_pv_bytes_raw.lower() == "true" else False
         )
         self.send_json_without_length_prefix = (
-            True if send_json_without_length_prefix_raw.lower() == "true"
+            True
+            if send_json_without_length_prefix_raw.lower() == "true"
             else False
         )
         match self.message_bus_protocol:

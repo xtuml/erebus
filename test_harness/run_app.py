@@ -11,7 +11,6 @@ import gc
 
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
-from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.process_manager import harness_test_manager
 from test_harness.protocol_verifier import puml_files_test, get_puml_file_paths
 from test_harness.utils import clean_directories
@@ -52,7 +51,8 @@ def run_harness_app(harness_config_path: str | None = None) -> None:
                     harness_app.test_stopper.run_test()
                 )
                 success, _ = harness_test_manager(
-                    harness_config=ProtocolVerifierConfig(harness_config_path),
+                    # harness_config=ProtocolVerifierConfig(harness_config_path),
+                    harness_config=harness_app.harness_config,
                     test_config=test_to_run["TestConfig"],
                     test_output_directory=test_to_run["TestOutputDirectory"],
                     pbar=pbar,

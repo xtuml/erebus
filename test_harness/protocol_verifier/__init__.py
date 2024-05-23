@@ -22,7 +22,8 @@ from test_harness.protocol_verifier.tests import (
     PerformanceTest,
 )
 from test_harness.simulator.simulator_profile import Profile
-from test_harness import AsyncTestStopper
+
+from test_harness.__init__ import AsyncTestStopper
 
 
 def full_pv_test(

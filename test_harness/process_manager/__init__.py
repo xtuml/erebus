@@ -1,7 +1,6 @@
 # pylint: disable=W0718
 # pylint: disable=R0801
-"""Full end to end process manager
-"""
+"""Full end to end process manager"""
 import logging
 from typing import Literal
 import traceback
@@ -20,8 +19,8 @@ def harness_test_manager(
     test_config: TestConfig,
     test_output_directory: str,
     pbar: tqdm | None = None,
-    test_stopper: AsyncTestStopper | None = None
-) -> tuple[Literal[True], Literal['']] | tuple[Literal[False], str]:
+    test_stopper: AsyncTestStopper | None = None,
+) -> tuple[Literal[True], Literal[""]] | tuple[Literal[False], str]:
     """Test Harness manager that trys to execute a test but if a failure is
     encounterd will log the error and return the error to the function user
 
@@ -49,20 +48,21 @@ def harness_test_manager(
             test_config=test_config,
             test_output_directory=test_output_directory,
             pbar=pbar,
-            test_stopper=test_stopper
+            test_stopper=test_stopper,
         )
         return (True, "")
 
     except Exception as error:
-        clean_directories([
-            harness_config.uml_file_store,
-            harness_config.profile_store,
-            harness_config.log_file_store,
-            harness_config.test_file_store
-        ])
+        clean_directories(
+            [
+                harness_config.uml_file_store,
+                harness_config.profile_store,
+                harness_config.log_file_store,
+                harness_config.test_file_store,
+            ]
+        )
         logging.getLogger().error(
-            "Error was: %s; traceback to follow",
-            str(error)
+            "Error was: %s; traceback to follow", str(error)
         )
         traceback.print_exc(file=sys.stdout)
         return (False, str(error))

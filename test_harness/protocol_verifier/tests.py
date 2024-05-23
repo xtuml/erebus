@@ -418,7 +418,7 @@ class Test(ABC):
                     args=(
                         results_handler,
                         process_generator_manager.create_iterator(),
-                        self.delay_times[i :: self.test_config.num_workers],
+                        self.delay_times[i:: self.test_config.num_workers],
                         self.harness_config,
                         self.pbar,
                         time_sync,
@@ -561,11 +561,13 @@ class Test(ABC):
                             results_holder=self.results
                         )
                     )
-                    metrics_retrievers = await metrics_stack.enter_async_context(
-                        async_metrics_retriever_kwargs_pair.metric_retriever_class(
-                            **async_metrics_retriever_kwargs_pair.kwargs
-                        )
-                    )
+                    metrics_retrievers = await (
+                        metrics_stack.enter_async_context(
+                            async_metrics_retriever_kwargs_pair.
+                            metric_retriever_class(
+                                **async_metrics_retriever_kwargs_pair.kwargs
+                            )
+                        ))
                     metrics_retrievers_awaitables.append(
                         metrics_retrievers.async_continuous_retrieve_metrics(
                             metrics_handler, **async_metrics_handler.kwargs
@@ -580,7 +582,8 @@ class Test(ABC):
                         self.kill_manager(self.stop_test()),
                         *[
                             self.kill_manager(metrics_retrievers_awaitable)
-                            for metrics_retrievers_awaitable in metrics_retrievers_awaitables
+                            for metrics_retrievers_awaitable in
+                            metrics_retrievers_awaitables
                         ],
                     )
                 except RuntimeError as error:
@@ -882,7 +885,8 @@ class PerformanceTest(Test):
                         handler_class=handler_class,
                         kwargs={
                             "interval": (
-                                harness_config.kafka_metrics_collection_interval
+                                harness_config.
+                                kafka_metrics_collection_interval
                             ),
                         },
                     ),
