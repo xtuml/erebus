@@ -10,14 +10,11 @@ import asyncio
 import shutil
 from threading import Thread
 from multiprocessing import Queue
-import json
 
 import flatdict
 from tqdm import tqdm
 import numpy as np
 from kafka3.producer.future import FutureRecordMetadata
-
-from test_harness.config.config import HarnessConfig
 
 T = TypeVar("T")
 
@@ -174,7 +171,7 @@ def collect_error_logs_from_func(
     filter: ErrorFilter,
     func: Callable,
     *args,
-    **kwargs
+    **kwargs,
 ) -> None:
     """Collects errors logs and raises exception when found. Filters any other
     logs
@@ -203,7 +200,7 @@ async def delayed_async_func(
     *,
     pbar: tqdm | None = None,
     args: list[Any] | None = None,
-    kwargs: dict | None = None
+    kwargs: dict | None = None,
 ) -> Any:
     """Method to delay an async func by an amount of time in seconds
 
@@ -408,6 +405,7 @@ class RollOverChoice:
     :param roll_over_value: The roll over value
     :type roll_over_value: `int`
     """
+
     def __init__(self, roll_over_value: int) -> None:
         """Constructor method"""
         self.roll_over_value = roll_over_value
@@ -418,11 +416,7 @@ class RollOverChoice:
             )
         self._counter = 0
 
-    def __call__(
-        self,
-        list_to_choose_from: list[T],
-        k: int = 1
-    ) -> list[T]:
+    def __call__(self, list_to_choose_from: list[T], k: int = 1) -> list[T]:
         """Method to choose from a list with a roll over value
 
         :param list_to_choose_from: The list to choose from
@@ -450,9 +444,7 @@ class RollOverChoice:
             )
 
 
-def choose_from_front_of_list(
-    list_to_choose_from: list[T]
-) -> T:
+def choose_from_front_of_list(list_to_choose_from: list[T]) -> T:
     """Method to choose from the front of a list
 
     :param list_to_choose_from: The list to choose from
@@ -461,38 +453,3 @@ def choose_from_front_of_list(
     :rtype: `T`
     """
     return list_to_choose_from[0]
-
-
-class PVLogFileNameCallback:
-    """Class to create a callback for the log file name
-
-    :param harness_config: The harness config
-    :type harness_config: :class:`HarnessConfig`"""
-    def __init__(
-        self,
-        harness_config: HarnessConfig,
-    ) -> None:
-        """Constructor method"""
-        self.reception_log_file = (
-            harness_config.log_urls["aer"]["prefix"] + ".log"
-        )
-        self.verifier_log_file = (
-            harness_config.log_urls["ver"]["prefix"] + ".log"
-        )
-
-    def call_back(
-        self, request
-    ) -> tuple[Literal[200], dict, str] | tuple[Literal[404], dict, str]:
-        """Method to create the callback
-        """
-        payload = json.loads(request.body)
-        if payload["location"] == "RECEPTION":
-            return (
-                200, {}, json.dumps({"fileNames": [self.reception_log_file]})
-            )
-        elif payload["location"] == "VERIFIER":
-            return (
-                200, {}, json.dumps({"fileNames": [self.verifier_log_file]})
-            )
-        else:
-            return 404, {}, json.dumps({})

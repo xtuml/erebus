@@ -3,8 +3,7 @@
 # pylint: disable=C2801
 # pylint: disable=C0302
 # pylint: disable=R0904
-"""Tests for tests.py
-"""
+"""Tests for tests.py"""
 import asyncio
 import glob
 import logging
@@ -32,7 +31,8 @@ import kafka3
 from kafka3.future import Future
 from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
 
-from test_harness.config.config import HarnessConfig, TestConfig
+from test_harness.config.config import TestConfig
+from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_files,
 )
@@ -53,10 +53,13 @@ from test_harness import TestHarnessPbar
 from test_harness.protocol_verifier.types import PVResultsHandlerItem
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.utils import (
-    check_dict_equivalency, clean_directories, ProcessGeneratorManager
+    check_dict_equivalency,
+    clean_directories,
+    ProcessGeneratorManager,
 )
-from test_harness.protocol_verifier.mocks.mock_pv_http_interface \
-      import mock_pv_http_interface
+from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
+    mock_pv_http_interface,
+)
 from test_harness.results.results import DictResultsHolder, ResultsHolder
 from test_harness import AsyncTestStopper
 from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
@@ -874,11 +877,12 @@ class TestPVResultsDataFrame:
 
 class TestPVResultsHandler:
     """Group of tests for :class:`PVResultsHandler`"""
+
     @staticmethod
     @pytest.mark.skip(reason="This passes intermittently - bug raised to fix")
     def test_events_cache_happy_path() -> None:
         """Tests the happy path for event caching using shelve.Shelf."""
-        harness_config = HarnessConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
         with NamedTemporaryFile(suffix=".db") as tmp_file:
             with PVResultsHandler(
@@ -909,7 +913,7 @@ class TestPVResultsHandler:
     @staticmethod
     def test___enter__() -> None:
         """Tests :class:`PVResultsHandler`.`__enter__`"""
-        harness_config = HarnessConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -920,7 +924,7 @@ class TestPVResultsHandler:
     @staticmethod
     def test___exit__() -> None:
         """Tests :class:`PVResultsHandler`.`__exit__`"""
-        harness_config = HarnessConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -934,7 +938,7 @@ class TestPVResultsHandler:
         """Tests
         :class:`PVResultsHandler`.`__exit__` when an error is thrown
         """
-        harness_config = HarnessConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -950,7 +954,7 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler` context manager when an error is
         thrown
         """
-        harness_config = HarnessConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
         with pytest.raises(RuntimeError) as e_info:
             with PVResultsHandler(results, harness_config.report_file_store):
@@ -960,7 +964,7 @@ class TestPVResultsHandler:
     @staticmethod
     def test_handle_result() -> None:
         """Tests :class:`PVResultsHandler`.`handle_result`"""
-        harness_config = HarnessConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -976,7 +980,7 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler`.`handle_item_from_queue`
         with no save
         """
-        harness_config = HarnessConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -1002,7 +1006,7 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler`.`handle_item_from_queue`
         with save
         """
-        harness_config = HarnessConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(test_config_path)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store, save_files=True
@@ -1032,7 +1036,7 @@ class TestPVResultsHandler:
 
 def test_send_test_files_functional() -> None:
     """Tests :class:`FunctionalTest`.`send_test_files`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
@@ -1054,7 +1058,7 @@ def test_send_test_files_functional() -> None:
 @responses.activate
 def test_run_test_functional() -> None:
     """Tests :class:`FunctionalTest`.`run_test`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
@@ -1065,7 +1069,6 @@ def test_run_test_functional() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-
         )
         asyncio.run(test.run_test())
         assert len(test.results.responses) == 1
@@ -1078,7 +1081,7 @@ def test_run_test_functional() -> None:
 @responses.activate
 def test_calc_results_functional() -> None:
     """Tests :class:`FunctionalTest`.`calc_results`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -1089,7 +1092,6 @@ def test_calc_results_functional() -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
-
         )
         asyncio.run(test.run_test())
         test.calc_results()
@@ -1108,7 +1110,7 @@ def test_calc_results_functional() -> None:
 def test_calc_results_functional_different_prefix() -> None:
     """Tests :class:`FunctionalTest`.`calc_results` for a different prefix for
     the verifier log domain"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.log_urls["ver"]["prefix"] = "pv"
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
@@ -1120,7 +1122,6 @@ def test_calc_results_functional_different_prefix() -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
-
         )
         asyncio.run(test.run_test())
         test.calc_results()
@@ -1137,7 +1138,7 @@ def test_calc_results_functional_different_prefix() -> None:
 
 def test_send_test_files_performance() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1154,7 +1155,6 @@ def test_send_test_files_performance() -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
-
         )
 
         with PVResultsHandler(
@@ -1166,7 +1166,7 @@ def test_send_test_files_performance() -> None:
 
 def test_send_test_files_with_simulator_sliced_delays() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1183,7 +1183,6 @@ def test_send_test_files_with_simulator_sliced_delays() -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
-
         )
 
         with PVResultsHandler(
@@ -1194,19 +1193,23 @@ def test_send_test_files_with_simulator_sliced_delays() -> None:
                 test.results.time_start = test.time_start
 
                 async def run():
-                    await asyncio.gather(test.send_test_files_with_simulator(
-                        pv_results_handler,
-                        test.sim_data_generator,
-                        test.delay_times[0::2],
-                        harness_config,
-                        pbar
-                    ), test.send_test_files_with_simulator(
-                        pv_results_handler,
-                        test.sim_data_generator,
-                        test.delay_times[1::2],
-                        harness_config,
-                        pbar
-                    ))
+                    await asyncio.gather(
+                        test.send_test_files_with_simulator(
+                            pv_results_handler,
+                            test.sim_data_generator,
+                            test.delay_times[0::2],
+                            harness_config,
+                            pbar,
+                        ),
+                        test.send_test_files_with_simulator(
+                            pv_results_handler,
+                            test.sim_data_generator,
+                            test.delay_times[1::2],
+                            harness_config,
+                            pbar,
+                        ),
+                    )
+
                 asyncio.run(run())
         assert len(test.results) == 6
 
@@ -1214,7 +1217,7 @@ def test_send_test_files_with_simulator_sliced_delays() -> None:
 @responses.activate
 def test_run_test_performance() -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1230,7 +1233,6 @@ def test_run_test_performance() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-
         )
         asyncio.run(test.run_test())
         assert len(test.results) == 6
@@ -1244,7 +1246,7 @@ def test_run_test_performance() -> None:
 def test_run_test_performance_different_prefix() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` but with a different prefix
     for the verifier log domain"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.log_urls["ver"]["prefix"] = "pv"
     test_config = TestConfig()
     test_config.parse_from_dict(
@@ -1261,7 +1263,6 @@ def test_run_test_performance_different_prefix() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-
         )
         asyncio.run(test.run_test())
         assert len(test.results) == 6
@@ -1279,13 +1280,13 @@ def test_run_test_performance_multi_process() -> None:
     :param caplog: Fixture to capture logs
     :type caplog: :class:`pytest.LogCaptureFixture`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
-            "num_workers": 2
+            "num_workers": 2,
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -1299,7 +1300,7 @@ def test_run_test_performance_multi_process() -> None:
                 test_config=test_config,
                 harness_config=harness_config,
                 test_graceful_kill_functions=[test_stopper.stop],
-                pbar=pbar
+                pbar=pbar,
             )
             asyncio.run(test.run_test())
         assert len(test.results) == 6
@@ -1315,18 +1316,18 @@ def test_run_test_performance_zero_gap_jobs() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` when the job event gap is
     set to zero meaning that all jobs are sequenced in order with no overlap
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {
-                "num_files_per_sec": 3, "total_jobs": 4,
-                "job_event_gap": 0, "shard": True,
+                "num_files_per_sec": 3,
+                "total_jobs": 4,
+                "job_event_gap": 0,
+                "shard": True,
             },
-            "test_finish": {
-                "finish_interval": 5
-            }
+            "test_finish": {"finish_interval": 5},
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -1337,7 +1338,6 @@ def test_run_test_performance_zero_gap_jobs() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-
         )
         asyncio.run(test.run_test())
         counter = 0
@@ -1365,26 +1365,27 @@ def test_run_test_performance_round_robin_zero_gap() -> None:
     Uses two puml files to test the round robin functionality one with events
     A -> B and the other with events C -> D
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {
-                "num_files_per_sec": 4, "total_jobs": 4,
-                "job_event_gap": 0, "shard": True,
-                "round_robin": True
+                "num_files_per_sec": 4,
+                "total_jobs": 4,
+                "job_event_gap": 0,
+                "shard": True,
+                "round_robin": True,
             },
-            "test_finish": {
-                "finish_interval": 3
-            }
+            "test_finish": {"finish_interval": 3},
         }
     )
     test_events = generate_test_events_from_puml_files(
         [
             test_files_path / "test_uml_1.puml",
-            test_files_path / "test_uml_2.puml"
-        ], test_config=test_config
+            test_files_path / "test_uml_2.puml",
+        ],
+        test_config=test_config,
     )
     events = []
 
@@ -1403,7 +1404,6 @@ def test_run_test_performance_round_robin_zero_gap() -> None:
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-
         )
         asyncio.run(test.run_test())
         assert len(events) == 8
@@ -1422,14 +1422,14 @@ def test_send_test_files_with_simulator_process_safe() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files_with_simulator`
     using process safe generators for sim data and delay times
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {"num_files_per_sec": 3, "total_jobs": 2},
-            "num_workers": 1
+            "num_workers": 1,
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -1441,7 +1441,7 @@ def test_send_test_files_with_simulator_process_safe() -> None:
                 test_file_generators=test_events,
                 test_config=test_config,
                 harness_config=harness_config,
-                pbar=pbar
+                pbar=pbar,
             )
             with PVResultsHandler(
                 test.results, test.test_output_directory, test.save_files
@@ -1455,27 +1455,27 @@ def test_send_test_files_with_simulator_process_safe() -> None:
                         pbar.total = test.total_number_of_events
                         test.time_start = datetime.now()
                         test.results.time_start = test.time_start
-                        asyncio.run(test.send_test_files_with_simulator(
-                            pv_results_adder,
-                            process_safe_sim_data_generator,
-                            process_safe_delay_times,
-                            harness_config,
-                            pbar
-                        ))
+                        asyncio.run(
+                            test.send_test_files_with_simulator(
+                                pv_results_adder,
+                                process_safe_sim_data_generator,
+                                process_safe_delay_times,
+                                harness_config,
+                                pbar,
+                            )
+                        )
         assert len(test.results) == 6
 
 
 @responses.activate
-def test_run_test_performance_kafka(
-    kafka_producer_mock: None
-) -> None:
+def test_run_test_performance_kafka(kafka_producer_mock: None) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
     mocked out
 
     :param kafka_producer_mock: Fixture providing a mocked kafka producer
     :type kafka_producer_mock: `None`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -1506,8 +1506,7 @@ def test_run_test_performance_kafka(
 
 @responses.activate
 def test_run_test_performance_kafka_with_errors(
-    sync_kafka_producer_mock: list[str],
-    monkeypatch: pytest.MonkeyPatch
+    sync_kafka_producer_mock: list[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
     mocked out
@@ -1525,10 +1524,8 @@ def test_run_test_performance_kafka_with_errors(
         future.failure(timeout_error)
         return future
 
-    monkeypatch.setattr(
-        kafka3.KafkaProducer, "send", mock_send
-    )
-    harness_config = HarnessConfig(test_config_path)
+    monkeypatch.setattr(kafka3.KafkaProducer, "send", mock_send)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.message_bus_protocol = "KAFKA3"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -1553,8 +1550,7 @@ def test_run_test_performance_kafka_with_errors(
         assert len(test.results) == 6
         error_files = glob.glob(
             os.path.join(
-                harness_config.log_file_store,
-                ERROR_LOG_FILE_PREFIX + "*"
+                harness_config.log_file_store, ERROR_LOG_FILE_PREFIX + "*"
             )
         )
         assert error_files
@@ -1577,7 +1573,7 @@ def test_run_test_performance_kafka_with_errors(
 @responses.activate
 def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
     """Tests :class:`PerformanceTests`.`calc_results`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1603,7 +1599,6 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
             test_config=test_config,
             harness_config=harness_config,
             test_output_directory=harness_config.report_file_store,
-
         )
         asyncio.run(test.run_test())
         test.calc_results()
@@ -1618,7 +1613,7 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
 @responses.activate
 def test_run_test_performance_profile_job_batch() -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1649,7 +1644,7 @@ def test_run_test_performance_profile_job_batch() -> None:
 @responses.activate
 def test_run_test_performance_profile_shard() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.pv_finish_interval = 5
     test_config = TestConfig()
     test_config.parse_from_dict(
@@ -1690,7 +1685,7 @@ def test_get_report_files_from_results(
     pv results and th results
     :type results_dataframe: :class:`pd`.`DataFrame`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -1763,7 +1758,7 @@ def test_run_test_performance_stop_test(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 1
     test_config = TestConfig()
@@ -1787,8 +1782,7 @@ def test_run_test_performance_stop_test(
         assert (
             "Protocol Verifier failed to finish within the test timeout of "
             f"{harness_config.pv_test_timeout} seconds.\nResults will "
-            "be calculated at this point"
-            in caplog.text
+            "be calculated at this point" in caplog.text
         )
         clean_directories(
             [harness_config.report_file_store, harness_config.log_file_store]
@@ -1800,7 +1794,7 @@ def test_run_test_performance_stop_test_async_test_stopper(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 10000
@@ -1822,15 +1816,12 @@ def test_run_test_performance_stop_test_async_test_stopper(
             test_file_generators=test_events,
             test_config=test_config,
             harness_config=harness_config,
-            test_graceful_kill_functions=[test_stopper.stop]
+            test_graceful_kill_functions=[test_stopper.stop],
         )
         t1 = time.time()
         asyncio.run(asyncio.wait_for(test.run_test(), 10))
         t2 = time.time()
-        assert (
-            "Test stopped"
-            in caplog.text
-        )
+        assert "Test stopped" in caplog.text
         assert t2 - t1 < 10
         clean_directories(
             [harness_config.report_file_store, harness_config.log_file_store]
@@ -1848,7 +1839,7 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
     :param caplog: Fixture to capture logs
     :type caplog: :class:`pytest.LogCaptureFixture`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 10000
@@ -1857,7 +1848,7 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {"num_files_per_sec": 3, "total_jobs": 50},
-            "num_workers": 2
+            "num_workers": 2,
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -1872,7 +1863,7 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
                 test_config=test_config,
                 harness_config=harness_config,
                 test_graceful_kill_functions=[test_stopper.stop],
-                pbar=pbar
+                pbar=pbar,
             )
 
             async def async_wait_stop():
@@ -1881,16 +1872,10 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
 
             t1 = time.time()
             await asyncio.gather(
-                asyncio.wait_for(
-                    test.run_test(), 10
-                ),
-                async_wait_stop()
+                asyncio.wait_for(test.run_test(), 10), async_wait_stop()
             )
         t2 = time.time()
-        assert (
-            "Test stopped"
-            in caplog.text
-        )
+        assert "Test stopped" in caplog.text
         assert t2 - t1 < 10
         clean_directories(
             [harness_config.report_file_store, harness_config.log_file_store]
@@ -1902,13 +1887,15 @@ def test_run_test_performance_no_logs(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` not grabbing logs"""
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {
-                "num_files_per_sec": 30, "total_jobs": 20, "save_logs": False
+                "num_files_per_sec": 30,
+                "total_jobs": 20,
+                "save_logs": False,
             },
         }
     )
@@ -1937,8 +1924,7 @@ def test_run_test_performance_no_logs(
 
 @responses.activate
 def test_run_test_performance_kafka_get_metrics_from_kafka(
-    kafka_producer_mock: None,
-    kafka_consumer_mock: None
+    kafka_producer_mock: None, kafka_consumer_mock: None
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
     mocked out
@@ -1948,7 +1934,7 @@ def test_run_test_performance_kafka_get_metrics_from_kafka(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -1975,12 +1961,15 @@ def test_run_test_performance_kafka_get_metrics_from_kafka(
         assert len(test.results) == 6
         for event_metrics in test.results.results.values():
             for field in [
-                "time_sent", "AER_start", "AER_end", "AEOSVDC_start",
-                "AEOSVDC_end"
+                "time_sent",
+                "AER_start",
+                "AER_end",
+                "AEOSVDC_start",
+                "AEOSVDC_end",
             ]:
                 assert field in event_metrics
                 assert isinstance(event_metrics[field], float)
-            assert event_metrics["response"] == ''
+            assert event_metrics["response"] == ""
         clean_directories(
             [harness_config.report_file_store, harness_config.log_file_store]
         )
@@ -1988,8 +1977,7 @@ def test_run_test_performance_kafka_get_metrics_from_kafka(
 
 @responses.activate
 def test_run_test_performance_kafka_get_metrics_from_kafka_no_length(
-    kafka_producer_mock_no_length: None,
-    kafka_consumer_mock_no_length: None
+    kafka_producer_mock_no_length: None, kafka_consumer_mock_no_length: None
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
     mocked out
@@ -1999,7 +1987,7 @@ def test_run_test_performance_kafka_get_metrics_from_kafka_no_length(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.send_json_without_length_prefix = True
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
@@ -2027,12 +2015,15 @@ def test_run_test_performance_kafka_get_metrics_from_kafka_no_length(
         assert len(test.results) == 6
         for event_metrics in test.results.results.values():
             for field in [
-                "time_sent", "AER_start", "AER_end", "AEOSVDC_start",
-                "AEOSVDC_end"
+                "time_sent",
+                "AER_start",
+                "AER_end",
+                "AEOSVDC_start",
+                "AEOSVDC_end",
             ]:
                 assert field in event_metrics
                 assert isinstance(event_metrics[field], float)
-            assert event_metrics["response"] == ''
+            assert event_metrics["response"] == ""
         clean_directories(
             [harness_config.report_file_store, harness_config.log_file_store]
         )
@@ -2040,8 +2031,7 @@ def test_run_test_performance_kafka_get_metrics_from_kafka_no_length(
 
 @responses.activate
 def test_run_test_performance_agg_during_test(
-    kafka_producer_mock: None,
-    kafka_consumer_mock: None
+    kafka_producer_mock: None, kafka_consumer_mock: None
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
     mocked out
@@ -2051,7 +2041,7 @@ def test_run_test_performance_agg_during_test(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -2063,7 +2053,7 @@ def test_run_test_performance_agg_during_test(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {"num_files_per_sec": 12, "total_jobs": 8},
-            "aggregate_during": True
+            "aggregate_during": True,
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -2079,12 +2069,15 @@ def test_run_test_performance_agg_during_test(
         assert len(test.results) == 24
         for event_metrics in test.results.results.values():
             for field in [
-                "time_sent", "AER_start", "AER_end", "AEOSVDC_start",
-                "AEOSVDC_end"
+                "time_sent",
+                "AER_start",
+                "AER_end",
+                "AEOSVDC_start",
+                "AEOSVDC_end",
             ]:
                 assert field in event_metrics
                 assert isinstance(event_metrics[field], float)
-            assert event_metrics["response"] == ''
+            assert event_metrics["response"] == ""
         # mirror results holder in a new instance of PVResults with
         # agg_during_test set to False
         mirrored_results = PVResultsDataFrame()
@@ -2105,8 +2098,7 @@ def test_run_test_performance_agg_during_test(
 
 @responses.activate
 def test_run_test_performance_agg_during_test_sample(
-    kafka_producer_mock: None,
-    kafka_consumer_mock: None
+    kafka_producer_mock: None, kafka_consumer_mock: None
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
     mocked out
@@ -2116,7 +2108,7 @@ def test_run_test_performance_agg_during_test_sample(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -2130,7 +2122,7 @@ def test_run_test_performance_agg_during_test_sample(
             "event_gen_options": {"invalid": False},
             "performance_options": {"num_files_per_sec": 10, "total_jobs": 20},
             "aggregate_during": True,
-            "sample_rate": 2
+            "sample_rate": 2,
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -2155,8 +2147,7 @@ def test_run_test_performance_agg_during_test_sample(
 
 @responses.activate
 def test_run_test_performance_low_memory(
-    kafka_producer_mock: None,
-    kafka_consumer_mock: None
+    kafka_producer_mock: None, kafka_consumer_mock: None
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with a kafka message bus
     mocked out
@@ -2166,7 +2157,7 @@ def test_run_test_performance_low_memory(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -2179,7 +2170,7 @@ def test_run_test_performance_low_memory(
         {
             "event_gen_options": {"invalid": False},
             "performance_options": {"num_files_per_sec": 10, "total_jobs": 20},
-            "low_memory": True
+            "low_memory": True,
         }
     )
     test_events = generate_test_events_from_puml_files(
@@ -2204,9 +2195,9 @@ def test_run_test_performance_low_memory(
 
 def test_use_harness_config_instead_of_test_config() -> None:
     """Tests :class:`PerformanceTests` using test_finish parameters in
-    HarnessConfig
+    ProtocolVerifierConfig
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -2233,7 +2224,7 @@ def test_use_test_config_instead_of_harness_config() -> None:
     """Tests :class:`PerformanceTests` using test_finish parameters in
     TestConfig
     """
-    harness_config = HarnessConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(test_config_path)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {

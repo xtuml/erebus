@@ -4,8 +4,7 @@
 # pylint: disable=W0246
 # pylint: disable=W0613
 # pylint: disable=C0302
-"""Methods and classes relating to tests
-"""
+"""Methods and classes relating to tests"""
 from typing import Generator, Any, Callable, Iterable, Iterator, Awaitable
 from abc import ABC, abstractmethod
 from random import choice, choices
@@ -28,10 +27,13 @@ from plotly.graph_objects import Figure
 import requests
 from tqdm import tqdm
 
-from test_harness.config.config import HarnessConfig, TestConfig
+from test_harness.config.config import TestConfig
+from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.utils import (
-    clean_directories, ProcessGeneratorManager, RollOverChoice,
-    choose_from_front_of_list
+    clean_directories,
+    ProcessGeneratorManager,
+    RollOverChoice,
+    choose_from_front_of_list,
 )
 from test_harness.protocol_verifier.calc_pv_finish import (
     PVFileInspector,
@@ -47,15 +49,13 @@ from test_harness.protocol_verifier.simulator_data import (
 from test_harness.simulator.simulator import (
     SimDatum,
     Simulator,
-    MultiProcessDateSync
+    MultiProcessDateSync,
 )
 from test_harness.simulator.simulator_profile import (
     Profile,
-    InterpolatedProfile
+    InterpolatedProfile,
 )
-from test_harness.message_buses.message_buses import (
-    get_producer_context
-)
+from test_harness.message_buses.message_buses import get_producer_context
 from test_harness.reporting.report_delivery import deliver_test_report_files
 from test_harness.reporting import create_report_files
 from test_harness.reporting.report_results import (
@@ -63,14 +63,16 @@ from test_harness.reporting.report_results import (
 )
 from test_harness.requests_th import send_get_request
 from test_harness.async_management import (
-    AsyncMPManager, AsyncKillManager, AsyncKillException
+    AsyncMPManager,
+    AsyncKillManager,
+    AsyncKillException,
 )
 from .pvresults import PVResults
 from .pvresultshandler import (
     PVResultsHandler,
     PVResultsAdder,
     PVKafkaMetricsHandler,
-    PVKafkaMetricsHandlerNoLength
+    PVKafkaMetricsHandlerNoLength,
 )
 from .pvperformanceresults import PVPerformanceResults
 from .kafka_metrics import PVKafkaMetricsRetriever
@@ -81,10 +83,12 @@ from .types import (
     MetricsRetriverKwargsPairAndHandlerKwargsPair,
     MetricsRetrieverKwargsPair,
     ResultsHandlerKwargsPair,
-    ERROR_LOG_FILE_PREFIX
+    ERROR_LOG_FILE_PREFIX,
 )
 from .send_events import (
-    get_message_bus_kwargs, get_producer_kwargs, PVMessageSender
+    get_message_bus_kwargs,
+    get_producer_kwargs,
+    PVMessageSender,
 )
 
 
@@ -97,7 +101,7 @@ class Test(ABC):
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
     :param harness_config: Main config for the test harness, defaults to `None`
-    :type harness_config: :class:`HarnessConfig` | `None`, optional
+    :type harness_config: :class:`ProtocolVerifierConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
     :type test_config: :class:`TestConfig` | `None`, optional
     :param test_output_directory: The path of the test output directory where
@@ -141,26 +145,25 @@ class Test(ABC):
             ],
         ],
         *,
-        harness_config: HarnessConfig | None = None,
+        harness_config: ProtocolVerifierConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
         test_profile: Profile | None = None,
         save_files: bool = True,
         pbar: tqdm | None = None,
         save_log_files: bool = True,
-        async_metrics_retrievers_and_handlers: list[
-            MetricsRetriverKwargsPairAndHandlerKwargsPair
-        ] | None = None,
-        test_graceful_kill_functions: list[
-            Callable[..., Awaitable[None]]
-        ] | None = None
-
+        async_metrics_retrievers_and_handlers: (
+            list[MetricsRetriverKwargsPairAndHandlerKwargsPair] | None
+        ) = None,
+        test_graceful_kill_functions: (
+            list[Callable[..., Awaitable[None]]] | None
+        ) = None,
     ) -> None:
         """Constructor method"""
         self.test_files = test_file_generators
         self.test_output_directory = test_output_directory
         self.harness_config = (
-            harness_config if harness_config else HarnessConfig()
+            harness_config if harness_config else ProtocolVerifierConfig()
         )
         self.test_config = test_config if test_config else TestConfig()
         self._check_config_test_finish_values()
@@ -194,11 +197,13 @@ class Test(ABC):
         self.pbar = pbar
         self.async_metrics_retrievers_and_handlers = (
             async_metrics_retrievers_and_handlers
-            if async_metrics_retrievers_and_handlers else []
+            if async_metrics_retrievers_and_handlers
+            else []
         )
         self.graceful_kill_functions = [self.timeout_test] + (
             test_graceful_kill_functions
-            if test_graceful_kill_functions else []
+            if test_graceful_kill_functions
+            else []
         )
         if self.test_config.num_workers >= 1:
             kill_event = Event()
@@ -212,7 +217,7 @@ class Test(ABC):
             [
                 "pv_test_timeout",
                 "pv_finish_interval",
-                "log_calc_interval_time"
+                "log_calc_interval_time",
             ],
             ["timeout", "finish_interval", "metric_get_interval"],
         ):
@@ -224,9 +229,9 @@ class Test(ABC):
                 )
 
     @abstractmethod
-    def set_results_holder(self) -> (
-        PVResults | PVFunctionalResults | PVPerformanceResults
-    ):
+    def set_results_holder(
+        self,
+    ) -> PVResults | PVFunctionalResults | PVPerformanceResults:
         """Abstract metho to return the results holder
 
         :return: Returns a :class:`PVResults` object
@@ -264,12 +269,10 @@ class Test(ABC):
                     }
                     job_options = {}
                     if len(flattened_test_files[flattened_key]) == 3:
-                        job_options = flattened_test_files[
-                            flattened_key
-                        ][2]
+                        job_options = flattened_test_files[flattened_key][2]
                     job = Job(
                         job_info=job_info,
-                        job_options=TemplateOptions(**job_options)
+                        job_options=TemplateOptions(**job_options),
                     )
 
                     job.parse_input_jobfile(job_sequence)
@@ -325,8 +328,7 @@ class Test(ABC):
         ]
 
     def _get_min_interval(self) -> float | int:
-        """Method to get the minimum interval between events
-        """
+        """Method to get the minimum interval between events"""
         return 1 / self.delay_times.get_max_num_per_sec()
 
     @abstractmethod
@@ -381,14 +383,16 @@ class Test(ABC):
         if self.test_config.num_workers == 0:
             self.time_start = datetime.now()
             self.results.time_start = self.time_start
-            await self.kill_manager(self.send_test_files_with_simulator(
-                results_handler=results_handler,
-                sim_data_iterator=self.sim_data_generator,
-                delay_times=self.delay_times,
-                harness_config=self.harness_config,
-                pbar=self.pbar,
-                kill_manager=self.kill_manager,
-            ))
+            await self.kill_manager(
+                self.send_test_files_with_simulator(
+                    results_handler=results_handler,
+                    sim_data_iterator=self.sim_data_generator,
+                    delay_times=self.delay_times,
+                    harness_config=self.harness_config,
+                    pbar=self.pbar,
+                    kill_manager=self.kill_manager,
+                )
+            )
             return
         await self._async_multi_process_send_test_files(results_handler)
 
@@ -414,7 +418,7 @@ class Test(ABC):
                     args=(
                         results_handler,
                         process_generator_manager.create_iterator(),
-                        self.delay_times[i::self.test_config.num_workers],
+                        self.delay_times[i:: self.test_config.num_workers],
                         self.harness_config,
                         self.pbar,
                         time_sync,
@@ -425,9 +429,7 @@ class Test(ABC):
             self.time_start = datetime.now()
             self.results.time_start = self.time_start
             await async_mp_manager.run_processes()
-            logging.getLogger().info(
-                "All processes have finished"
-            )
+            logging.getLogger().info("All processes have finished")
         self.pbar.update(0)
 
     @staticmethod
@@ -435,27 +437,29 @@ class Test(ABC):
         results_handler: PVResultsHandler,
         sim_data_iterator: Iterator[SimDatum],
         delay_times: Iterable[float],
-        harness_config: HarnessConfig,
+        harness_config: ProtocolVerifierConfig,
         pbar: tqdm,
         time_sync: MultiProcessDateSync | None = None,
         kill_manager: AsyncKillManager | None = None,
     ) -> None:
-        asyncio.run(Test.send_test_files_with_simulator(
-            results_handler=results_handler,
-            sim_data_iterator=sim_data_iterator,
-            delay_times=delay_times,
-            harness_config=harness_config,
-            pbar=pbar,
-            time_sync=time_sync,
-            kill_manager=kill_manager,
-        ))
+        asyncio.run(
+            Test.send_test_files_with_simulator(
+                results_handler=results_handler,
+                sim_data_iterator=sim_data_iterator,
+                delay_times=delay_times,
+                harness_config=harness_config,
+                pbar=pbar,
+                time_sync=time_sync,
+                kill_manager=kill_manager,
+            )
+        )
 
     @staticmethod
     async def send_test_files_with_simulator(
         results_handler: PVResultsAdder,
         sim_data_iterator: Iterator[SimDatum],
         delay_times: Iterable[float],
-        harness_config: HarnessConfig,
+        harness_config: ProtocolVerifierConfig,
         pbar: tqdm,
         time_sync: MultiProcessDateSync | None = None,
         kill_manager: AsyncKillManager | None = None,
@@ -469,7 +473,7 @@ class Test(ABC):
         :param delay_times: Iterable of delay times
         :type delay_times: :class:`Iterable`[:class:`float`]
         :param harness_config: The harness config
-        :type harness_config: :class:`HarnessConfig`
+        :type harness_config: :class:`ProtocolVerifierConfig`
         :param pbar: A progress bar to track the progress of the test
         :type pbar: :class:`tqdm`
         :param time_sync: A time sync object for multiple processes,
@@ -485,7 +489,7 @@ class Test(ABC):
         async with get_producer_context(
             message_bus=harness_config.message_bus_protocol,
             message_bus_kwargs=message_bus_kwargs,
-            producer_kwargs=producer_kwargs
+            producer_kwargs=producer_kwargs,
         ) as producer:
             message_sender = PVMessageSender(
                 message_producer=producer,
@@ -534,7 +538,6 @@ class Test(ABC):
         """
         await asyncio.gather(
             *[func() for func in self.graceful_kill_functions]
-
         )
 
     async def run_test(self) -> None:
@@ -543,8 +546,8 @@ class Test(ABC):
             results_holder=self.results,
             test_output_directory=self.test_output_directory,
             save_files=self.save_files,
-            queue_type=queue.Queue if self.test_config.num_workers <= 1 else (
-                Queue
+            queue_type=(
+                queue.Queue if self.test_config.num_workers <= 1 else (Queue)
             ),
         ) as pv_results_handler:
             async with AsyncExitStack() as metrics_stack:
@@ -558,42 +561,35 @@ class Test(ABC):
                             results_holder=self.results
                         )
                     )
-                    metrics_retrievers = (
-                        await metrics_stack.enter_async_context(
+                    metrics_retrievers = await (
+                        metrics_stack.enter_async_context(
                             async_metrics_retriever_kwargs_pair.
                             metric_retriever_class(
                                 **async_metrics_retriever_kwargs_pair.kwargs
                             )
-                        )
-                    )
+                        ))
                     metrics_retrievers_awaitables.append(
                         metrics_retrievers.async_continuous_retrieve_metrics(
-                            metrics_handler,
-                            **async_metrics_handler.kwargs
-
+                            metrics_handler, **async_metrics_handler.kwargs
                         )
                     )
                 try:
                     await asyncio.gather(
-                        self.send_test_files(
-                            pv_results_handler
-                        ),
+                        self.send_test_files(pv_results_handler),
                         self.kill_manager(
                             self.pv_file_inspector.run_pv_file_inspector()
                         ),
                         self.kill_manager(self.stop_test()),
                         *[
                             self.kill_manager(metrics_retrievers_awaitable)
-                            for metrics_retrievers_awaitable
-                            in metrics_retrievers_awaitables
+                            for metrics_retrievers_awaitable in
+                            metrics_retrievers_awaitables
                         ],
                     )
                 except RuntimeError as error:
                     logging.getLogger().info(msg=str(error))
                 self.time_end = datetime.now()
-                logging.getLogger().info(
-                    "Sending test files has completed"
-                )
+                logging.getLogger().info("Sending test files has completed")
 
     @abstractmethod
     def calc_results(self) -> None:
@@ -689,7 +685,7 @@ class FunctionalTest(Test):
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
     :param harness_config: Main config for the test harness, defaults to `None`
-    :type harness_config: :class:`HarnessConfig` | `None`, optional
+    :type harness_config: :class:`ProtocolVerifierConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
     :type test_config: :class:`TestConfig` | `None`, optional
     :param test_output_directory: The path of the test output directory where
@@ -719,14 +715,14 @@ class FunctionalTest(Test):
             ],
         ],
         *,
-        harness_config: HarnessConfig | None = None,
+        harness_config: ProtocolVerifierConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
         test_profile: None = None,
         pbar: tqdm | None = None,
-        test_graceful_kill_functions: list[
-            Callable[..., Awaitable[None]]
-        ] | None = None
+        test_graceful_kill_functions: (
+            list[Callable[..., Awaitable[None]]] | None
+        ) = None,
     ) -> None:
         super().__init__(
             test_file_generators=test_file_generators,
@@ -780,9 +776,10 @@ class FunctionalTest(Test):
         validity_df = self.results.create_validity_dataframe()
         # analyse the logs and get report files
         report_files_mapping = create_report_files(
-            log_string=log_string, validity_df=validity_df,
+            log_string=log_string,
+            validity_df=validity_df,
             test_name="Results",
-            event_id_job_id_map=self.results.event_id_job_id_map
+            event_id_job_id_map=self.results.event_id_job_id_map,
         )
         report_files_mapping["Results_Aggregated.html"] = self.make_figs(
             report_files_mapping["Results.csv"]
@@ -829,7 +826,7 @@ class PerformanceTest(Test):
     :class:`Generator`[ `tuple`[`list`[`dict`], `list`[`str`],
     :class:`plt`.`Figure`  |  `None`, `str`], `Any`, `None`, ], `bool`, ], ], ]
     :param harness_config: Main config for the test harness, defaults to `None`
-    :type harness_config: :class:`HarnessConfig` | `None`, optional
+    :type harness_config: :class:`ProtocolVerifierConfig` | `None`, optional
     :param test_config: Config for the specific test, defaults to `None`
     :type test_config: :class:`TestConfig` | `None`, optional
     :param test_output_directory: The path of the test output directory where
@@ -859,14 +856,14 @@ class PerformanceTest(Test):
             ],
         ],
         *,
-        harness_config: HarnessConfig | None = None,
+        harness_config: ProtocolVerifierConfig | None = None,
         test_config: TestConfig | None = None,
         test_output_directory: str | None = None,
         test_profile: Profile | None = None,
         pbar: tqdm | None = None,
-        test_graceful_kill_functions: list[
-            Callable[..., Awaitable[None]]
-        ] | None = None
+        test_graceful_kill_functions: (
+            list[Callable[..., Awaitable[None]]] | None
+        ) = None,
     ) -> None:
         """Constructor method"""
         if harness_config.send_json_without_length_prefix:
@@ -874,30 +871,30 @@ class PerformanceTest(Test):
         else:
             handler_class = PVKafkaMetricsHandler
 
-        metrics_retriever_and_handlers = [
-            MetricsRetriverKwargsPairAndHandlerKwargsPair(
-                metric_retriever_kwargs_pair=MetricsRetrieverKwargsPair(
-                    metric_retriever_class=PVKafkaMetricsRetriever,
-                    kwargs={
-                        "msgbroker": (
-                            harness_config.kafka_metrics_host
-                        ),
-                        "topic": (
-                            harness_config.kafka_metrics_topic
-                        ),
-                    },
-                ),
-                handler_kwargs_pair=ResultsHandlerKwargsPair(
-                    handler_class=handler_class,
-                    kwargs={
-                        "interval": (
-                            harness_config.
-                            kafka_metrics_collection_interval
-                        ),
-                    },
+        metrics_retriever_and_handlers = (
+            [
+                MetricsRetriverKwargsPairAndHandlerKwargsPair(
+                    metric_retriever_kwargs_pair=MetricsRetrieverKwargsPair(
+                        metric_retriever_class=PVKafkaMetricsRetriever,
+                        kwargs={
+                            "msgbroker": (harness_config.kafka_metrics_host),
+                            "topic": (harness_config.kafka_metrics_topic),
+                        },
+                    ),
+                    handler_kwargs_pair=ResultsHandlerKwargsPair(
+                        handler_class=handler_class,
+                        kwargs={
+                            "interval": (
+                                harness_config.
+                                kafka_metrics_collection_interval
+                            ),
+                        },
+                    ),
                 )
-            )
-        ] if harness_config.metrics_from_kafka else []
+            ]
+            if harness_config.metrics_from_kafka
+            else []
+        )
 
         super().__init__(
             test_file_generators=test_file_generators,
@@ -956,9 +953,7 @@ class PerformanceTest(Test):
         :rtype: `list`[`tuple`[:class:`Job`, `dict`[`str`, `str` | `bool`]]]
         """
         if self.test_config.performance_options["round_robin"]:
-            chooser = RollOverChoice(
-                len(self.job_templates)
-            )
+            chooser = RollOverChoice(len(self.job_templates))
         else:
             chooser = choices
         if self.test_profile:
@@ -1000,15 +995,13 @@ class PerformanceTest(Test):
             (
                 os.path.join(
                     self.harness_config.log_file_store,
-                    ERROR_LOG_FILE_PREFIX + "*"
+                    ERROR_LOG_FILE_PREFIX + "*",
                 )
             )
         )
         for file in files:
             with open(file, "r", encoding="utf-8") as error_file:
-                self.results.update_errors(
-                    len(error_file.readlines())
-                )
+                self.results.update_errors(len(error_file.readlines()))
 
     def get_pv_sim_data(self) -> None:
         """Method to get the PV sim data from the grok endpoint and read into
