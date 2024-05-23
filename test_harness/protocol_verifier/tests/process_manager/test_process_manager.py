@@ -1,5 +1,5 @@
 # pylint: disable=R0801
-"""Tests for process_manager.__init__.py"""
+"""Tests for test_harness.process_manager.__init__.py"""
 
 from pathlib import Path
 import os
@@ -30,8 +30,6 @@ test_file_path = os.path.join(
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 
 
-# TODO remove any pv related tests and convert to test-harness specific tests/
-# more generalised
 @responses.activate
 def test_harness_test_manager_uml_exists() -> None:
     """Tests `harness_test_manager` when uml exists in the uml file store"""

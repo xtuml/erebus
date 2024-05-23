@@ -43,7 +43,7 @@ from test_harness.protocol_verifier.pvperformanceresults import (
 from test_harness.protocol_verifier.pvresultsdataframe import (
     PVResultsDataFrame,
 )
-from test_harness.protocol_verifier.tests import (
+from test_harness.protocol_verifier.test_utils import (
     FunctionalTest,
     PerformanceTest,
     PVFunctionalResults,

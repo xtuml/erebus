@@ -42,6 +42,7 @@ def harness_test_manager(
     :rtype: `tuple`[:class:`Literal`[`True`], :class:`Literal`['']] |
     `tuple`[:class:`Literal`[`False`], `str`]
     """
+    # TODO: pull full_pv_test out and replace with generic test_harness test
     try:
         full_pv_test(
             harness_config=harness_config,

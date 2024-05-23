@@ -18,7 +18,7 @@ from flask.testing import FlaskClient, FlaskCliRunner
 from pygrok import Grok
 from requests import PreparedRequest
 
-from test_harness.protocol_verifier.tests import (
+from test_harness.protocol_verifier.test_utils import (
     PVPerformanceResults,
     PVResultsDataFrame,
 )
@@ -363,7 +363,7 @@ def event_jobs() -> list[dict[str, str | datetime]]:
 
 @pytest.fixture
 def pv_results(
-    event_jobs: list[dict[str, str | datetime]]
+    event_jobs: list[dict[str, str | datetime]],
 ) -> PVResultsDataFrame:
     """An instance of :class:`PVResultsDataFrame` with loaded sent events data
 
@@ -592,14 +592,12 @@ def expected_verifier_pv_added_results() -> (
 
 
 @pytest.fixture
-def get_log_file_names_call_back() -> (
-    Callable[
-        ...,
-        tuple[Literal[400], dict, Literal["Error response"]]
-        | tuple[Literal[400], dict, str]
-        | tuple[Literal[200], dict, str],
-    ]
-):
+def get_log_file_names_call_back() -> Callable[
+    ...,
+    tuple[Literal[400], dict, Literal["Error response"]]
+    | tuple[Literal[400], dict, str]
+    | tuple[Literal[200], dict, str],
+]:
     """Fixture to provide a call back request function for a
     POST request endpoint to get the file names for a domain location of the
     PV with specified file prefix. The request contains a json payload
@@ -617,6 +615,7 @@ def get_log_file_names_call_back() -> (
         | `tuple`[:class:`Literal`[`200`], `dict`, `str`],
     ]
     """
+
     def request_callback(
         request: PreparedRequest,
     ) -> (
