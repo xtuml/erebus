@@ -4,13 +4,13 @@ Config class for the Protocol Verifier
 
 # Determine the project root and add it to the Python path
 from typing import Optional
-import sys
+# import sys
 from pathlib import Path
 from configparser import ConfigParser
 
 from test_harness.config.config import HarnessConfig
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+# sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 
 class ProtocolVerifierConfig(HarnessConfig):
