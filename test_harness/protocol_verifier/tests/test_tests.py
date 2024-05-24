@@ -66,7 +66,7 @@ from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
 
 # get test config
 test_config_path = os.path.join(
-    Path(__file__).parent.parent.parent
+    Path(__file__).parent.parent.parent.parent
     / "tests/test_harness/config/test_config.config",
 )
 
