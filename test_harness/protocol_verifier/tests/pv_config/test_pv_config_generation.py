@@ -21,10 +21,12 @@ test_file_path_error = os.path.join(
     "test_uml_job_def_error.puml",
 )
 test_file_unhappy_puml_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "unhappy_job.puml"
+    Path(__file__).parent.parent.parent.parent.parent / "test_files",
+    "unhappy_job.puml",
 )
 test_file_unhappy_job_def_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "unhappy_job_job_def.json"
+    Path(__file__).parent.parent.parent.parent.parent / "test_files",
+    "unhappy_job_job_def.json",
 )
 
 
