@@ -281,40 +281,40 @@ def grok_priority_patterns() -> list[Grok]:
     ]
 
 
-# @pytest.fixture
-# def expected_verifier_grok_results() -> list[dict[str, str]]:
-#     """Fixture providing expected verifier groked results
+@pytest.fixture
+def expected_verifier_grok_results() -> list[dict[str, str]]:
+    """Fixture providing expected verifier groked results
 
-#     :return: Returns a list of groked results
-#     :rtype: `list`[`dict`[`str`, `str`]]
-#     """
-#     return [
-#         {
-#             "timestamp": "2023-09-28T19:27:23.434758Z",
-#             "field": "svdc_new_job_started",
-#             "event_id": "3cf78438-8084-494d-8d7b-efd7ea46f7d4",
-#         },
-#         {
-#             "timestamp": "2023-09-28T19:27:23.514683Z",
-#             "field": "aeordering_job_processed",
-#             "job_id": "4cdbe6d0-424a-4a96-9357-3b19144ee07b",
-#         },
-#         {
-#             "timestamp": "2023-09-28T19:27:23.514745Z",
-#             "field": "aeordering_events_processed",
-#             "event_id": "7a231b76-8062-47da-a2c9-0a764dfa3dd9",
-#         },
-#         {
-#             "timestamp": "2023-09-28T19:27:23.515067Z",
-#             "field": "aeordering_events_blocked",
-#             "event_id": "7a231b76-8062-47da-a2c9-0a764dfa3dd9",
-#         },
-#         {
-#             "timestamp": "2023-09-28T19:10:57.012539Z",
-#             "field": "svdc_job_success",
-#             "job_id": "85619f16-f04f-4f60-8525-2f643c6b417e",
-#         },
-#     ]
+    :return: Returns a list of groked results
+    :rtype: `list`[`dict`[`str`, `str`]]
+    """
+    return [
+        {
+            "timestamp": "2023-09-28T19:27:23.434758Z",
+            "field": "svdc_new_job_started",
+            "event_id": "3cf78438-8084-494d-8d7b-efd7ea46f7d4",
+        },
+        {
+            "timestamp": "2023-09-28T19:27:23.514683Z",
+            "field": "aeordering_job_processed",
+            "job_id": "4cdbe6d0-424a-4a96-9357-3b19144ee07b",
+        },
+        {
+            "timestamp": "2023-09-28T19:27:23.514745Z",
+            "field": "aeordering_events_processed",
+            "event_id": "7a231b76-8062-47da-a2c9-0a764dfa3dd9",
+        },
+        {
+            "timestamp": "2023-09-28T19:27:23.515067Z",
+            "field": "aeordering_events_blocked",
+            "event_id": "7a231b76-8062-47da-a2c9-0a764dfa3dd9",
+        },
+        {
+            "timestamp": "2023-09-28T19:10:57.012539Z",
+            "field": "svdc_job_success",
+            "job_id": "85619f16-f04f-4f60-8525-2f643c6b417e",
+        },
+    ]
 
 
 # @pytest.fixture
