@@ -40,7 +40,8 @@ from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
 
 # get test config
 test_config_path = os.path.join(
-    Path(__file__).parent.parent, "config/test_config.config"
+    Path(__file__).parent.parent.parent.parent.parent,
+    "tests/test_harness/config/test_config.config",
 )
 
 test_files_path = Path(__file__).parent.parent / "test_files"
