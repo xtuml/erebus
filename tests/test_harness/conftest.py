@@ -245,40 +245,40 @@ def runner(test_app: HarnessApp) -> FlaskCliRunner:
 #     )
 
 
-# @pytest.fixture
-# def log_file_string() -> (
-#     Literal["2023-09-28T19:27:23.434758Z 1 svdc_new_job_started…"]
-# ):
-#     """Fixture providing a log file string
+@pytest.fixture
+def log_file_string() -> (
+    Literal["2023-09-28T19:27:23.434758Z 1 svdc_new_job_started…"]
+):
+    """Fixture providing a log file string
 
-#     :return: Returns the log file string
-#     :rtype: `str`
-#     """
-#     return (
-#         "2023-09-28T19:27:23.434758Z 1 svdc_new_job_started : JobId ="
-#         " eeba705f-eac4-467c-8826-bf31673e745f : EventId ="
-#         " 3cf78438-8084-494d-8d7b-efd7ea46f7d4 : EventType = A"
-#     )
+    :return: Returns the log file string
+    :rtype: `str`
+    """
+    return (
+        "2023-09-28T19:27:23.434758Z 1 svdc_new_job_started : JobId ="
+        " eeba705f-eac4-467c-8826-bf31673e745f : EventId ="
+        " 3cf78438-8084-494d-8d7b-efd7ea46f7d4 : EventType = A"
+    )
 
 
-# @pytest.fixture
-# def grok_priority_patterns() -> list[Grok]:
-#     """Fixture providing a list of grok patterns in priority order
+@pytest.fixture
+def grok_priority_patterns() -> list[Grok]:
+    """Fixture providing a list of grok patterns in priority order
 
-#     :return: List of grok patterns
-#     :rtype: `list`[:class:`Grok`]
-#     """
-#     return [
-#         Grok(
-#             "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} %{WORD:field} :"
-#             " JobId = %{UUID} : EventId = %{UUID:event_id} : "
-#             "EventType = %{WORD}"
-#         ),
-#         Grok(
-#             "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} %{WORD:field} :"
-#             " JobId = %{UUID:job_id}"
-#         ),
-#     ]
+    :return: List of grok patterns
+    :rtype: `list`[:class:`Grok`]
+    """
+    return [
+        Grok(
+            "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} %{WORD:field} :"
+            " JobId = %{UUID} : EventId = %{UUID:event_id} : "
+            "EventType = %{WORD}"
+        ),
+        Grok(
+            "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} %{WORD:field} :"
+            " JobId = %{UUID:job_id}"
+        ),
+    ]
 
 
 # @pytest.fixture
@@ -361,72 +361,72 @@ def runner(test_app: HarnessApp) -> FlaskCliRunner:
 #     ]
 
 
-# @pytest.fixture
-# def get_log_file_names_call_back() -> Callable[
-#     ...,
-#     tuple[Literal[400], dict, Literal["Error response"]]
-#     | tuple[Literal[400], dict, str]
-#     | tuple[Literal[200], dict, str],
-# ]:
-#     """Fixture to provide a call back request function for a
-#     POST request endpoint to get the file names for a domain location of the
-#     PV with specified file prefix. The request contains a json payload
-#     containing:
-#     * "location" - Domain location of the log files to get
-#     * "file_prefix" - The file prefix of the log file names to get
+@pytest.fixture
+def get_log_file_names_call_back() -> Callable[
+    ...,
+    tuple[Literal[400], dict, Literal["Error response"]]
+    | tuple[Literal[400], dict, str]
+    | tuple[Literal[200], dict, str],
+]:
+    """Fixture to provide a call back request function for a
+    POST request endpoint to get the file names for a domain location of the
+    PV with specified file prefix. The request contains a json payload
+    containing:
+    * "location" - Domain location of the log files to get
+    * "file_prefix" - The file prefix of the log file names to get
 
-#     :return: Returns the fixture
-#     :rtype: :class:`Callable`[
-#         `...`,
-#         `tuple`[:class:`Literal`[`400`], `dict`, :class:`Literal`[
-#             `"Error response"`
-#         ]]
-#         | `tuple`[:class:`Literal`[`400`], `dict`, `str`]
-#         | `tuple`[:class:`Literal`[`200`], `dict`, `str`],
-#     ]
-#     """
+    :return: Returns the fixture
+    :rtype: :class:`Callable`[
+        `...`,
+        `tuple`[:class:`Literal`[`400`], `dict`, :class:`Literal`[
+            `"Error response"`
+        ]]
+        | `tuple`[:class:`Literal`[`400`], `dict`, `str`]
+        | `tuple`[:class:`Literal`[`200`], `dict`, `str`],
+    ]
+    """
 
-#     def request_callback(
-#         request: PreparedRequest,
-#     ) -> (
-#         tuple[Literal[400], dict, Literal["Error response"]]
-#         | tuple[Literal[400], dict, str]
-#         | tuple[Literal[200], dict, str]
-#     ):
-#         payload = json.loads(request.body)
-#         headers = {}
-#         file_names = []
-#         if set(["location", "file_prefix"]) != set(payload.keys()):
-#             return (400, headers, "Error response")
-#         match payload["location"]:
-#             case "RECEPTION":
-#                 match payload["file_prefix"]:
-#                     case "AEReception":
-#                         file_names.append("AEReception.log")
-#                     case _:
-#                         file_names.append("Reception.log")
-#             case "VERIFIER":
-#                 match payload["file_prefix"]:
-#                     case "AEOrdering":
-#                         file_names.append("AEOrdering.log")
-#                     case "AESequenceDC":
-#                         file_names.append("AESequenceDC.log")
-#                     case "IStore":
-#                         file_names.append("IStore.log")
-#                     case _:
-#                         file_names.append("Verifier.log")
-#                         pass
-#             case _:
-#                 return (
-#                     400,
-#                     headers,
-#                     (
-#                         "Request error: the input key"
-#                         f" {payload['location']} does not exist"
-#                     ),
-#                 )
-#         resp_body = {"fileNames": file_names}
+    def request_callback(
+        request: PreparedRequest,
+    ) -> (
+        tuple[Literal[400], dict, Literal["Error response"]]
+        | tuple[Literal[400], dict, str]
+        | tuple[Literal[200], dict, str]
+    ):
+        payload = json.loads(request.body)
+        headers = {}
+        file_names = []
+        if set(["location", "file_prefix"]) != set(payload.keys()):
+            return (400, headers, "Error response")
+        match payload["location"]:
+            case "RECEPTION":
+                match payload["file_prefix"]:
+                    case "AEReception":
+                        file_names.append("AEReception.log")
+                    case _:
+                        file_names.append("Reception.log")
+            case "VERIFIER":
+                match payload["file_prefix"]:
+                    case "AEOrdering":
+                        file_names.append("AEOrdering.log")
+                    case "AESequenceDC":
+                        file_names.append("AESequenceDC.log")
+                    case "IStore":
+                        file_names.append("IStore.log")
+                    case _:
+                        file_names.append("Verifier.log")
+                        pass
+            case _:
+                return (
+                    400,
+                    headers,
+                    (
+                        "Request error: the input key"
+                        f" {payload['location']} does not exist"
+                    ),
+                )
+        resp_body = {"fileNames": file_names}
 
-#         return (200, headers, json.dumps(resp_body))
+        return (200, headers, json.dumps(resp_body))
 
-#     return request_callback
+    return request_callback
