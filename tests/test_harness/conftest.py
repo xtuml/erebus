@@ -361,234 +361,234 @@ def event_jobs() -> list[dict[str, str | datetime]]:
     ]
 
 
-@pytest.fixture
-def pv_results(
-    event_jobs: list[dict[str, str | datetime]],
-) -> PVResultsDataFrame:
-    """An instance of :class:`PVResultsDataFrame` with loaded sent events data
+# @pytest.fixture
+# def pv_results(
+#     event_jobs: list[dict[str, str | datetime]],
+# ) -> PVResultsDataFrame:
+#     """An instance of :class:`PVResultsDataFrame` with loaded sent events data
 
-    :param event_jobs: Fixture providing sent events data
-    :type event_jobs: `list`[`dict`]
-    :return: Returns the instance of :class:`PvResultsDataFrame`
-    :rtype: :class:`PVResultsDataFrame`
-    """
-    results = PVResultsDataFrame()
-    results.time_start = datetime.strptime(
-        "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-    )
-    for event_entry in event_jobs:
-        results.add_first_event_data(**event_entry)
-    return results
-
-
-@pytest.fixture
-def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
-    """Fixture providing the expected results loaded from reception log file
-
-    :return: Returns a dictionary of the expected results
-    :rtype: `list`[`dict`[`str`, `str` | `float`]]
-    """
-    time_start = datetime.strptime(
-        "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-    )
-    return [
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "reception_event_received"
-            ],
-            event_id="1c9c37f7-b61a-4c05-a841-00c1276a22e0",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "reception_event_received"
-            ],
-            event_id="7b5f2070-0f4d-443b-875c-6ef89a2e7993",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:57.791624Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "reception_event_received"
-            ],
-            event_id="b4696f92-da3f-4c4c-936a-1266741b1fb7",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:56.737302Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "reception_event_received"
-            ],
-            event_id="d1c33411-fa6d-4968-ae0d-265b911faba1",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:57.804237Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "reception_event_written"
-            ],
-            event_id="1c9c37f7-b61a-4c05-a841-00c1276a22e0",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:57.784209Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "reception_event_written"
-            ],
-            event_id="7b5f2070-0f4d-443b-875c-6ef89a2e7993",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:57.799078Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "reception_event_written"
-            ],
-            event_id="b4696f92-da3f-4c4c-936a-1266741b1fb7",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:56.750974Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "reception_event_written"
-            ],
-            event_id="d1c33411-fa6d-4968-ae0d-265b911faba1",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:57.810939Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-    ]
+#     :param event_jobs: Fixture providing sent events data
+#     :type event_jobs: `list`[`dict`]
+#     :return: Returns the instance of :class:`PvResultsDataFrame`
+#     :rtype: :class:`PVResultsDataFrame`
+#     """
+#     results = PVResultsDataFrame()
+#     results.time_start = datetime.strptime(
+#         "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#     )
+#     for event_entry in event_jobs:
+#         results.add_first_event_data(**event_entry)
+#     return results
 
 
-@pytest.fixture
-def expected_verifier_pv_added_results() -> (
-    list[dict[str, str | set[str] | float]]
-):
-    """Fixture providing the expected results loaded from verifier log file
+# @pytest.fixture
+# def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
+#     """Fixture providing the expected results loaded from reception log file
 
-    :return: Returns a list of dictionaries of the expected results
-    :rtype: `list`[`dict`[`str`, `str` | `set`[`str`] | `float`]]
-    """
-    time_start = datetime.strptime(
-        "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-    )
-    return [
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "aeordering_events_processed"
-            ],
-            event_ids=set(["1c9c37f7-b61a-4c05-a841-00c1276a22e0"]),
-            job_id="b87dc318-b714-43ce-9ca0-0aac712f03e2",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:58.274324Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "aeordering_events_processed"
-            ],
-            event_ids=set(["7b5f2070-0f4d-443b-875c-6ef89a2e7993"]),
-            job_id="b87dc318-b714-43ce-9ca0-0aac712f03e2",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:58.281972Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "aeordering_events_processed"
-            ],
-            event_ids=set(["b4696f92-da3f-4c4c-936a-1266741b1fb7"]),
-            job_id="fdd29d17-79b4-4fc4-bd41-39b1a4c4a05b",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:57.164510Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
-                "aeordering_events_processed"
-            ],
-            event_ids=set(["d1c33411-fa6d-4968-ae0d-265b911faba1"]),
-            job_id="fdd29d17-79b4-4fc4-bd41-39b1a4c4a05b",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:58.198180Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map["svdc_job_success"],
-            job_id="b87dc318-b714-43ce-9ca0-0aac712f03e2",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:59.289109Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-            event_ids=set(
-                [
-                    "1c9c37f7-b61a-4c05-a841-00c1276a22e0",
-                    "7b5f2070-0f4d-443b-875c-6ef89a2e7993",
-                ]
-            ),
-        ),
-        dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map["svdc_job_success"],
-            job_id="fdd29d17-79b4-4fc4-bd41-39b1a4c4a05b",
-            pv_time=(
-                datetime.strptime(
-                    "2023-10-04T17:50:59.210438Z", "%Y-%m-%dT%H:%M:%S.%fZ"
-                )
-                - time_start
-            ).total_seconds(),
-            event_ids=set(
-                [
-                    "b4696f92-da3f-4c4c-936a-1266741b1fb7",
-                    "d1c33411-fa6d-4968-ae0d-265b911faba1",
-                ]
-            ),
-        ),
-    ]
+#     :return: Returns a dictionary of the expected results
+#     :rtype: `list`[`dict`[`str`, `str` | `float`]]
+#     """
+#     time_start = datetime.strptime(
+#         "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#     )
+#     return [
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "reception_event_received"
+#             ],
+#             event_id="1c9c37f7-b61a-4c05-a841-00c1276a22e0",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "reception_event_received"
+#             ],
+#             event_id="7b5f2070-0f4d-443b-875c-6ef89a2e7993",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:57.791624Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "reception_event_received"
+#             ],
+#             event_id="b4696f92-da3f-4c4c-936a-1266741b1fb7",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:56.737302Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "reception_event_received"
+#             ],
+#             event_id="d1c33411-fa6d-4968-ae0d-265b911faba1",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:57.804237Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "reception_event_written"
+#             ],
+#             event_id="1c9c37f7-b61a-4c05-a841-00c1276a22e0",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:57.784209Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "reception_event_written"
+#             ],
+#             event_id="7b5f2070-0f4d-443b-875c-6ef89a2e7993",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:57.799078Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "reception_event_written"
+#             ],
+#             event_id="b4696f92-da3f-4c4c-936a-1266741b1fb7",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:56.750974Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "reception_event_written"
+#             ],
+#             event_id="d1c33411-fa6d-4968-ae0d-265b911faba1",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:57.810939Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#     ]
+
+
+# @pytest.fixture
+# def expected_verifier_pv_added_results() -> (
+#     list[dict[str, str | set[str] | float]]
+# ):
+#     """Fixture providing the expected results loaded from verifier log file
+
+#     :return: Returns a list of dictionaries of the expected results
+#     :rtype: `list`[`dict`[`str`, `str` | `set`[`str`] | `float`]]
+#     """
+#     time_start = datetime.strptime(
+#         "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#     )
+#     return [
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "aeordering_events_processed"
+#             ],
+#             event_ids=set(["1c9c37f7-b61a-4c05-a841-00c1276a22e0"]),
+#             job_id="b87dc318-b714-43ce-9ca0-0aac712f03e2",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:58.274324Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "aeordering_events_processed"
+#             ],
+#             event_ids=set(["7b5f2070-0f4d-443b-875c-6ef89a2e7993"]),
+#             job_id="b87dc318-b714-43ce-9ca0-0aac712f03e2",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:58.281972Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "aeordering_events_processed"
+#             ],
+#             event_ids=set(["b4696f92-da3f-4c4c-936a-1266741b1fb7"]),
+#             job_id="fdd29d17-79b4-4fc4-bd41-39b1a4c4a05b",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:57.164510Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map[
+#                 "aeordering_events_processed"
+#             ],
+#             event_ids=set(["d1c33411-fa6d-4968-ae0d-265b911faba1"]),
+#             job_id="fdd29d17-79b4-4fc4-bd41-39b1a4c4a05b",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:58.198180Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map["svdc_job_success"],
+#             job_id="b87dc318-b714-43ce-9ca0-0aac712f03e2",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:59.289109Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#             event_ids=set(
+#                 [
+#                     "1c9c37f7-b61a-4c05-a841-00c1276a22e0",
+#                     "7b5f2070-0f4d-443b-875c-6ef89a2e7993",
+#                 ]
+#             ),
+#         ),
+#         dict(
+#             pv_data_field=PVResultsDataFrame.pv_grok_map["svdc_job_success"],
+#             job_id="fdd29d17-79b4-4fc4-bd41-39b1a4c4a05b",
+#             pv_time=(
+#                 datetime.strptime(
+#                     "2023-10-04T17:50:59.210438Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+#                 )
+#                 - time_start
+#             ).total_seconds(),
+#             event_ids=set(
+#                 [
+#                     "b4696f92-da3f-4c4c-936a-1266741b1fb7",
+#                     "d1c33411-fa6d-4968-ae0d-265b911faba1",
+#                 ]
+#             ),
+#         ),
+#     ]
 
 
 @pytest.fixture
