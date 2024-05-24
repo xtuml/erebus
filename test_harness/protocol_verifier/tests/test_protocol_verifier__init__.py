@@ -40,62 +40,62 @@ from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
 
 # get test config
 test_config_path = os.path.join(
-    Path(__file__).parent.parent.parent.parent.parent,
-    "tests/test_harness/config/test_config.config",
+    Path(__file__).parent.parent.parent.parent
+    / "tests/test_harness/config/test_config.config",
 )
 
-test_files_path = Path(__file__).parent.parent / "test_files"
+test_files_path = Path(__file__).parent / "test_files"
 
 # get path of tests uml file
 test_file_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_uml_job_def.puml"
+    Path(__file__).parent / "test_files", "test_uml_job_def.puml"
 )
 
 # get path of test csv file
 test_csv_file_path_1 = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_profile.csv"
+    Path(__file__).parent / "test_files", "test_profile.csv"
 )
 
 # get path of test file
 test_csv_file_path_2 = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_profile_2.csv"
+    Path(__file__).parent / "test_files", "test_profile_2.csv"
 )
 
 # get path of tests uml file
 test_uml_1_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_uml_1.puml"
+    Path(__file__).parent / "test_files", "test_uml_1.puml"
 )
 # get paths of test event json files
 test_uml_1_events = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_uml_1_events.json"
+    Path(__file__).parent / "test_files", "test_uml_1_events.json"
 )
 test_uml_2_events = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_uml_2_events.json"
+    Path(__file__).parent / "test_files", "test_uml_2_events.json"
 )
 
 # get path of umls and events file for extra job invariants test
 test_uml_1_einv_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_uml_1_EINV.puml"
+    Path(__file__).parent / "test_files", "test_uml_1_EINV.puml"
 )
 test_uml_2_einv_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_uml_2_EINV.puml"
+    Path(__file__).parent / "test_files", "test_uml_2_EINV.puml"
 )
 test_file_path_einv = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_event_file_EINV.json"
+    Path(__file__).parent / "test_files", "test_event_file_EINV.json"
 )
 test_file_path_einv_options = os.path.join(
-    Path(__file__).parent.parent / "test_files",
+    Path(__file__).parent / "test_files",
     "test_event_file_EINV_options.json",
 )
 
 # valid test file json validity path
 valid_test_file_json_validity_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_event_valid_json.json"
+    Path(__file__).parent / "test_files", "test_event_valid_json.json"
 )
 
 # invalid test file json validity path
 invalid_test_file_json_validity_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_event_invalid_json.json"
+    Path(__file__).parent / "test_files", "test_event_invalid_json.json"
 )
 
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
