@@ -1,0 +1,15 @@
+{
+    "job_file": [
+        {
+            "jobId": "4f57f033-03e9-468c-b3b4-c144af8a3e20",
+            "jobName": "test_uml_1",
+            "eventType": "A",
+            "eventId": "8628fdb6-48e7-4eab-9c9d-95bcbe48b7d0",
+            "timestamp": "2023-09-21T14:35:09.728704Z",
+            "applicationName": "default_application_name"
+        }
+    ],
+    "job_name": "test_uml_1",
+    "sequence_type": "ValidJSON",
+    "validity": true
+}

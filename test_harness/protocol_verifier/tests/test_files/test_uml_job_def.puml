@@ -1,0 +1,9 @@
+@startuml
+partition "test_uml" {
+    group "test_uml"
+        :A;
+        :B;
+        :C;
+    end group 
+}
+@enduml

@@ -13,19 +13,19 @@ from test_harness.utils import check_dict_equivalency
 
 # get resources folder in tests folder
 test_file_path = os.path.join(
-    Path(__file__).parent.parent.parent.parent.parent / "tests/test_files",
+    Path(__file__).parent.parent / "test_files",
     "test_uml_job_def.puml",
 )
 test_file_path_error = os.path.join(
-    Path(__file__).parent.parent.parent.parent.parent / "tests/test_files",
+    Path(__file__).parent.parent / "test_files",
     "test_uml_job_def_error.puml",
 )
 test_file_unhappy_puml_path = os.path.join(
-    Path(__file__).parent.parent.parent.parent.parent / "tests/test_files",
+    Path(__file__).parent.parent / "test_files",
     "unhappy_job.puml",
 )
 test_file_unhappy_job_def_path = os.path.join(
-    Path(__file__).parent.parent.parent.parent.parent / "tests/test_files",
+    Path(__file__).parent.parent / "test_files",
     "unhappy_job_job_def.json",
 )
 
