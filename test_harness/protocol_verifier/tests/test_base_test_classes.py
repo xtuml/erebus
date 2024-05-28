@@ -36,11 +36,11 @@ from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.protocol_verifier.generate_test_files import (
     generate_test_events_from_puml_files,
 )
-from test_harness.protocol_verifier.pvperformanceresults import (
+from test_harness.protocol_verifier.results.pvperformanceresults import (
     ProcessErrorDataDict,
     ResultsDict,
 )
-from test_harness.protocol_verifier.pvresultsdataframe import (
+from test_harness.protocol_verifier.results.pvresultsdataframe import (
     PVResultsDataFrame,
 )
 from test_harness.protocol_verifier.base_test_classes import (
