@@ -287,7 +287,8 @@ def sync_kafka_producer_mock(
         future.success("")
         return future
 
-    def mock_start(*agrs, **kwargs):
+    def mock_start(self, *agrs, **kwargs):
+        self._closed = False
         action_list.append("start")
         return None
 

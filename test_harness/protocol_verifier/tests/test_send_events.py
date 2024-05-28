@@ -510,7 +510,6 @@ class TestPVMessageSender:
         assert sync_kafka_producer_mock[-1] == "stop"
         # Debug print
         print("sync_kafka_producer_mock:", sync_kafka_producer_mock)
-        
         assert all(
             action == "send" for action in sync_kafka_producer_mock[1:-1]
         )
