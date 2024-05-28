@@ -12,12 +12,12 @@ from tqdm import tqdm
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
-from test_harness.protocol_verifier.generate_test_files import (
+from test_harness.protocol_verifier.testing_suite.generate_test_files import (
     generate_test_events_from_puml_files,
     get_test_events_from_test_file_jsons,
 )
 from test_harness.protocol_verifier.send_job_defs import send_job_defs_from_uml
-from test_harness.protocol_verifier.base_test_classes import (
+from test_harness.protocol_verifier.testing_suite.base_test_classes import (
     FunctionalTest,
     PerformanceTest,
 )

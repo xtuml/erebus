@@ -33,7 +33,7 @@ from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
 
 from test_harness.config.config import TestConfig
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
-from test_harness.protocol_verifier.generate_test_files import (
+from test_harness.protocol_verifier.testing_suite.generate_test_files import (
     generate_test_events_from_puml_files,
 )
 from test_harness.protocol_verifier.results.pvperformanceresults import (
@@ -43,7 +43,7 @@ from test_harness.protocol_verifier.results.pvperformanceresults import (
 from test_harness.protocol_verifier.results.pvresultsdataframe import (
     PVResultsDataFrame,
 )
-from test_harness.protocol_verifier.base_test_classes import (
+from test_harness.protocol_verifier.testing_suite.base_test_classes import (
     FunctionalTest,
     PerformanceTest,
     PVFunctionalResults,
@@ -66,21 +66,21 @@ from test_harness.protocol_verifier.utils.types import ERROR_LOG_FILE_PREFIX
 
 # get test config
 test_config_path = os.path.join(
-    Path(__file__).parent.parent.parent.parent
+    Path(__file__).parent.parent.parent.parent.parent
     / "tests/test_harness/config/test_config.config",
 )
 
 # test files directory path
-test_files_path = Path(__file__).parent / "test_files"
+test_files_path = Path(__file__).parent.parent / "test_files"
 
 # get path of tests uml file
 test_file_path = os.path.join(
-    Path(__file__).parent / "test_files", "test_uml_job_def.puml"
+    Path(__file__).parent.parent / "test_files", "test_uml_job_def.puml"
 )
 
 
 # grok file path
-grok_file = Path(__file__).parent / "test_files" / "grok_file.txt"
+grok_file = Path(__file__).parent.parent / "test_files" / "grok_file.txt"
 
 
 def check_numpy_expected_vs_actual(
