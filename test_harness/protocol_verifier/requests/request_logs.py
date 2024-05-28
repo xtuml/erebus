@@ -1,6 +1,5 @@
 # pylint: disable=C0103
-"""Group of methods to request logs from Protocol Verifier
-"""
+"""Group of methods to request logs from Protocol Verifier"""
 from typing import Iterable
 import gzip
 import logging
@@ -10,14 +9,12 @@ import requests
 from test_harness.requests_th import (
     send_json_post_request,
     send_get_request,
-    check_response_tuple_ok
+    check_response_tuple_ok,
 )
 
 
 def get_verifier_log_file_names(
-    url: str,
-    location: str | None = None,
-    file_prefix: str | None = None
+    url: str, location: str | None = None, file_prefix: str | None = None
 ) -> list[str]:
     """Method to get verifier log file names
 
@@ -37,19 +34,11 @@ def get_verifier_log_file_names(
     :rtype: `list`[`str`]
     """
     if location is None or file_prefix is None:
-        response_tuple = send_get_request(
-            url=url,
-            max_retries=5
-        )
+        response_tuple = send_get_request(url=url, max_retries=5)
     else:
-        json_dict = {
-            "location": location,
-            "file_prefix": file_prefix
-        }
+        json_dict = {"location": location, "file_prefix": file_prefix}
         response_tuple = send_json_post_request(
-            json_dict=json_dict,
-            url=url,
-            max_retries=5
+            json_dict=json_dict, url=url, max_retries=5
         )
 
     check_response_tuple_ok(response_tuple=response_tuple, url=url)
@@ -86,9 +75,7 @@ def get_verifier_log_file_names(
 
 
 def get_verifier_log_file_data(
-    file_name: str,
-    url: str,
-    location: str | None = None
+    file_name: str, url: str, location: str | None = None
 ) -> bytes:
     """Method to get the bytes response content of a file from the endpoint
 
@@ -99,27 +86,18 @@ def get_verifier_log_file_data(
     :return: Returns the bytes of the file
     :rtype: `bytes`
     """
-    json_dict = {
-        "fileName": file_name
-    }
+    json_dict = {"fileName": file_name}
     if location:
         json_dict["location"] = location
     response_tuple = send_json_post_request(
-        json_dict=json_dict,
-        url=url,
-        max_retries=5
+        json_dict=json_dict, url=url, max_retries=5
     )
-    check_response_tuple_ok(
-        response_tuple=response_tuple,
-        url=url
-    )
+    check_response_tuple_ok(response_tuple=response_tuple, url=url)
     return response_tuple[2].content
 
 
 def get_verifier_log_files_data(
-    file_names: Iterable[str],
-    url: str,
-    location: str | None
+    file_names: Iterable[str], url: str, location: str | None
 ) -> dict[str, bytes]:
     """Method to get raw file bytes from an iterable of file names
 
@@ -132,9 +110,7 @@ def get_verifier_log_files_data(
     """
     return {
         file_name: get_verifier_log_file_data(
-            file_name,
-            url,
-            location=location
+            file_name, url, location=location
         )
         for file_name in file_names
     }
@@ -145,7 +121,7 @@ def get_log_files_raw_bytes(
     url_get_file: str,
     already_received_file_names: list[str] | None = None,
     location: str | None = None,
-    file_prefix: str | None = None
+    file_prefix: str | None = None,
 ) -> dict[str, bytes]:
     """Method to get log files raw bytes from server. Catches EOF errors.
 
@@ -163,24 +139,20 @@ def get_log_files_raw_bytes(
     if not already_received_file_names:
         already_received_file_names = []
     file_names = get_verifier_log_file_names(
-        url_log_file_names,
-        location=location,
-        file_prefix=file_prefix
+        url_log_file_names, location=location, file_prefix=file_prefix
     )
     files_to_request = set(file_names).difference(
         set(already_received_file_names)
     )
     # request files
     files = get_verifier_log_files_data(
-        files_to_request,
-        url_get_file,
-        location=location
+        files_to_request, url_get_file, location=location
     )
     return files
 
 
 def get_log_files_strings_from_log_files_bytes(
-    raw_bytes_files: dict[str, bytes]
+    raw_bytes_files: dict[str, bytes],
 ) -> dict[str, str]:
     """Method to convert files as bytes to utf-8 strings representing the file
 
@@ -194,8 +166,7 @@ def get_log_files_strings_from_log_files_bytes(
     for file_name, raw_bytes in raw_bytes_files.items():
         try:
             files[file_name] = get_log_file_string_from_log_file_bytes(
-                raw_bytes=raw_bytes,
-                is_gzip=".gz" in file_name
+                raw_bytes=raw_bytes, is_gzip=".gz" in file_name
             )
         except (gzip.BadGzipFile, EOFError):
             logging.getLogger().warning(
@@ -205,8 +176,7 @@ def get_log_files_strings_from_log_files_bytes(
 
 
 def get_log_file_string_from_log_file_bytes(
-    raw_bytes: bytes,
-    is_gzip: bool = False
+    raw_bytes: bytes, is_gzip: bool = False
 ) -> str:
     """Method to get a log file string from raw bytes. If gzipped will gzip
     decompress first
@@ -230,7 +200,7 @@ def get_log_files(
     url_get_file: str,
     already_received_file_names: list[str] | None = None,
     location: str | None = None,
-    file_prefix: str | None = None
+    file_prefix: str | None = None,
 ) -> dict[str, str]:
     """Method to get log files strings from server
 
@@ -250,7 +220,7 @@ def get_log_files(
         url_get_file=url_get_file,
         already_received_file_names=already_received_file_names,
         location=location,
-        file_prefix=file_prefix
+        file_prefix=file_prefix,
     )
     files = get_log_files_strings_from_log_files_bytes(raw_bytes_files)
     return files
@@ -258,13 +228,12 @@ def get_log_files(
 
 if __name__ == "__main__":
     import sys
+
     args = sys.argv
     url_file_names = (
         "http://host.docker.internal:9000/download/verifier-log-file-names"
     )
-    url_file = (
-        "http://host.docker.internal:9000/download/verifierlog"
-    )
+    url_file = "http://host.docker.internal:9000/download/verifierlog"
     already_received_files = []
     if "--url-names" in args:
         url_file_names = args[args.index("--url-names") + 1]
@@ -272,18 +241,16 @@ if __name__ == "__main__":
         url_file = args[args.index("--url-file") + 1]
     for index, arg in enumerate(args):
         if "--omit" == arg:
-            already_received_files.append(
-                args[index + 1]
-            )
+            already_received_files.append(args[index + 1])
     log_files = get_log_files(
         url_log_file_names=url_file_names,
         url_get_file=url_file,
-        already_received_file_names=already_received_files
+        already_received_file_names=already_received_files,
     )
     concat_string = "\n".join(log_files.values())
     if "--save-path" in args:
         save_path = args[args.index("--save-path") + 1]
-        with open(save_path, 'w', encoding="utf-8") as file:
+        with open(save_path, "w", encoding="utf-8") as file:
             file.write(concat_string)
     else:
         print(concat_string)
