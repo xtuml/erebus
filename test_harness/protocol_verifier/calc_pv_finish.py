@@ -6,8 +6,8 @@ import os
 from typing import Any
 import logging
 
-from test_harness.requests_th.request_logs import get_log_files
-from test_harness.requests_th.request_pv_io import (
+from test_harness.protocol_verifier.requests.request_logs import get_log_files
+from test_harness.protocol_verifier.requests.request_pv_io import (
     gather_get_requests_json_response,
 )
 from test_harness.config.config import TestConfig

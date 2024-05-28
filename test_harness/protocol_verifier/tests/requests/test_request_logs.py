@@ -1,6 +1,5 @@
 # pylint: disable=R0913
-"""Tests for request_logs.py
-"""
+"""Tests for request_logs.py"""
 import logging
 from typing import Callable, Literal
 
@@ -8,7 +7,7 @@ import pytest
 import responses
 from responses import matchers
 
-from test_harness.requests_th.request_logs import (
+from test_harness.protocol_verifier.requests.request_logs import (
     get_verifier_log_file_names,
     get_verifier_log_file_data,
     get_log_files_raw_bytes,
@@ -145,7 +144,7 @@ def test_get_verifier_log_file_names_location_200_ok(
         tuple[Literal[400], dict, Literal["Error response"]]
         | tuple[Literal[400], dict, str]
         | tuple[Literal[200], dict, str],
-    ]
+    ],
 ) -> None:
     """Test for `get_verifier_log_file_names` with 200 ok response
     using location and file prefix inputs
@@ -171,7 +170,7 @@ def test_get_verifier_log_file_names_location_200_ok(
     actual_file_names = []
     for location, file_prefix in zip(
         ["RECEPTION"] + ["VERIFIER"] * 3,
-        ["AEReception", "AEOrdering", "AESequenceDC", "IStore"]
+        ["AEReception", "AEOrdering", "AESequenceDC", "IStore"],
     ):
         response_file_names = get_verifier_log_file_names(
             url=url, location=location, file_prefix=file_prefix
@@ -181,7 +180,7 @@ def test_get_verifier_log_file_names_location_200_ok(
         "AEReception.log",
         "AEOrdering.log",
         "AESequenceDC.log",
-        "IStore.log"
+        "IStore.log",
     ]
     for file_name in actual_file_names:
         assert file_name in expected_file_names
@@ -434,9 +433,11 @@ def test_get_log_files_location_file_prefix(
         url_log_file_names,
         status=200,
         json={"fileNames": file_names},
-        match=[matchers.json_params_matcher(
-            {"location": "RECEPTION", "file_prefix": "AEReception"}
-        )]
+        match=[
+            matchers.json_params_matcher(
+                {"location": "RECEPTION", "file_prefix": "AEReception"}
+            )
+        ],
     )
 
     responses.add(
@@ -444,22 +445,28 @@ def test_get_log_files_location_file_prefix(
         url_get_file,
         body=file_raw_bytes,
         status=200,
-        match=[matchers.json_params_matcher(
-            {"fileName": file_name, "location": "RECEPTION"}
-        )],
+        match=[
+            matchers.json_params_matcher(
+                {"fileName": file_name, "location": "RECEPTION"}
+            )
+        ],
     )
     responses.add(
         responses.POST,
         url_get_file,
         body=file_raw_bytes_gzipped,
         status=200,
-        match=[matchers.json_params_matcher(
-            {"fileName": file_name_gzipped, "location": "RECEPTION"}
-        )],
+        match=[
+            matchers.json_params_matcher(
+                {"fileName": file_name_gzipped, "location": "RECEPTION"}
+            )
+        ],
     )
     log_files = get_log_files(
-        url_log_file_names=url_log_file_names, url_get_file=url_get_file,
-        location="RECEPTION", file_prefix="AEReception"
+        url_log_file_names=url_log_file_names,
+        url_get_file=url_get_file,
+        location="RECEPTION",
+        file_prefix="AEReception",
     )
     assert log_files[file_name] == file_string
     assert log_files[file_name_gzipped] == file_string
