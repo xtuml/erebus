@@ -17,7 +17,7 @@ from test_harness.protocol_verifier.generate_test_files import (
     get_test_events_from_test_file_jsons,
 )
 from test_harness.protocol_verifier.send_job_defs import send_job_defs_from_uml
-from test_harness.protocol_verifier.tests import (
+from test_harness.protocol_verifier.test_utils import (
     FunctionalTest,
     PerformanceTest,
 )

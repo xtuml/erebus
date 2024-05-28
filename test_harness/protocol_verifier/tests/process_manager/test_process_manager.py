@@ -1,5 +1,5 @@
 # pylint: disable=R0801
-"""Tests for process_manager.__init__.py"""
+"""Tests for test_harness.process_manager.__init__.py"""
 
 from pathlib import Path
 import os
@@ -19,19 +19,20 @@ from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
 
 # get test config
 test_config_path = os.path.join(
-    Path(__file__).parent.parent, "config/test_config.config"
+    Path(__file__).parent.parent.parent.parent.parent
+    / "tests/test_harness/config/test_config.config",
 )
 
 # get path of tests uml file
 test_file_path = os.path.join(
-    Path(__file__).parent.parent / "test_files", "test_uml_job_def.puml"
+    Path(__file__).parent.parent.parent.parent.parent
+    / "tests/test_harness/test_files",
+    "test_uml_job_def.puml",
 )
 
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 
 
-# TODO remove any pv related tests and convert to test-harness specific tests/
-# more generalised
 @responses.activate
 def test_harness_test_manager_uml_exists() -> None:
     """Tests `harness_test_manager` when uml exists in the uml file store"""
