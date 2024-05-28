@@ -18,7 +18,9 @@ import pandas as pd
 from prometheus_client.parser import text_fd_to_metric_families
 from pygrok import Grok
 
-from test_harness.protocol_verifier.reporting.log_analyser import yield_grok_metrics_from_files
+from test_harness.protocol_verifier.reporting.log_analyser import (
+    yield_grok_metrics_from_files
+)
 from test_harness.results.aggregation import (
     AggregationBin,
     AggregationCount,
