@@ -287,8 +287,7 @@ def sync_kafka_producer_mock(
         future.success("")
         return future
 
-    def mock_start(self, *agrs, **kwargs):
-        self._closed = False
+    def mock_start(*agrs, **kwargs):
         action_list.append("start")
         return None
 
@@ -296,9 +295,13 @@ def sync_kafka_producer_mock(
         action_list.append("stop")
         return None
 
+    def mock_del(*args, **kwargs):
+        pass
+
     monkeypatch.setattr(kafka3.KafkaProducer, "send", mock_send)
     monkeypatch.setattr(kafka3.KafkaProducer, "__init__", mock_start)
     monkeypatch.setattr(kafka3.KafkaProducer, "close", mock_stop)
+    monkeypatch.setattr(kafka3.KafkaProducer, "__del__", mock_del)
     return action_list
 
 
