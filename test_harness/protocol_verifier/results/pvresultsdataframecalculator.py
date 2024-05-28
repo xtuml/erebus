@@ -14,7 +14,7 @@ import pandas as pd
 import scipy.stats as sps
 import dask.array as da
 
-from test_harness.protocol_verifier.types import (
+from test_harness.protocol_verifier.utils.types import (
     AveragesDict,
     FailuresDict,
     ReceptionCountsDict,

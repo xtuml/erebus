@@ -33,7 +33,7 @@ from .pvresultsdataframecalculator import (
     PVResultsDataFrameCalculatorV2,
     PVResultsDataFrameCalculator,
 )
-from test_harness.protocol_verifier.types import (
+from test_harness.protocol_verifier.utils.types import (
     AveragesDict,
     FailuresDict,
     ProcessErrorDataDict,

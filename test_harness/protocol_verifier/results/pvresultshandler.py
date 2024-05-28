@@ -24,7 +24,7 @@ from test_harness.protocol_verifier.metrics_and_events.kafka_metrics import (
     decode_and_yield_events_from_raw_msgs,
     decode_and_yield_events_from_raw_msgs_no_length,
 )
-from test_harness.protocol_verifier.types import PVResultsHandlerItem
+from test_harness.protocol_verifier.utils.types import PVResultsHandlerItem
 
 
 class PVResultsAdder(ResultsHandler):

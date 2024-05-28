@@ -78,7 +78,7 @@ from test_harness.protocol_verifier.results.pvperformanceresults import PVPerfor
 from .metrics_and_events.kafka_metrics import PVKafkaMetricsRetriever
 from test_harness.protocol_verifier.results.pvresultsdataframe import PVResultsDataFrame
 from test_harness.protocol_verifier.results.pvfunctionalresults import PVFunctionalResults
-from .types import (
+from .utils.types import (
     TemplateOptions,
     MetricsRetriverKwargsPairAndHandlerKwargsPair,
     MetricsRetrieverKwargsPair,

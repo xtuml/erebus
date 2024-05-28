@@ -50,7 +50,7 @@ from test_harness.protocol_verifier.base_test_classes import (
     PVResultsHandler,
 )
 from test_harness import TestHarnessPbar
-from test_harness.protocol_verifier.types import PVResultsHandlerItem
+from test_harness.protocol_verifier.utils.types import PVResultsHandlerItem
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.utils import (
     check_dict_equivalency,
@@ -62,7 +62,7 @@ from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
 )
 from test_harness.results.results import DictResultsHolder, ResultsHolder
 from test_harness import AsyncTestStopper
-from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
+from test_harness.protocol_verifier.utils.types import ERROR_LOG_FILE_PREFIX
 
 # get test config
 test_config_path = os.path.join(
