@@ -57,8 +57,8 @@ from test_harness.simulator.simulator_profile import (
 )
 from test_harness.message_buses.message_buses import get_producer_context
 from test_harness.reporting.report_delivery import deliver_test_report_files
-from test_harness.reporting import create_report_files
-from test_harness.reporting.report_results import (
+from test_harness.protocol_verifier.reporting import create_report_files
+from test_harness.protocol_verifier.reporting.report_results import (
     generate_performance_test_reports,
 )
 from test_harness.requests_th import send_get_request
