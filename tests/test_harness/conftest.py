@@ -65,7 +65,6 @@ def runner(test_app: HarnessApp) -> FlaskCliRunner:
     return test_app.test_cli_runner()
 
 
-
 @pytest.fixture
 def grok_priority_patterns() -> list[Grok]:
     """Fixture providing a list of grok patterns in priority order
