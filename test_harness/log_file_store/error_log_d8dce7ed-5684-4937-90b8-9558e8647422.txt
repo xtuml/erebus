@@ -1,6 +1,0 @@
-ERROR:ErrorLogger:KafkaTimeoutError: timeout
-ERROR:ErrorLogger:KafkaTimeoutError: timeout
-ERROR:ErrorLogger:KafkaTimeoutError: timeout
-ERROR:ErrorLogger:KafkaTimeoutError: timeout
-ERROR:ErrorLogger:KafkaTimeoutError: timeout
-ERROR:ErrorLogger:KafkaTimeoutError: timeout
