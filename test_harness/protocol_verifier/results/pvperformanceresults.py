@@ -41,7 +41,7 @@ from test_harness.protocol_verifier.types import (
     ResultsDict,
 )
 from test_harness.results.results import ResultsHolder, DictResultsHolder
-from test_harness.protocol_verifier.kafka_metrics import (
+from test_harness.protocol_verifier.metrics_and_events.kafka_metrics import (
     consume_events_from_kafka_topic
 )
 

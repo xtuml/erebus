@@ -75,7 +75,7 @@ from test_harness.protocol_verifier.results.pvresultshandler import (
     PVKafkaMetricsHandlerNoLength,
 )
 from test_harness.protocol_verifier.results.pvperformanceresults import PVPerformanceResults
-from .kafka_metrics import PVKafkaMetricsRetriever
+from .metrics_and_events.kafka_metrics import PVKafkaMetricsRetriever
 from test_harness.protocol_verifier.results.pvresultsdataframe import PVResultsDataFrame
 from test_harness.protocol_verifier.results.pvfunctionalresults import PVFunctionalResults
 from .types import (
@@ -85,7 +85,7 @@ from .types import (
     ResultsHandlerKwargsPair,
     ERROR_LOG_FILE_PREFIX,
 )
-from .send_events import (
+from .metrics_and_events.send_events import (
     get_message_bus_kwargs,
     get_producer_kwargs,
     PVMessageSender,
