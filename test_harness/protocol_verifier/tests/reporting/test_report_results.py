@@ -2,7 +2,7 @@
 """
 import re
 from pandas import DataFrame
-from test_harness.reporting.report_results import (
+from test_harness.protocol_verifier.reporting.report_results import (
     generate_junit_xml,
     generate_html_report_string,
     get_report_files_mapping_from_dataframe_report,

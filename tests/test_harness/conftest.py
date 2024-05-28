@@ -66,22 +66,6 @@ def runner(test_app: HarnessApp) -> FlaskCliRunner:
 
 
 @pytest.fixture
-def log_file_string() -> (
-    Literal["2023-09-28T19:27:23.434758Z 1 svdc_new_job_started…"]
-):
-    """Fixture providing a log file string
-
-    :return: Returns the log file string
-    :rtype: `str`
-    """
-    return (
-        "2023-09-28T19:27:23.434758Z 1 svdc_new_job_started : JobId ="
-        " eeba705f-eac4-467c-8826-bf31673e745f : EventId ="
-        " 3cf78438-8084-494d-8d7b-efd7ea46f7d4 : EventType = A"
-    )
-
-
-@pytest.fixture
 def grok_priority_patterns() -> list[Grok]:
     """Fixture providing a list of grok patterns in priority order
 
