@@ -8,7 +8,7 @@ from pandas import DataFrame
 import pytest
 from pygrok import Grok
 
-from test_harness.reporting.log_analyser import (
+from test_harness.protocol_verifier.reporting.log_analyser import (
     check_test_result,
     get_job_id_failure_successes,
     grok_line_priority,
