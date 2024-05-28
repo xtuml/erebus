@@ -74,10 +74,16 @@ from test_harness.protocol_verifier.results.pvresultshandler import (
     PVKafkaMetricsHandler,
     PVKafkaMetricsHandlerNoLength,
 )
-from test_harness.protocol_verifier.results.pvperformanceresults import PVPerformanceResults
+from test_harness.protocol_verifier.results.pvperformanceresults import (
+    PVPerformanceResults
+)
 from ..metrics_and_events.kafka_metrics import PVKafkaMetricsRetriever
-from test_harness.protocol_verifier.results.pvresultsdataframe import PVResultsDataFrame
-from test_harness.protocol_verifier.results.pvfunctionalresults import PVFunctionalResults
+from test_harness.protocol_verifier.results.pvresultsdataframe import (
+    PVResultsDataFrame
+)
+from test_harness.protocol_verifier.results.pvfunctionalresults import (
+    PVFunctionalResults
+)
 from ..utils.types import (
     TemplateOptions,
     MetricsRetriverKwargsPairAndHandlerKwargsPair,
