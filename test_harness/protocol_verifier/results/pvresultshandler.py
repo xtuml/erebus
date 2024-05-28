@@ -20,11 +20,11 @@ import aiokafka
 from test_harness.simulator.simulator import QueueHandler, ResultsHandler
 from .pvresults import PVResults
 from .pvperformanceresults import PVPerformanceResults
-from .kafka_metrics import (
+from test_harness.protocol_verifier.kafka_metrics import (
     decode_and_yield_events_from_raw_msgs,
     decode_and_yield_events_from_raw_msgs_no_length,
 )
-from .types import PVResultsHandlerItem
+from test_harness.protocol_verifier.types import PVResultsHandlerItem
 
 
 class PVResultsAdder(ResultsHandler):

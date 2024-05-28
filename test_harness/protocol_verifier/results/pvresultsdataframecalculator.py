@@ -14,13 +14,15 @@ import pandas as pd
 import scipy.stats as sps
 import dask.array as da
 
-from .types import (
+from test_harness.protocol_verifier.types import (
     AveragesDict,
     FailuresDict,
     ReceptionCountsDict,
 )
 from test_harness.results.results import ResultsHolder
-from test_harness.protocol_verifier.pvperformanceresults import AggregationTask
+from test_harness.protocol_verifier.results.pvperformanceresults import (
+    AggregationTask
+)
 
 
 class PVResultsDataFrameCalculator:

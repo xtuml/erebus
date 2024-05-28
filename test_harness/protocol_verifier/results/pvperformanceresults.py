@@ -33,7 +33,7 @@ from .pvresultsdataframecalculator import (
     PVResultsDataFrameCalculatorV2,
     PVResultsDataFrameCalculator,
 )
-from .types import (
+from test_harness.protocol_verifier.types import (
     AveragesDict,
     FailuresDict,
     ProcessErrorDataDict,
@@ -41,7 +41,9 @@ from .types import (
     ResultsDict,
 )
 from test_harness.results.results import ResultsHolder, DictResultsHolder
-from .kafka_metrics import consume_events_from_kafka_topic
+from test_harness.protocol_verifier.kafka_metrics import (
+    consume_events_from_kafka_topic
+)
 
 
 class PVPerformanceResults(PVResults):

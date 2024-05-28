@@ -67,17 +67,17 @@ from test_harness.async_management import (
     AsyncKillManager,
     AsyncKillException,
 )
-from .pvresults import PVResults
-from .pvresultshandler import (
+from test_harness.protocol_verifier.results.pvresults import PVResults
+from test_harness.protocol_verifier.results.pvresultshandler import (
     PVResultsHandler,
     PVResultsAdder,
     PVKafkaMetricsHandler,
     PVKafkaMetricsHandlerNoLength,
 )
-from .pvperformanceresults import PVPerformanceResults
+from test_harness.protocol_verifier.results.pvperformanceresults import PVPerformanceResults
 from .kafka_metrics import PVKafkaMetricsRetriever
-from .pvresultsdataframe import PVResultsDataFrame
-from .pvfunctionalresults import PVFunctionalResults
+from test_harness.protocol_verifier.results.pvresultsdataframe import PVResultsDataFrame
+from test_harness.protocol_verifier.results.pvfunctionalresults import PVFunctionalResults
 from .types import (
     TemplateOptions,
     MetricsRetriverKwargsPairAndHandlerKwargsPair,
