@@ -157,6 +157,9 @@ class HarnessConfig:
             calculated_path = str(
                 Path(__file__).parent.parent.parent / given_path
             )
+            # debug print
+            print(f" The given path is: {given_path}")
+            print(f" The Path is : {Path(__file__).parent.parent.parent}")
         if not os.path.exists(calculated_path):
             raise RuntimeError(
                 f"The given path '{given_path}' does not exist for the config "
