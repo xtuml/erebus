@@ -13,6 +13,7 @@ import kafka3
 from kafka3.future import Future
 from aiokafka.errors import KafkaTimeoutError as AIOKafkaTimeoutError
 from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
+from configparser import ConfigParser
 
 from test_harness.utils import check_dict_equivalency
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
@@ -29,6 +30,8 @@ from test_harness.protocol_verifier.metrics_and_events.send_events import (
 
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 
+config_parser = ConfigParser
+config_parser.read()
 
 class TestPVInputConverter:
     """Tests for `PVInputConverter`"""

@@ -6,8 +6,8 @@ import os
 import glob
 import re
 import shutil
-
 import responses
+from configparser import ConfigParser
 
 from test_harness.config.config import TestConfig
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
@@ -23,6 +23,10 @@ test_config_path = os.path.join(
     / "tests/test_harness/config/test_config.config",
 )
 
+# set config_parser object
+config_parser = ConfigParser()
+config_parser.read(test_config_path)
+
 # get path of tests uml file
 test_file_path = os.path.join(
     Path(__file__).parent.parent.parent.parent.parent
@@ -36,7 +40,7 @@ uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 @responses.activate
 def test_harness_test_manager_uml_exists() -> None:
     """Tests `harness_test_manager` when uml exists in the uml file store"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     shutil.copy(test_file_path, harness_config.uml_file_store)
     with mock_pv_http_interface(harness_config):
@@ -71,7 +75,7 @@ def test_harness_test_manager_no_uml() -> None:
     """Tests `harness_test_manager` when uml does not exist in the uml file
     store
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     success, message = harness_test_manager(
         harness_config=harness_config,
