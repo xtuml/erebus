@@ -29,10 +29,10 @@ from test_harness.async_management import AsyncKillException
 
 try:
     from test_harness.protocol_verifier.config.config import (
-        ProtocolVerifierConfig,
+        ProtocolVerifierConfig
     )
-except Exception:
-    pass
+except Exception as error:
+    print(f"Error loading in ProtocolVerifierConfig: {error}")
 from test_harness.utils import create_zip_file_from_folder
 
 
@@ -87,11 +87,12 @@ class HarnessApp(Flask):
         root_path: Optional[str] = None,
     ) -> None:
         """Constructor method"""
-        if config_parser["protocol-verifier"]:
-            self.harness_config = ProtocolVerifierConfig(
-                config_parser=config_parser
-            )
-        else:
+        try: 
+            if config_parser["protocol-verifier"]:
+                self.harness_config = ProtocolVerifierConfig(
+                    config_parser=config_parser
+                )
+        except KeyError:
             self.harness_config = HarnessConfig(config_parser=config_parser)
         self.harness_progress_manager = TestHarnessProgessManager()
         super().__init__(

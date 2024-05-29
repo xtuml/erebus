@@ -9,6 +9,7 @@ import json
 import asyncio
 from zipfile import ZipFile
 from tempfile import TemporaryDirectory
+from configparser import ConfigParser
 
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
@@ -26,6 +27,10 @@ test_config_path = os.path.join(
     Path(__file__).parent,
     "config/test_config.config"
 )
+# set config_parser object
+config_parser = ConfigParser()
+config_parser.read(test_config_path)
+
 # get resources folder in tests folder
 input_resources = Path(__file__).parent / "test_files"
 # get uml_file_store in tests folder
@@ -280,7 +285,7 @@ def test_create_output_directory_does_not_exist() -> None:
     exist
     """
     harness_config = HarnessConfig(
-        config_path=test_config_path
+        config_parser=config_parser
     )
     directory_name, directory_path = create_test_output_directory(
         base_output_path=harness_config.report_file_store,

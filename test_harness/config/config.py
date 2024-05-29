@@ -35,6 +35,7 @@ class HarnessConfig:
             self.store_config_path = str(
                 Path(__file__).parent / "store_config.config"
             )
+        self.config_parser.read(self.store_config_path)
         self.parse_config_to_attributes()
 
     def parse_config_to_attributes(self) -> None:
