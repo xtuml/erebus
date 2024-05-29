@@ -85,7 +85,7 @@ class HarnessApp(Flask):
         root_path: Optional[str] = None,
     ) -> None:
         """Constructor method"""
-        try: 
+        try:
             if config_parser["protocol-verifier"]:
                 self.harness_config = ProtocolVerifierConfig(
                     config_parser=config_parser

@@ -42,6 +42,7 @@ test_config_path = os.path.join(
 config_parser = ConfigParser()
 config_parser.read(test_config_path)
 
+
 class TestPVInputConverter:
     """Tests for `PVInputConverter`"""
 
@@ -123,7 +124,9 @@ class TestPVInputConverter:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         data_converter = PVInputConverter(
-            message_bus="HTTP", harness_config=ProtocolVerifierConfig(config_parser)
+            message_bus="HTTP", harness_config=ProtocolVerifierConfig(
+                config_parser
+                )
         )
         job_id = "job_id"
         job_info = {"job_info": "job_info"}
