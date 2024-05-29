@@ -9,7 +9,7 @@
 # pylint: disable=R0914
 import warnings
 
-from .pvperformanceresults import (
+from .pv_performance_results import (
     PVPerformanceResults,
 )
 

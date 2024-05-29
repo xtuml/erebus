@@ -20,7 +20,7 @@ from test_harness.protocol_verifier.utils.types import (
     ReceptionCountsDict,
 )
 from test_harness.results.results import ResultsHolder
-from test_harness.protocol_verifier.results.pvperformanceresults import (
+from test_harness.protocol_verifier.results.pv_performance_results import (
     AggregationTask
 )
 

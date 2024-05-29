@@ -28,8 +28,8 @@ from test_harness.results.aggregation import (
     AggregationTask,
     BinValueCount,
 )
-from .pvresults import PVResults
-from .pvresultsdataframecalculator import (
+from .pv_results import PVResults
+from .pv_results_dataframe_calculator import (
     PVResultsDataFrameCalculatorV2,
     PVResultsDataFrameCalculator,
 )
