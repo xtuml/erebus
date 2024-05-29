@@ -53,6 +53,7 @@ def test_harness_test_manager_uml_exists() -> None:
     print(f"test_output_directory: {harness_config.report_file_store}")
     assert success
     files = glob.glob("*.*", root_dir=harness_config.report_file_store)
+    print(f"Files found: {files}")  # Add this line to print the files found
     expected_files = [
         "Results.csv",
         "Results.html",
