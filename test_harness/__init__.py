@@ -89,10 +89,10 @@ class HarnessApp(Flask):
         """Constructor method"""
         if config_parser["protocol-verifier"]:
             self.harness_config = ProtocolVerifierConfig(
-                config_path=config_parser
+                config_parser=config_parser
             )
         else:
-            self.harness_config = HarnessConfig(config_path=config_parser)
+            self.harness_config = HarnessConfig(config_parser=config_parser)
         self.harness_progress_manager = TestHarnessProgessManager()
         super().__init__(
             import_name,

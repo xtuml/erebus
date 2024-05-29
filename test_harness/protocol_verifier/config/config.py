@@ -18,7 +18,7 @@ class ProtocolVerifierConfig(HarnessConfig):
         # Initialise HarnessConfig to inherit attributes
         super().__init__(config_parser)
 
-        self.config_parser = ConfigParser()
+        self.config_parser = config_parser
         self.parse_pv_config()
 
     def parse_pv_config(self):
