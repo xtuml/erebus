@@ -26,6 +26,13 @@ import yaml
 
 from test_harness.config.config import TestConfig, HarnessConfig
 from test_harness.async_management import AsyncKillException
+
+try:
+    from test_harness.protocol_verifier.config.config import (
+        ProtocolVerifierConfig,
+    )
+except Exception:
+    pass
 from test_harness.utils import create_zip_file_from_folder
 
 
@@ -68,7 +75,7 @@ class HarnessApp(Flask):
     def __init__(
         self,
         import_name: str,
-        harness_config_path: Optional[str] = None,
+        config_parser: ConfigParser,
         static_url_path: Optional[str] = None,
         static_folder: Optional[Union[str, os.PathLike]] = "static",
         static_host: Optional[str] = None,
@@ -80,7 +87,12 @@ class HarnessApp(Flask):
         root_path: Optional[str] = None,
     ) -> None:
         """Constructor method"""
-        self.harness_config = HarnessConfig(config_path=harness_config_path)
+        if config_parser["protocol-verifier"]:
+            self.harness_config = ProtocolVerifierConfig(
+                config_path=config_parser
+            )
+        else:
+            self.harness_config = HarnessConfig(config_path=config_parser)
         self.harness_progress_manager = TestHarnessProgessManager()
         super().__init__(
             import_name,
