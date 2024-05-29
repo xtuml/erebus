@@ -12,9 +12,7 @@ import shutil
 from zipfile import ZipFile
 import glob
 from multiprocessing import Value
-from threading import Lock
-import asyncio
-import logging
+
 from tempfile import TemporaryDirectory
 from configparser import ConfigParser
 
@@ -25,7 +23,7 @@ from tqdm import tqdm
 import yaml
 
 from test_harness.config.config import TestConfig, HarnessConfig
-from test_harness.async_management import AsyncKillException
+from test_harness.utils import AsyncTestStopper
 
 try:
     from test_harness.protocol_verifier.config.config import (
@@ -790,61 +788,6 @@ class TestHarnessProgessManager:
         """
         del self.pbars[name]
         self.test_is_running.value = False
-
-
-class AsyncTestStopper:
-    """Class to stop a test"""
-
-    def __init__(self) -> None:
-        """Constructor method"""
-        self.stop_test = False
-        self.lock = Lock()
-        self.is_stopped = False
-
-    @contextmanager
-    def run_test(
-        self,
-    ) -> Generator["AsyncTestStopper", Any, None]:
-        """Method to run the test as a context manager
-
-        :raises exception: Raises an exception if an exception is raised
-        :yield: Yields the instance of the class
-        :rtype: `Generator`[:class:`AsyncTestStopper`, `Any`, `None`]
-        """
-        try:
-            self.reset()
-            yield self
-        except Exception as exception:
-            logging.getLogger().error(
-                "The folowing type of error occurred %s with value %s",
-                type(exception),
-                exception,
-            )
-            raise exception
-
-        finally:
-            self.reset()
-
-    async def stop(self) -> None:
-        """Method to stop the test"""
-        while True:
-            await asyncio.sleep(1)
-            with self.lock:
-                if self.stop_test:
-                    self.is_stopped = True
-                    logging.getLogger().info("Test stopped")
-                    raise AsyncKillException("Test stopped")
-
-    def reset(self) -> None:
-        """Method to reset the test"""
-        with self.lock:
-            self.stop_test = False
-            self.is_stopped = False
-
-    def set(self) -> None:
-        """Method to set the test"""
-        with self.lock:
-            self.stop_test = True
 
 
 if __name__ == "__main__":
