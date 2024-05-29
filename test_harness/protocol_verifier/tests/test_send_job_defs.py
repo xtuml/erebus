@@ -28,6 +28,7 @@ test_config_path = os.path.join(
 config_parser = ConfigParser()
 config_parser.read(test_config_path)
 
+
 @responses.activate
 def test_send_job_defs_from_file_io_file_name_tuples_ok() -> None:
     """Tests `send_job_defs_from_file_io_file_name_tuples` when response
