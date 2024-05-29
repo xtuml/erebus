@@ -35,7 +35,7 @@ from test_harness.utils import (
     RollOverChoice,
     choose_from_front_of_list,
 )
-from test_harness.protocol_verifier.calc_pv_finish import (
+from test_harness.protocol_verifier.pv_file_inspector import (
     PVFileInspector,
     handle_domain_log_file_reception_and_save,
 )
