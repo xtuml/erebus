@@ -12,7 +12,7 @@ import pandas as pd
 from pygrok import Grok
 from typing import Generator, Literal, Callable, Any
 from test_harness.simulator.simulator import SimDatum
-from test_harness.protocol_verifier.test_utils import (
+from test_harness.protocol_verifier.testing_suite.base_test_classes import (
     PVPerformanceResults,
     PVResultsDataFrame,
 )

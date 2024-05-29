@@ -25,7 +25,7 @@ from test_harness.message_buses.message_buses import (
     MessageExceptionHandler,
     MessageSender,
 )
-from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
+from test_harness.protocol_verifier.utils.types import ERROR_LOG_FILE_PREFIX
 
 
 class ErrorLogger:

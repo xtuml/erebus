@@ -11,7 +11,7 @@ import kafka3
 import aiokafka
 
 from test_harness.simulator.simulator import ResultsHandler
-from test_harness.protocol_verifier.types import ResultsDict
+from test_harness.protocol_verifier.utils.types import ResultsDict
 from test_harness.metrics.metrics import MetricsRetriever
 
 

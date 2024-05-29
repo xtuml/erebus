@@ -3,7 +3,7 @@ import json
 
 import aiokafka
 
-from test_harness.protocol_verifier.kafka_metrics import (
+from test_harness.protocol_verifier.metrics_and_events.kafka_metrics import (
     decode_and_yield_events_from_raw_msgs_no_length,
 )
 

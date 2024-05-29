@@ -17,7 +17,7 @@ from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
 from test_harness.utils import check_dict_equivalency
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.message_buses.message_buses import get_producer_context
-from test_harness.protocol_verifier.send_events import (
+from test_harness.protocol_verifier.metrics_and_events.send_events import (
     PVInputConverter,
     PVResponseConverter,
     PVMessageResponseConverter,

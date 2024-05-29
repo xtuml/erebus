@@ -7,7 +7,7 @@
 # pylint: disable=C0114
 import pandas as pd
 
-from .pvresults import PVResults
+from .pv_results import PVResults
 
 
 class PVFunctionalResults(PVResults):

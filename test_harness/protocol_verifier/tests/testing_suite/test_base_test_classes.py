@@ -33,24 +33,24 @@ from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
 
 from test_harness.config.config import TestConfig
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
-from test_harness.protocol_verifier.generate_test_files import (
+from test_harness.protocol_verifier.testing_suite.generate_test_files import (
     generate_test_events_from_puml_files,
 )
-from test_harness.protocol_verifier.pvperformanceresults import (
+from test_harness.protocol_verifier.results.pv_performance_results import (
     ProcessErrorDataDict,
     ResultsDict,
 )
-from test_harness.protocol_verifier.pvresultsdataframe import (
+from test_harness.protocol_verifier.results.pv_results_dataframe import (
     PVResultsDataFrame,
 )
-from test_harness.protocol_verifier.test_utils import (
+from test_harness.protocol_verifier.testing_suite.base_test_classes import (
     FunctionalTest,
     PerformanceTest,
     PVFunctionalResults,
     PVResultsHandler,
 )
 from test_harness import TestHarnessPbar
-from test_harness.protocol_verifier.types import PVResultsHandlerItem
+from test_harness.protocol_verifier.utils.types import PVResultsHandlerItem
 from test_harness.simulator.simulator_profile import Profile
 from test_harness.utils import (
     check_dict_equivalency,
@@ -62,25 +62,25 @@ from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
 )
 from test_harness.results.results import DictResultsHolder, ResultsHolder
 from test_harness import AsyncTestStopper
-from test_harness.protocol_verifier.types import ERROR_LOG_FILE_PREFIX
+from test_harness.protocol_verifier.utils.types import ERROR_LOG_FILE_PREFIX
 
 # get test config
 test_config_path = os.path.join(
-    Path(__file__).parent.parent.parent.parent
+    Path(__file__).parent.parent.parent.parent.parent
     / "tests/test_harness/config/test_config.config",
 )
 
 # test files directory path
-test_files_path = Path(__file__).parent / "test_files"
+test_files_path = Path(__file__).parent.parent / "test_files"
 
 # get path of tests uml file
 test_file_path = os.path.join(
-    Path(__file__).parent / "test_files", "test_uml_job_def.puml"
+    Path(__file__).parent.parent / "test_files", "test_uml_job_def.puml"
 )
 
 
 # grok file path
-grok_file = Path(__file__).parent / "test_files" / "grok_file.txt"
+grok_file = Path(__file__).parent.parent / "test_files" / "grok_file.txt"
 
 
 def check_numpy_expected_vs_actual(

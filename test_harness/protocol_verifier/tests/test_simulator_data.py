@@ -30,7 +30,7 @@ from test_harness.protocol_verifier.simulator_data import (
     convert_list_dict_to_json_io_bytes,
     convert_list_dict_to_pv_json_io_bytes,
 )
-from test_harness.protocol_verifier.types import TemplateOptions
+from test_harness.protocol_verifier.utils.types import TemplateOptions
 
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 

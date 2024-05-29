@@ -28,12 +28,12 @@ from test_harness.results.aggregation import (
     AggregationTask,
     BinValueCount,
 )
-from .pvresults import PVResults
-from .pvresultsdataframecalculator import (
+from .pv_results import PVResults
+from .pv_results_dataframe_calculator import (
     PVResultsDataFrameCalculatorV2,
     PVResultsDataFrameCalculator,
 )
-from .types import (
+from test_harness.protocol_verifier.utils.types import (
     AveragesDict,
     FailuresDict,
     ProcessErrorDataDict,
@@ -41,7 +41,9 @@ from .types import (
     ResultsDict,
 )
 from test_harness.results.results import ResultsHolder, DictResultsHolder
-from .kafka_metrics import consume_events_from_kafka_topic
+from test_harness.protocol_verifier.metrics_and_events.kafka_metrics import (
+    consume_events_from_kafka_topic
+)
 
 
 class PVPerformanceResults(PVResults):

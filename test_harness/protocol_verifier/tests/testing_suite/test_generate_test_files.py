@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from test_harness.protocol_verifier.generate_test_files import (
+from test_harness.protocol_verifier.testing_suite.generate_test_files import (
     generate_test_events_from_puml_file,
     generate_test_events_from_puml_files,
     load_test_file_data_json_into_test_file_holder,
@@ -16,7 +16,7 @@ from test_harness.config.config import TestConfig
 from test_harness.utils import check_dict_equivalency
 
 # test file resources folder
-test_file_resources = Path(__file__).parent / "test_files"
+test_file_resources = Path(__file__).parent.parent / "test_files"
 
 
 def test_generate_test_events_from_puml_file_default_config() -> None:

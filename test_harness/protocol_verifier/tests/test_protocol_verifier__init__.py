@@ -29,7 +29,9 @@ from test_harness.protocol_verifier import (
     select_store_paths,
     full_pv_test,
 )
-from test_harness.protocol_verifier.generate_test_files import TestJobFile
+from test_harness.protocol_verifier.testing_suite.generate_test_files import (
+    TestJobFile
+)
 from test_harness.utils import clean_directories
 from test_harness.simulator.simulator_profile import Profile
 from test_harness import AsyncTestStopper

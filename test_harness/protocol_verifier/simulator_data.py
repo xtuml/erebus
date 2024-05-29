@@ -16,7 +16,7 @@ import itertools
 from abc import ABC, abstractmethod
 
 from test_harness.simulator.simulator import SimDatum, Batch, async_do_nothing
-from test_harness.protocol_verifier.types import TemplateOptions
+from test_harness.protocol_verifier.utils.types import TemplateOptions
 
 
 class PVSimDatumTransformer(ABC):

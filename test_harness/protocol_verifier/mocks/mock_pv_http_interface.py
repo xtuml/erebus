@@ -7,7 +7,7 @@ import responses
 
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from aioresponses import aioresponses, CallbackResult
-from test_harness.protocol_verifier.utils import PVLogFileNameCallback
+from test_harness.protocol_verifier.utils.utils import PVLogFileNameCallback
 
 
 @contextmanager

@@ -4,7 +4,7 @@ from itertools import chain
 import json
 
 from test_harness.config.config import TestConfig
-from test_harness.protocol_verifier.types import (
+from test_harness.protocol_verifier.utils.types import (
     TestJobFile, TemplateJobsDataAndValidityTuple,
     SequenceTypeData, UpdateableIterator
 )

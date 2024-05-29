@@ -35,7 +35,7 @@ from test_harness.utils import (
     RollOverChoice,
     choose_from_front_of_list,
 )
-from test_harness.protocol_verifier.calc_pv_finish import (
+from test_harness.protocol_verifier.pv_file_inspector import (
     PVFileInspector,
     handle_domain_log_file_reception_and_save,
 )
@@ -67,25 +67,31 @@ from test_harness.async_management import (
     AsyncKillManager,
     AsyncKillException,
 )
-from .pvresults import PVResults
-from .pvresultshandler import (
+from test_harness.protocol_verifier.results.pv_results import PVResults
+from test_harness.protocol_verifier.results.pv_results_handler import (
     PVResultsHandler,
     PVResultsAdder,
     PVKafkaMetricsHandler,
     PVKafkaMetricsHandlerNoLength,
 )
-from .pvperformanceresults import PVPerformanceResults
-from .kafka_metrics import PVKafkaMetricsRetriever
-from .pvresultsdataframe import PVResultsDataFrame
-from .pvfunctionalresults import PVFunctionalResults
-from .types import (
+from test_harness.protocol_verifier.results.pv_performance_results import (
+    PVPerformanceResults
+)
+from ..metrics_and_events.kafka_metrics import PVKafkaMetricsRetriever
+from test_harness.protocol_verifier.results.pv_results_dataframe import (
+    PVResultsDataFrame
+)
+from test_harness.protocol_verifier.results.pv_functional_results import (
+    PVFunctionalResults
+)
+from ..utils.types import (
     TemplateOptions,
     MetricsRetriverKwargsPairAndHandlerKwargsPair,
     MetricsRetrieverKwargsPair,
     ResultsHandlerKwargsPair,
     ERROR_LOG_FILE_PREFIX,
 )
-from .send_events import (
+from ..metrics_and_events.send_events import (
     get_message_bus_kwargs,
     get_producer_kwargs,
     PVMessageSender,
