@@ -24,6 +24,7 @@ from test_harness.utils import clean_directories
 # grok file path
 grok_file_path = Path(__file__).parent / "test_files" / "grok_file.txt"
 
+
 def cleanup_folders():
     """Cuntion to execute clean directories"""
     file_path = os.path.join(
@@ -38,6 +39,7 @@ def cleanup_folders():
             f"{file_path}/log_file_store",
         ]
     )
+
 
 @pytest.fixture(autouse=True)
 def run_before_and_after_tests(tmpdir):
