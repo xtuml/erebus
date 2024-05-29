@@ -3,6 +3,7 @@
 import copy
 from pathlib import Path
 import os
+from configparser import ConfigParser
 
 import responses
 import pytest
@@ -17,6 +18,15 @@ from test_harness.protocol_verifier.send_job_defs import (
 # test file resources folder
 test_file_resources = Path(__file__).parent / "test_files"
 
+# get test config
+test_config_path = os.path.join(
+    Path(__file__).parent.parent.parent.parent
+    / "tests/test_harness/config/test_config.config",
+)
+
+# set config_parser object
+config_parser = ConfigParser()
+config_parser.read(test_config_path)
 
 @responses.activate
 def test_send_job_defs_from_file_io_file_name_tuples_ok() -> None:
@@ -77,7 +87,7 @@ def test_send_job_defs_from_uml() -> None:
     """Tests send_job_defs_from_uml"""
     url = "http://mockserver.com/job-definitions"
     responses.add(responses.POST, url, status=200)
-    harness_config = HarnessConfig()
+    harness_config = HarnessConfig(config_parser)
     test_uml_file_path_1 = os.path.join(test_file_resources, "test_uml_1.puml")
     test_uml_file_path_2 = os.path.join(test_file_resources, "test_uml_2.puml")
     send_job_defs_from_uml(
