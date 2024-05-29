@@ -3,6 +3,7 @@
 import json
 import aiohttp
 import re
+import os
 from datetime import datetime
 import asyncio
 
@@ -11,6 +12,7 @@ import aioresponses
 import aiokafka
 import kafka3
 from kafka3.future import Future
+from pathlib import Path
 from aiokafka.errors import KafkaTimeoutError as AIOKafkaTimeoutError
 from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
 from configparser import ConfigParser
@@ -30,8 +32,15 @@ from test_harness.protocol_verifier.metrics_and_events.send_events import (
 
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 
-config_parser = ConfigParser
-config_parser.read()
+# get test config
+test_config_path = os.path.join(
+    Path(__file__).parent.parent.parent.parent.parent
+    / "tests/test_harness/config/test_config.config",
+)
+
+# set config_parser object
+config_parser = ConfigParser()
+config_parser.read(test_config_path)
 
 class TestPVInputConverter:
     """Tests for `PVInputConverter`"""
@@ -43,7 +52,7 @@ class TestPVInputConverter:
         :param job_list: A list of event dicts in a job
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
-        test_config = ProtocolVerifierConfig()
+        test_config = ProtocolVerifierConfig(config_parser)
         test_config.send_json_without_length_prefix = False
 
         data_converter = PVInputConverter(
@@ -76,7 +85,7 @@ class TestPVInputConverter:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
 
-        test_config = ProtocolVerifierConfig()
+        test_config = ProtocolVerifierConfig(config_parser)
         test_config.send_json_without_length_prefix = True
 
         data_converter = PVInputConverter(
@@ -114,7 +123,7 @@ class TestPVInputConverter:
         :type job_list: `list`[`dict`[`str`, `str`  |  `list`[`str`]]]
         """
         data_converter = PVInputConverter(
-            message_bus="HTTP", harness_config=ProtocolVerifierConfig()
+            message_bus="HTTP", harness_config=ProtocolVerifierConfig(config_parser)
         )
         job_id = "job_id"
         job_info = {"job_info": "job_info"}
@@ -310,7 +319,7 @@ class TestPVMessageSender:
             sender = PVMessageSender(
                 message_producer=producer,
                 message_bus="KAFKA",
-                harness_config=ProtocolVerifierConfig(),
+                harness_config=ProtocolVerifierConfig(config_parser),
             )
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
@@ -370,7 +379,7 @@ class TestPVMessageSender:
             sender = PVMessageSender(
                 message_producer=producer,
                 message_bus="KAFKA",
-                harness_config=ProtocolVerifierConfig(),
+                harness_config=ProtocolVerifierConfig(config_parser),
             )
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
@@ -422,7 +431,7 @@ class TestPVMessageSender:
             sender = PVMessageSender(
                 message_producer=producer,
                 message_bus="KAFKA3",
-                harness_config=ProtocolVerifierConfig(),
+                harness_config=ProtocolVerifierConfig(config_parser),
             )
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
@@ -492,7 +501,7 @@ class TestPVMessageSender:
             sender = PVMessageSender(
                 message_producer=producer,
                 message_bus="KAFKA3",
-                harness_config=ProtocolVerifierConfig(),
+                harness_config=ProtocolVerifierConfig(config_parser),
             )
             job_id = "job_id"
             job_info = {"job_info": "job_info"}
@@ -547,7 +556,7 @@ class TestPVMessageSender:
                 sender = PVMessageSender(
                     message_producer=producer,
                     message_bus="HTTP",
-                    harness_config=ProtocolVerifierConfig(),
+                    harness_config=ProtocolVerifierConfig(config_parser),
                 )
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}
@@ -592,7 +601,7 @@ class TestPVMessageSender:
                 sender = PVMessageSender(
                     message_producer=producer,
                     message_bus="HTTP",
-                    harness_config=ProtocolVerifierConfig(),
+                    harness_config=ProtocolVerifierConfig(config_parser),
                 )
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}
@@ -637,7 +646,7 @@ class TestPVMessageSender:
                 sender = PVMessageSender(
                     message_producer=producer,
                     message_bus="HTTP",
-                    harness_config=ProtocolVerifierConfig(),
+                    harness_config=ProtocolVerifierConfig(config_parser),
                 )
                 job_id = "job_id"
                 job_info = {"job_info": "job_info"}
@@ -656,7 +665,7 @@ class TestPVMessageSender:
 
 def test_get_message_bus_kwargs() -> None:
     """Tests `get_message_bus_kwargs`"""
-    harness_config = ProtocolVerifierConfig()
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     message_bus_kwargs = get_message_bus_kwargs(harness_config)
@@ -677,7 +686,7 @@ def test_get_message_bus_kwargs() -> None:
 
 def test_get_producer_kwargs():
     """Tests `get_producer_kwargs`"""
-    harness_config = ProtocolVerifierConfig()
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.kafka_message_bus_topic = "test_topic"
     harness_config.pv_send_url = "http://localhost:8080/sendevents"
     for details in [
