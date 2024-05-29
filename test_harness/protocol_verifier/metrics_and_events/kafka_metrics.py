@@ -209,7 +209,9 @@ def decode_and_yield_events_from_raw_msgs_no_length(
     for partition in raw_msgs.keys():
         for msg in raw_msgs[partition]:
             data = bytearray(msg.value)
-            json_data: KafkaBenchMarkProbeJSON = json.loads(data.decode("utf-8"))
+            json_data: KafkaBenchMarkProbeJSON = json.loads(
+                data.decode("utf-8")
+            )
             if json_data["payload"]["tag"] in KEY_EVENTS:
                 yield ResultsDict(
                     field=json_data["payload"]["tag"],
