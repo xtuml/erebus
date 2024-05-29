@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import json
+import os
 
 import datetime
 import pytest
@@ -18,8 +19,34 @@ from test_harness.protocol_verifier.testing_suite.base_test_classes import (
 )
 from requests import PreparedRequest
 
+from test_harness.utils import clean_directories
+
 # grok file path
 grok_file_path = Path(__file__).parent / "test_files" / "grok_file.txt"
+
+def cleanup_folders():
+    """Cuntion to execute clean directories"""
+    file_path = os.path.join(
+        Path(__file__).parent.parent.parent.parent
+        / "tests/test_harness",
+    )
+    clean_directories(
+        [
+            f"{file_path}/report_output",
+            f"{file_path}/uml_file_store",
+            f"{file_path}/test_file_store",
+            f"{file_path}/log_file_store",
+        ]
+    )
+
+@pytest.fixture(autouse=True)
+def run_before_and_after_tests(tmpdir):
+    """Fixture to execute asserts before and after a test is run"""
+    # Setup: fill with any logic you want
+    cleanup_folders()
+    yield  # this is where the testing happens
+    # Teardown : fill with any logic you want
+    cleanup_folders()
 
 
 @pytest.fixture
