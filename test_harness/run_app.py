@@ -8,6 +8,8 @@ import os
 from contextlib import ExitStack
 from time import sleep
 import gc
+from configparser import ConfigParser
+from pathlib import Path
 
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
@@ -26,8 +28,19 @@ def run_harness_app(harness_config_path: str | None = None) -> None:
     :type harness_config_path: `str` | `None`, optional
     """
 
+    config_parser = ConfigParser()
+    if harness_config_path is None:
+        harness_config_path = str(
+            Path(__file__).parent / "config/default_config.config"
+        )
+    try:
+        config_parser.read(harness_config_path)
+    except Exception as error:
+        print(f"Unable to find config at the specified location: {error}")
+        sys.exit()
+
     harness_app = create_app(
-        harness_config_path=harness_config_path,
+        config_parser=config_parser,
     )
     thread = threading.Thread(
         target=harness_app.run,

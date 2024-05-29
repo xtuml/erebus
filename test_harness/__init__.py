@@ -16,6 +16,7 @@ from threading import Lock
 import asyncio
 import logging
 from tempfile import TemporaryDirectory
+from configparser import ConfigParser
 
 from flask import Flask, request, make_response, Response, jsonify, send_file
 from werkzeug.datastructures import FileStorage
@@ -389,13 +390,13 @@ class HarnessApp(Flask):
 
 
 def create_app(
-    harness_config_path: Optional[str] = None,
+    config_parser: ConfigParser,
     test_config: Optional[Mapping] = None,
 ) -> HarnessApp:
     """Creates HarnessApp(Flask)
 
-    :param harness_config_path: _description_, defaults to None
-    :type harness_config_path: Optional[str], optional
+    :param config_parser: :class: `ConfigParser`
+    :type config_parser: Optional[str], optional
     :param test_config: Configuration test config, defaults to None
     :type test_config: :class:`Mapping`, optional
     :return: Returns a HarnessApp instance
@@ -404,7 +405,7 @@ def create_app(
     # create and configure the app
     app = HarnessApp(
         __name__,
-        harness_config_path=harness_config_path,
+        config_parser=config_parser,
         instance_relative_config=True,
     )
     app.config.from_mapping()
