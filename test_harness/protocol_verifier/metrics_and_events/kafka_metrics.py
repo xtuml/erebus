@@ -11,7 +11,10 @@ import kafka3
 import aiokafka
 
 from test_harness.simulator.simulator import ResultsHandler
-from test_harness.protocol_verifier.utils.types import ResultsDict
+from test_harness.protocol_verifier.utils.types import (
+    ResultsDict,
+    KafkaBenchMarkProbeJSON,
+)
 from test_harness.metrics.metrics import MetricsRetriever
 
 
@@ -206,12 +209,14 @@ def decode_and_yield_events_from_raw_msgs_no_length(
     for partition in raw_msgs.keys():
         for msg in raw_msgs[partition]:
             data = bytearray(msg.value)
-            json_data = json.loads(data.decode("utf-8"))
-            if json_data["tag"] in KEY_EVENTS:
+            json_data: KafkaBenchMarkProbeJSON = json.loads(
+                data.decode("utf-8")
+            )
+            if json_data["payload"]["tag"] in KEY_EVENTS:
                 yield ResultsDict(
-                    field=json_data["tag"],
+                    field=json_data["payload"]["tag"],
                     timestamp=json_data['timestamp'],
-                    event_id=json_data["EventId"]
+                    event_id=json_data["payload"]["eventId"]
                 )
 
 

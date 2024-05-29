@@ -6,6 +6,10 @@ import aiokafka
 from test_harness.protocol_verifier.metrics_and_events.kafka_metrics import (
     decode_and_yield_events_from_raw_msgs_no_length,
 )
+from test_harness.protocol_verifier.utils.types import (
+    KafkaBenchMarkProbeJSON,
+    KafkaBenchMarkProbePayload,
+)
 
 
 def test_decode_and_yield_events_from_raw_msgs_no_length() -> None:
@@ -36,11 +40,13 @@ def test_decode_and_yield_events_from_raw_msgs_no_length() -> None:
                 key=None,
                 value=bytearray(
                     json.dumps(
-                        {
-                            "tag": "reception_event_received",
-                            "timestamp": "2022-01-01T00:00:00.000Z",
-                            "EventId": "test_event_id",
-                        }
+                        KafkaBenchMarkProbeJSON(
+                            timestamp="2022-01-01T00:00:00.000Z",
+                            payload=KafkaBenchMarkProbePayload(
+                                tag="reception_event_received",
+                                eventId="test_event_id",
+                            )
+                        ),
                     ).encode("utf-8")
                 ),
                 timestamp=0,

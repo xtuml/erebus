@@ -275,3 +275,23 @@ class MetricsRetriverKwargsPairAndHandlerKwargsPair(NamedTuple):
     handler_kwargs_pair: ResultsHandlerKwargsPair
     """The handler for the results and kwargs
     """
+
+
+class KafkaBenchMarkProbePayload(TypedDict):
+    """Typed dict that type hints for an expected Kafka Benchmark Probe Payload
+    """
+    eventId: str
+    """The event id of the probe
+    """
+    tag: str
+
+
+class KafkaBenchMarkProbeJSON(TypedDict):
+    """Typed dict that type hints for an expected Kafka Benchmark Probe JSON
+    """
+    timestamp: str
+    """The timestamp of the probe
+    """
+    payload: KafkaBenchMarkProbePayload
+    """The payload for the metric
+    """

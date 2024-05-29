@@ -16,6 +16,10 @@ from test_harness.protocol_verifier.testing_suite.base_test_classes import (
     PVPerformanceResults,
     PVResultsDataFrame,
 )
+from test_harness.protocol_verifier.utils.types import (
+    KafkaBenchMarkProbeJSON,
+    KafkaBenchMarkProbePayload,
+)
 from requests import PreparedRequest
 
 # grok file path
@@ -397,23 +401,20 @@ def kafka_consumer_mock_no_length(
                 "svdc_event_processed",
             ]
             for i, field in enumerate(log_field):
-
-                bytes_string = '"tag" : "' + field + '", '
-
-                event_id_string = f""""EventId" : "{event['eventId']}", """
-
-                timestamp_string = (
-                    '"timestamp" : "'
-                    + time_stamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                    + '"'
+                KafkaBenchMarkProbeJSON(
+                    timestamp=time_stamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                    payload=KafkaBenchMarkProbePayload(
+                        tag=field, eventId=event["eventId"]
+                    ),
                 )
 
-                byte_array = str(
-                    "{ "
-                    + bytes_string
-                    + event_id_string
-                    + timestamp_string
-                    + " }"
+                byte_array = json.dumps(
+                    KafkaBenchMarkProbeJSON(
+                        timestamp=time_stamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                        payload=KafkaBenchMarkProbePayload(
+                            tag=field, eventId=event["eventId"]
+                        ),
+                    )
                 ).encode("utf-8")
 
                 consumer_record = aiokafka.ConsumerRecord(
