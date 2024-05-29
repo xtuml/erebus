@@ -10,6 +10,7 @@ import json
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 import logging
 from zipfile import ZipFile
+from configparser import ConfigParser
 
 from typing import Callable, Literal
 from io import BytesIO
@@ -45,6 +46,10 @@ test_config_path = os.path.join(
     Path(__file__).parent.parent.parent.parent
     / "tests/test_harness/config/test_config.config",
 )
+
+# set config_parser object
+config_parser = ConfigParser()
+config_parser.read(test_config_path)
 
 test_files_path = Path(__file__).parent / "test_files"
 
@@ -106,7 +111,7 @@ uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 @responses.activate
 def test_puml_files_test() -> None:
     """Tests method `puml_test_files`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     with mock_pv_http_interface(harness_config):
@@ -141,7 +146,7 @@ def test_puml_files_test() -> None:
 @responses.activate
 def test_puml_files_test_send_as_pv_bytes() -> None:
     """Tests method `puml_test_files` with send as pv bytes set to true"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.pv_send_as_pv_bytes = True
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
@@ -178,7 +183,7 @@ def test_puml_files_test_job_file_with_options() -> None:
     """Tests method `puml_test_files` with an input job file containing options
     for Extra job invariants with mismatched invariants and length set to 2
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     with mock_pv_http_interface(harness_config):
         puml_files_test(
@@ -215,7 +220,7 @@ def test_puml_files_test_functional_extra_job_invariants() -> None:
     """Tests method `puml_test_files` functional test with extra job
     invariants
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     with mock_pv_http_interface(harness_config):
@@ -260,7 +265,7 @@ def test_puml_files_test_performance_extra_job_invariants() -> None:
     """Tests method `puml_test_files` performance test with extra job
     invariants
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -325,7 +330,7 @@ def test_puml_files_test_json_validity_tests_aer_log_file() -> None:
     """Tests method `puml_test_files` with json validity tests only using aer
     log file
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -387,7 +392,7 @@ def test_puml_files_test_json_validity_tests_ver_log_file() -> None:
     """Tests method `puml_test_files` with json validity tests but only using
     verifier log file
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     reception_file = []
@@ -456,7 +461,7 @@ def test_puml_files_test_with_location_log_urls(
         | `tuple`[:class:`Literal`[`200`], `dict`, `str`],
     ]
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     with mock_pv_http_interface(
@@ -493,7 +498,7 @@ def test_puml_files_test_with_location_log_urls(
 
 def test_puml_files_test_no_teg_pkg(monkeypatch: pytest.MonkeyPatch):
     """Tests method `puml_test_files` with no teg package"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     import builtins
 
@@ -523,7 +528,7 @@ def test_puml_files_test_no_teg_pkg(monkeypatch: pytest.MonkeyPatch):
 
 def test_get_test_profile_one_file() -> None:
     """Tests `get_test_profile` when one file is present in the folder"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     # prepare data
     shutil.copy(test_csv_file_path_1, harness_config.profile_store)
     profile = get_test_profile(harness_config.profile_store)
@@ -533,7 +538,7 @@ def test_get_test_profile_one_file() -> None:
 
 def test_get_test_profile_two_files() -> None:
     """Tests `get_test_profile` when two files are present in the folder"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     # prepare data
     shutil.copy(test_csv_file_path_1, harness_config.profile_store)
     shutil.copy(test_csv_file_path_2, harness_config.profile_store)
@@ -547,7 +552,7 @@ def test_get_test_profile_two_files() -> None:
 
 def test_get_test_profile_no_file() -> None:
     """Tests `get_test_profile` when no files are present in the folder"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     profile = get_test_profile(harness_config.profile_store)
     assert profile is None
 
@@ -557,7 +562,7 @@ def test_puml_files_performance_with_input_profile(
     grok_exporter_string: str,
 ) -> None:
     """Tests method `puml_test_files` for a performance test using a profile"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
     test_config.parse_from_dict(
@@ -611,7 +616,7 @@ def test_puml_files_performance_with_input_profile(
 
 def test_get_test_file_paths_two_files() -> None:
     """Tests `get_test_file_paths` with two files in the directory"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     shutil.copy(test_uml_1_events, harness_config.test_file_store)
     shutil.copy(test_uml_2_events, harness_config.test_file_store)
     test_file_paths = get_test_file_paths(harness_config.test_file_store)
@@ -626,7 +631,7 @@ def test_get_test_file_paths_two_files() -> None:
 
 def test_get_test_file_paths_no_files() -> None:
     """Tests `get_test_file_paths` with no files in the directory"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_file_paths = get_test_file_paths(harness_config.test_file_store)
     assert test_file_paths is None
 
@@ -634,7 +639,7 @@ def test_get_test_file_paths_no_files() -> None:
 @responses.activate
 def test_puml_files_test_with_test_files_uploaded() -> None:
     """Tests method `puml_test_files` with test files uploaded"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     shutil.copy(test_uml_1_events, harness_config.test_file_store)
     with mock_pv_http_interface(harness_config):
@@ -709,7 +714,7 @@ def test_puml_files_test_functional_test_timeout(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Tests method `puml_test_files` with a functonal test with a timeout"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.pv_test_timeout = 2
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
@@ -736,7 +741,7 @@ def test_puml_files_performance_test_timeout(
     caplog: pytest.LogCaptureFixture, grok_exporter_string: str
 ) -> None:
     """Tests method `puml_test_files` for a performance test that times out"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.pv_test_timeout = 2
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
@@ -780,7 +785,7 @@ def test_puml_files_performance_test_async_stop(
     caplog: pytest.LogCaptureFixture, grok_exporter_string: str
 ) -> None:
     """Tests method `puml_test_files` for a performance test that times out"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 100000
     test_config = TestConfig()
@@ -811,7 +816,7 @@ def test_puml_files_performance_test_async_stop(
 
 def test_select_store_paths_all_exist() -> None:
     """Tests `select_store_paths` when all the store paths exist"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     with TemporaryDirectory() as tmp_dir:
         with ZipFile(
             os.path.join(test_files_path, "test_zip_file.zip"), "r"
@@ -832,7 +837,7 @@ def test_select_store_paths_all_exist() -> None:
 
 def test_select_store_paths_none_exist() -> None:
     """Tests `select_store_paths` when none of the store paths exist"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     with TemporaryDirectory() as tmp_dir:
         store_paths = select_store_paths(tmp_dir, harness_config)
         for file_store in [
@@ -850,7 +855,7 @@ def test_full_pv_test_test_files_in_test_output_directory() -> None:
     """Tests method `full_pv_test` for a performance test with input files
     from a zip file
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
     test_config.parse_from_dict(
