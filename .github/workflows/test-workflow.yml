@@ -52,6 +52,7 @@ jobs:
           rm -rf external
 
       - name: Run Tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
-          export PYTHONPATH=/workspaces/erebus:$PYTHONPATH
-          pytest 
+          pytest
