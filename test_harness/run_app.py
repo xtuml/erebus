@@ -108,6 +108,7 @@ def main(
     :raises error: Raises an error if an error is raised in sub functions but
     cleans directories first before re-raising
     """
+    # TODO update when CLI functionality working again
     harness_config = HarnessConfig(harness_config_path)
     test_config = TestConfig()
     if test_config_yaml_path:
