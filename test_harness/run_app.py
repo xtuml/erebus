@@ -14,7 +14,14 @@ from pathlib import Path
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.process_manager import harness_test_manager
-from test_harness.protocol_verifier import puml_files_test, get_puml_file_paths
+try:
+    from test_harness.protocol_verifier import (
+        puml_files_test,
+        get_puml_file_paths,
+    )
+except ImportError:
+    puml_files_test = None
+    get_puml_file_paths = None
 from test_harness.utils import clean_directories
 
 logging.basicConfig(level=logging.INFO)
@@ -101,6 +108,7 @@ def main(
     :raises error: Raises an error if an error is raised in sub functions but
     cleans directories first before re-raising
     """
+    # TODO update when CLI functionality working again
     harness_config = HarnessConfig(harness_config_path)
     test_config = TestConfig()
     if test_config_yaml_path:

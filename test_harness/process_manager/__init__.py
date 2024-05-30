@@ -15,8 +15,9 @@ try:
     from test_harness.protocol_verifier.config.config import (
         ProtocolVerifierConfig,
     )
-except Exception:
-    pass
+except ImportError:
+    ProtocolVerifierConfig = None
+    full_pv_test = None
 from test_harness.utils import clean_directories
 from test_harness import AsyncTestStopper
 
@@ -51,7 +52,9 @@ def harness_test_manager(
     """
     # TODO: add generic test to else statement
     try:
-        if isinstance(harness_config, ProtocolVerifierConfig):
+        if ProtocolVerifierConfig and isinstance(
+                harness_config, ProtocolVerifierConfig
+                ):
             full_pv_test(
                 harness_config=harness_config,
                 test_config=test_config,
