@@ -10,6 +10,7 @@ from typing import Literal, Any
 import glob
 import re
 from multiprocessing import Manager, Process
+from configparser import ConfigParser
 
 from aioresponses import CallbackResult
 import responses
@@ -32,6 +33,10 @@ from test_harness.protocol_verifier.mocks.mock_pv_http_interface import (
 test_config_path = os.path.join(
     Path(__file__).parent, "config/run_app_test.config"
 )
+
+# set config_parser object
+config_parser = ConfigParser()
+config_parser.read(test_config_path)
 
 # get path of tests uml file
 test_file_path = os.path.join(
@@ -108,7 +113,7 @@ def test_run_harness_app() -> None:
     Raises:
         AssertionError: If the test fails.
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     manager = Manager()
     reception_file = manager.list()
 
@@ -250,7 +255,7 @@ def test_run_harness_app_uploaded_zip_file() -> None:
     Raises:
         AssertionError: If the test fails.
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     manager = Manager()
     reception_file = manager.list()
 
@@ -381,7 +386,7 @@ def test_run_harness_app_2_workers() -> None:
     Raises:
         AssertionError: If the test fails.
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
 
     manager = Manager()
     reception_file = manager.list()
@@ -489,7 +494,7 @@ def test_run_harness_app_stop_test() -> None:
     Raises:
         AssertionError: If the test fails.
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     manager = Manager()
     reception_file = manager.list()
 
@@ -590,7 +595,7 @@ def test_run_harness_app_2_workers_stop_test() -> None:
     Raises:
         AssertionError: If the test fails.
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
 
     manager = Manager()
     reception_file = manager.list()

@@ -12,10 +12,9 @@ import shutil
 from zipfile import ZipFile
 import glob
 from multiprocessing import Value
-from threading import Lock
-import asyncio
-import logging
+
 from tempfile import TemporaryDirectory
+from configparser import ConfigParser
 
 from flask import Flask, request, make_response, Response, jsonify, send_file
 from werkzeug.datastructures import FileStorage
@@ -24,7 +23,14 @@ from tqdm import tqdm
 import yaml
 
 from test_harness.config.config import TestConfig, HarnessConfig
-from test_harness.async_management import AsyncKillException
+from test_harness.utils import AsyncTestStopper
+
+try:
+    from test_harness.protocol_verifier.config.config import (
+        ProtocolVerifierConfig
+    )
+except Exception as error:
+    print(f"Error loading in ProtocolVerifierConfig: {error}")
 from test_harness.utils import create_zip_file_from_folder
 
 
@@ -67,7 +73,7 @@ class HarnessApp(Flask):
     def __init__(
         self,
         import_name: str,
-        harness_config_path: Optional[str] = None,
+        config_parser: ConfigParser,
         static_url_path: Optional[str] = None,
         static_folder: Optional[Union[str, os.PathLike]] = "static",
         static_host: Optional[str] = None,
@@ -79,7 +85,13 @@ class HarnessApp(Flask):
         root_path: Optional[str] = None,
     ) -> None:
         """Constructor method"""
-        self.harness_config = HarnessConfig(config_path=harness_config_path)
+        try:
+            if config_parser["protocol-verifier"]:
+                self.harness_config = ProtocolVerifierConfig(
+                    config_parser=config_parser
+                )
+        except KeyError:
+            self.harness_config = HarnessConfig(config_parser=config_parser)
         self.harness_progress_manager = TestHarnessProgessManager()
         super().__init__(
             import_name,
@@ -389,13 +401,13 @@ class HarnessApp(Flask):
 
 
 def create_app(
-    harness_config_path: Optional[str] = None,
+    config_parser: ConfigParser,
     test_config: Optional[Mapping] = None,
 ) -> HarnessApp:
     """Creates HarnessApp(Flask)
 
-    :param harness_config_path: _description_, defaults to None
-    :type harness_config_path: Optional[str], optional
+    :param config_parser: :class: `ConfigParser`
+    :type config_parser: Optional[str], optional
     :param test_config: Configuration test config, defaults to None
     :type test_config: :class:`Mapping`, optional
     :return: Returns a HarnessApp instance
@@ -404,7 +416,7 @@ def create_app(
     # create and configure the app
     app = HarnessApp(
         __name__,
-        harness_config_path=harness_config_path,
+        config_parser=config_parser,
         instance_relative_config=True,
     )
     app.config.from_mapping()
@@ -776,61 +788,6 @@ class TestHarnessProgessManager:
         """
         del self.pbars[name]
         self.test_is_running.value = False
-
-
-class AsyncTestStopper:
-    """Class to stop a test"""
-
-    def __init__(self) -> None:
-        """Constructor method"""
-        self.stop_test = False
-        self.lock = Lock()
-        self.is_stopped = False
-
-    @contextmanager
-    def run_test(
-        self,
-    ) -> Generator["AsyncTestStopper", Any, None]:
-        """Method to run the test as a context manager
-
-        :raises exception: Raises an exception if an exception is raised
-        :yield: Yields the instance of the class
-        :rtype: `Generator`[:class:`AsyncTestStopper`, `Any`, `None`]
-        """
-        try:
-            self.reset()
-            yield self
-        except Exception as exception:
-            logging.getLogger().error(
-                "The folowing type of error occurred %s with value %s",
-                type(exception),
-                exception,
-            )
-            raise exception
-
-        finally:
-            self.reset()
-
-    async def stop(self) -> None:
-        """Method to stop the test"""
-        while True:
-            await asyncio.sleep(1)
-            with self.lock:
-                if self.stop_test:
-                    self.is_stopped = True
-                    logging.getLogger().info("Test stopped")
-                    raise AsyncKillException("Test stopped")
-
-    def reset(self) -> None:
-        """Method to reset the test"""
-        with self.lock:
-            self.stop_test = False
-            self.is_stopped = False
-
-    def set(self) -> None:
-        """Method to set the test"""
-        with self.lock:
-            self.stop_test = True
 
 
 if __name__ == "__main__":

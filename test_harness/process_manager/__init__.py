@@ -9,7 +9,14 @@ import sys
 from tqdm import tqdm
 
 from test_harness.config.config import TestConfig, HarnessConfig
-from test_harness.protocol_verifier import full_pv_test
+
+try:
+    from test_harness.protocol_verifier import full_pv_test
+    from test_harness.protocol_verifier.config.config import (
+        ProtocolVerifierConfig,
+    )
+except Exception:
+    pass
 from test_harness.utils import clean_directories
 from test_harness import AsyncTestStopper
 
@@ -42,15 +49,18 @@ def harness_test_manager(
     :rtype: `tuple`[:class:`Literal`[`True`], :class:`Literal`['']] |
     `tuple`[:class:`Literal`[`False`], `str`]
     """
-    # TODO: pull full_pv_test out and replace with generic test_harness test
+    # TODO: add generic test to else statement
     try:
-        full_pv_test(
-            harness_config=harness_config,
-            test_config=test_config,
-            test_output_directory=test_output_directory,
-            pbar=pbar,
-            test_stopper=test_stopper,
-        )
+        if isinstance(harness_config, ProtocolVerifierConfig):
+            full_pv_test(
+                harness_config=harness_config,
+                test_config=test_config,
+                test_output_directory=test_output_directory,
+                pbar=pbar,
+                test_stopper=test_stopper,
+            )
+        else:
+            pass
         return (True, "")
 
     except Exception as error:

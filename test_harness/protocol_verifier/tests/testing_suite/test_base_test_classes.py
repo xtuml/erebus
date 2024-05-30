@@ -30,6 +30,7 @@ from pygrok import Grok
 import kafka3
 from kafka3.future import Future
 from kafka3.errors import KafkaTimeoutError as KafkaTimeoutError3
+from configparser import ConfigParser
 
 from test_harness.config.config import TestConfig
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
@@ -70,6 +71,10 @@ test_config_path = os.path.join(
     / "tests/test_harness/config/test_config.config",
 )
 
+# set config_parser object
+config_parser = ConfigParser()
+config_parser.read(test_config_path)
+
 # test files directory path
 test_files_path = Path(__file__).parent.parent / "test_files"
 
@@ -77,7 +82,6 @@ test_files_path = Path(__file__).parent.parent / "test_files"
 test_file_path = os.path.join(
     Path(__file__).parent.parent / "test_files", "test_uml_job_def.puml"
 )
-
 
 # grok file path
 grok_file = Path(__file__).parent.parent / "test_files" / "grok_file.txt"
@@ -883,7 +887,7 @@ class TestPVResultsHandler:
     @pytest.mark.skip(reason="This passes intermittently - bug raised to fix")
     def test_events_cache_happy_path() -> None:
         """Tests the happy path for event caching using shelve.Shelf."""
-        harness_config = ProtocolVerifierConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(config_parser)
         results = PVFunctionalResults()
         with NamedTemporaryFile(suffix=".db") as tmp_file:
             with PVResultsHandler(
@@ -914,7 +918,7 @@ class TestPVResultsHandler:
     @staticmethod
     def test___enter__() -> None:
         """Tests :class:`PVResultsHandler`.`__enter__`"""
-        harness_config = ProtocolVerifierConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(config_parser)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -925,7 +929,7 @@ class TestPVResultsHandler:
     @staticmethod
     def test___exit__() -> None:
         """Tests :class:`PVResultsHandler`.`__exit__`"""
-        harness_config = ProtocolVerifierConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(config_parser)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -939,7 +943,7 @@ class TestPVResultsHandler:
         """Tests
         :class:`PVResultsHandler`.`__exit__` when an error is thrown
         """
-        harness_config = ProtocolVerifierConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(config_parser)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -955,7 +959,7 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler` context manager when an error is
         thrown
         """
-        harness_config = ProtocolVerifierConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(config_parser)
         results = PVFunctionalResults()
         with pytest.raises(RuntimeError) as e_info:
             with PVResultsHandler(results, harness_config.report_file_store):
@@ -965,7 +969,7 @@ class TestPVResultsHandler:
     @staticmethod
     def test_handle_result() -> None:
         """Tests :class:`PVResultsHandler`.`handle_result`"""
-        harness_config = ProtocolVerifierConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(config_parser)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -981,7 +985,7 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler`.`handle_item_from_queue`
         with no save
         """
-        harness_config = ProtocolVerifierConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(config_parser)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store
@@ -1007,7 +1011,7 @@ class TestPVResultsHandler:
         """Tests :class:`PVResultsHandler`.`handle_item_from_queue`
         with save
         """
-        harness_config = ProtocolVerifierConfig(test_config_path)
+        harness_config = ProtocolVerifierConfig(config_parser)
         results = PVFunctionalResults()
         results_handler = PVResultsHandler(
             results, harness_config.report_file_store, save_files=True
@@ -1037,7 +1041,7 @@ class TestPVResultsHandler:
 
 def test_send_test_files_functional() -> None:
     """Tests :class:`FunctionalTest`.`send_test_files`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
@@ -1059,7 +1063,7 @@ def test_send_test_files_functional() -> None:
 @responses.activate
 def test_run_test_functional() -> None:
     """Tests :class:`FunctionalTest`.`run_test`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
     test_events = generate_test_events_from_puml_files(
@@ -1082,7 +1086,7 @@ def test_run_test_functional() -> None:
 @responses.activate
 def test_calc_results_functional() -> None:
     """Tests :class:`FunctionalTest`.`calc_results`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -1111,7 +1115,7 @@ def test_calc_results_functional() -> None:
 def test_calc_results_functional_different_prefix() -> None:
     """Tests :class:`FunctionalTest`.`calc_results` for a different prefix for
     the verifier log domain"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.log_urls["ver"]["prefix"] = "pv"
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
@@ -1139,7 +1143,7 @@ def test_calc_results_functional_different_prefix() -> None:
 
 def test_send_test_files_performance() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1167,7 +1171,7 @@ def test_send_test_files_performance() -> None:
 
 def test_send_test_files_with_simulator_sliced_delays() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1218,7 +1222,7 @@ def test_send_test_files_with_simulator_sliced_delays() -> None:
 @responses.activate
 def test_run_test_performance() -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1247,7 +1251,7 @@ def test_run_test_performance() -> None:
 def test_run_test_performance_different_prefix() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` but with a different prefix
     for the verifier log domain"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.log_urls["ver"]["prefix"] = "pv"
     test_config = TestConfig()
     test_config.parse_from_dict(
@@ -1281,7 +1285,7 @@ def test_run_test_performance_multi_process() -> None:
     :param caplog: Fixture to capture logs
     :type caplog: :class:`pytest.LogCaptureFixture`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1317,7 +1321,7 @@ def test_run_test_performance_zero_gap_jobs() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` when the job event gap is
     set to zero meaning that all jobs are sequenced in order with no overlap
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1366,7 +1370,7 @@ def test_run_test_performance_round_robin_zero_gap() -> None:
     Uses two puml files to test the round robin functionality one with events
     A -> B and the other with events C -> D
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1423,7 +1427,7 @@ def test_send_test_files_with_simulator_process_safe() -> None:
     """Tests :class:`PerformanceTests`.`send_test_files_with_simulator`
     using process safe generators for sim data and delay times
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.pv_finish_interval = 8
     test_config = TestConfig()
     test_config.parse_from_dict(
@@ -1476,7 +1480,7 @@ def test_run_test_performance_kafka(kafka_producer_mock: None) -> None:
     :param kafka_producer_mock: Fixture providing a mocked kafka producer
     :type kafka_producer_mock: `None`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -1526,7 +1530,7 @@ def test_run_test_performance_kafka_with_errors(
         return future
 
     monkeypatch.setattr(kafka3.KafkaProducer, "send", mock_send)
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.message_bus_protocol = "KAFKA3"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -1574,7 +1578,7 @@ def test_run_test_performance_kafka_with_errors(
 @responses.activate
 def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
     """Tests :class:`PerformanceTests`.`calc_results`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1614,7 +1618,7 @@ def test_run_test_performance_calc_results(grok_exporter_string: str) -> None:
 @responses.activate
 def test_run_test_performance_profile_job_batch() -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1645,7 +1649,7 @@ def test_run_test_performance_profile_job_batch() -> None:
 @responses.activate
 def test_run_test_performance_profile_shard() -> None:
     """Tests :class:`PerformanceTests`.`run_tests` with the test timeout hit"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.pv_finish_interval = 5
     test_config = TestConfig()
     test_config.parse_from_dict(
@@ -1686,7 +1690,7 @@ def test_get_report_files_from_results(
     pv results and th results
     :type results_dataframe: :class:`pd`.`DataFrame`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -1759,7 +1763,7 @@ def test_run_test_performance_stop_test(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 1
     test_config = TestConfig()
@@ -1795,7 +1799,7 @@ def test_run_test_performance_stop_test_async_test_stopper(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests`"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 10000
@@ -1840,7 +1844,7 @@ async def test_run_test_performance_stop_test_async_test_stopper_multi_process(
     :param caplog: Fixture to capture logs
     :type caplog: :class:`pytest.LogCaptureFixture`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     # make stop test timeout 1 second
     harness_config.pv_test_timeout = 100000
     harness_config.pv_finish_interval = 10000
@@ -1888,7 +1892,7 @@ def test_run_test_performance_no_logs(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Tests :class:`PerformanceTests`.`run_tests` not grabbing logs"""
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {
@@ -1935,7 +1939,7 @@ def test_run_test_performance_kafka_get_metrics_from_kafka(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -1988,7 +1992,7 @@ def test_run_test_performance_kafka_get_metrics_from_kafka_no_length(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.send_json_without_length_prefix = True
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
@@ -2042,7 +2046,7 @@ def test_run_test_performance_agg_during_test(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -2109,7 +2113,7 @@ def test_run_test_performance_agg_during_test_sample(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -2158,7 +2162,7 @@ def test_run_test_performance_low_memory(
     :param kafka_consumer_mock: Fixture providing a mocked kafka consumer
     :type kafka_consumer_mock: `None`
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     harness_config.message_bus_protocol = "KAFKA"
     harness_config.kafka_message_bus_host = "localhost:9092"
     harness_config.kafka_message_bus_topic = "test"
@@ -2198,7 +2202,7 @@ def test_use_harness_config_instead_of_test_config() -> None:
     """Tests :class:`PerformanceTests` using test_finish parameters in
     ProtocolVerifierConfig
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_events = generate_test_events_from_puml_files(
         [test_file_path], test_config=test_config
@@ -2225,7 +2229,7 @@ def test_use_test_config_instead_of_harness_config() -> None:
     """Tests :class:`PerformanceTests` using test_finish parameters in
     TestConfig
     """
-    harness_config = ProtocolVerifierConfig(test_config_path)
+    harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
     test_config.parse_from_dict(
         {

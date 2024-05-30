@@ -5,6 +5,7 @@
 Fixtures for Test Harness
 """
 
+from configparser import ConfigParser
 import sys
 from os.path import abspath
 from pathlib import Path
@@ -31,11 +32,16 @@ def test_app() -> Generator[HarnessApp, None, None]:
     :yield: Yields the Harness app
     :rtype: :class:`Generator`[:class:`HarnessApp`, None, None]
     """
-    app = create_app(
-        harness_config_path=str(
-            Path(__file__).parent / "config/test_config.config"
-        ),
+    config_parser = ConfigParser()
+    harness_config_path = str(
+        Path(__file__).parent / "config/test_config.config"
     )
+    try:
+        config_parser.read(harness_config_path)
+    except Exception as error:
+        print(f"Unable to find config at the specified location: {error}")
+        sys.exit()
+    app = create_app(config_parser=config_parser)
     app.config.update({"TESTING": True})
 
     yield app

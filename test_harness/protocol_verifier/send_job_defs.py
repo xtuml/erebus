@@ -4,7 +4,7 @@ from io import BytesIO
 
 from test_harness.protocol_verifier.config.config import ProtocolVerifierConfig
 from test_harness.utils import create_file_io_file_name_tuple_with_file_path
-from test_harness.pv_config.pv_config_generation import (
+from test_harness.protocol_verifier.pv_config.pv_config_generation import (
     get_job_defs_from_uml_files,
 )
 from test_harness.requests_th.send_config import post_config_form_upload
