@@ -30,7 +30,7 @@ grok_file_path = Path(__file__).parent / "test_files" / "grok_file.txt"
 
 
 def cleanup_folders():
-    """Cuntion to execute clean directories"""
+    """Functtion to execute clean directories"""
     file_path = os.path.join(
         Path(__file__).parent.parent.parent.parent
         / "tests/test_harness",
@@ -47,11 +47,12 @@ def cleanup_folders():
 
 @pytest.fixture(autouse=True)
 def run_before_and_after_tests(tmpdir):
-    """Fixture to execute asserts before and after a test is run"""
-    # Setup: fill with any logic you want
+    """Fixture to clean output directories before and after tests"""
+    # Before test
     cleanup_folders()
-    yield  # this is where the testing happens
-    # Teardown : fill with any logic you want
+    # This is where the testing happens
+    yield
+    # After test
     cleanup_folders()
 
 
