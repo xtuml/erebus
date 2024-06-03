@@ -32,7 +32,10 @@ verifier_parse_logs = test_resources / "Verifier_parse_test.log"
 # reception log file validity
 reception_json_validity = test_resources / "Reception_json_validity_test.log"
 
+# svdc_job_failed logs file
+svdc_job_failed_logs_file = test_resources / "svdc_job_failed.log"
 
+# NOTE PASSING
 def test_parse_log_string_to_pv_results_dataframe() -> None:
     """Tests `parse_log_string_to_pv_results_dataframe`"""
     pv_results = parse_log_string_to_pv_results_dataframe(
@@ -40,11 +43,11 @@ def test_parse_log_string_to_pv_results_dataframe() -> None:
     )
     assert len(pv_results) == 5
     expected_job_ids = [
-        ("13021f1d-0854-4948-ab55-c9f5b5977d23", True),
-        ("91adcba7-05ff-4361-9be7-c0de8e22b9f7", True),
-        ("854ca735-d000-49d9-941e-947d2728848e", False),
-        ("b5498ed4-a532-48c9-885f-d01671f95d60", False),
-        ("f5e96c8b-9bc1-4882-a482-72c36d4e767c", False),
+        ("f67bd9b6-581a-4ca4-9fcd-d6eb4a6bd5f3", True),
+        ("1efbea67-04cb-4f10-863f-d4025c48af23", True),
+        ("8def8c2a-2a86-485d-aac1-df1a4d27667a", False),
+        ("131137f6-968a-443f-b468-99e725cb3e3e", False),
+        ("032b0c8b-80a9-4f35-bd02-30c1c765d8d9", False),
     ]
     for job_id, pv_result in expected_job_ids:
         assert job_id in pv_results.index
@@ -77,45 +80,16 @@ def test_parse_log_string_to_pv_results_dataframe_reception_log_file() -> None:
 
 def test_parse_log_string_to_pv_results_dataframe_svdc_failures() -> None:
     """Tests `parse_log_string_to_pv_results_dataframe` with SVDC failures"""
-    log_string = (
-        "2023-11-02T18:44:44.951533Z 3 svdc_job_failed : FailureReason = one"
-        " or more constraint checks have failed : JobId ="
-        " 3843e246-7940-4e70-b173-4840cfc21386 with Job Name = simple_AND_job"
-        + "\n"
-        + "svdc_job_failed : FailureReason = Invalid audit event definition"
-        " for a start event in job definition = simple_AND_job since the"
-        " occurrenceNumberInSequence is expected to be 1 : JobId ="
-        " 3f01aeca-7b4a-4288-9078-8ce32d36fec7 with Job Name ="
-        " simple_AND_job"
-        + "\n"
-        + "2023-10-26T15:01:47.148184Z 1 svdc_job_failed : FailureReason ="
-        " JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : ApplicationName ="
-        " default_application_name : EventType = SpyEvent : FailureReason ="
-        " Event type is not allowed to be reported for application : JobId ="
-        " b5498ed4-a532-48c9-885f-d01671f95d60"
-        + "\n"
-        + "2023-10-26T15:01:46.154341Z 1 svdc_job_failed : FailureReason = An"
-        " event starting a new sequence has been received but there is no"
-        " matching start event definition for Job ="
-        " 854ca735-d000-49d9-941e-947d2728848e, with audit event type = B :"
-        " JobId = 854ca735-d000-49d9-941e-947d2728848e"
-        + "\n"
-        + "svdc_job_failed : FailureReason = JobId ="
-        " a5239839-c2e3-474b-81ab-88a007eb956f : EventType = SpyEvent :"
-        " FailureReason = Event type is not allowed for job name, Job Name ="
-        " simple_AND_job : JobId = a5239839-c2e3-474b-81ab-88a007eb956f with"
-        " Job Name = simple_AND_job"
-    )
     pv_results = parse_log_string_to_pv_results_dataframe(
-        log_string=log_string
+        log_string=svdc_job_failed_logs_file.read_text()
     )
     assert len(pv_results) == 5
     expected_job_ids = [
-        ("3843e246-7940-4e70-b173-4840cfc21386", False),
-        ("3f01aeca-7b4a-4288-9078-8ce32d36fec7", False),
-        ("b5498ed4-a532-48c9-885f-d01671f95d60", False),
-        ("854ca735-d000-49d9-941e-947d2728848e", False),
-        ("a5239839-c2e3-474b-81ab-88a007eb956f", False),
+        ("8def8c2a-2a86-485d-aac1-df1a4d27667a", False),
+        ("5fa561e2-91c4-49f6-98ba-1e2bdfaabb05", False),
+        ("370718ec-f51e-44a2-a45c-8f7af9f05950", False),
+        ("6dab7f0c-c7b9-41d7-8105-28ac1a45a25d", False),
+        ("e329cf98-a671-4f68-bed4-1e794004fc95", False),
     ]
     for job_id, pv_result in expected_job_ids:
         assert job_id in pv_results.index

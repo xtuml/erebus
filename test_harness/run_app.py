@@ -14,6 +14,7 @@ from pathlib import Path
 from test_harness import create_app, create_test_output_directory
 from test_harness.config.config import HarnessConfig, TestConfig
 from test_harness.process_manager import harness_test_manager
+
 try:
     from test_harness.protocol_verifier import (
         puml_files_test,
