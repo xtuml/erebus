@@ -17,6 +17,8 @@ from tempfile import TemporaryDirectory
 from configparser import ConfigParser
 
 from flask import Flask, request, make_response, Response, jsonify, send_file
+
+from flasgger import Swagger, swag_from
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from tqdm import tqdm
@@ -27,7 +29,7 @@ from test_harness.utils import AsyncTestStopper
 
 try:
     from test_harness.protocol_verifier.config.config import (
-        ProtocolVerifierConfig
+        ProtocolVerifierConfig,
     )
 except Exception as error:
     print(f"Error loading in ProtocolVerifierConfig: {error}")
@@ -421,6 +423,8 @@ def create_app(
     )
     app.config.from_mapping()
 
+    Swagger(app)
+
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile("config.py", silent=True)
@@ -439,6 +443,7 @@ def create_app(
 
     # route to upload profile
     @app.route("/upload/profile", methods=["POST"])
+    @swag_from("api.yml")
     def upload_profile() -> None:
         return app.upload_profile()
 
