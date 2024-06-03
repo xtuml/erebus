@@ -24,7 +24,7 @@ from test_harness.utils import check_dict_equivalency
 test_resources = Path(__file__).parent.parent / "test_files"
 
 # unhappy logs file
-unhappy_logs_file = test_resources / "unhappy_jobs_test.logs"
+unhappy_logs_file = test_resources / "unhappy_jobs_test.log"
 
 # verifier parse logs
 verifier_parse_logs = test_resources / "Verifier_parse_test.log"
@@ -33,7 +33,7 @@ verifier_parse_logs = test_resources / "Verifier_parse_test.log"
 reception_json_validity = test_resources / "Reception_json_validity_test.log"
 
 # svdc_job_failed logs file
-svdc_job_failed_logs_file = test_resources / "svdc_job_failed.log"
+svdc_job_failed_logs_file = test_resources / "svdc_job_failed_test.log"
 
 # NOTE PASSING
 def test_parse_log_string_to_pv_results_dataframe() -> None:
@@ -78,6 +78,7 @@ def test_parse_log_string_to_pv_results_dataframe_reception_log_file() -> None:
         assert all(pv_results.loc[job_id, "PVResult"]) == pv_result
 
 
+# NOTE PASSING
 def test_parse_log_string_to_pv_results_dataframe_svdc_failures() -> None:
     """Tests `parse_log_string_to_pv_results_dataframe` with SVDC failures"""
     pv_results = parse_log_string_to_pv_results_dataframe(
@@ -103,8 +104,8 @@ def test_parse_log_string_to_pv_results_dataframe_un_happy() -> None:
     )
     assert len(pv_results) == 2
     expected_job_ids = [
-        ("e365e78d-1b7a-49f1-b12d-165a64bae217", True),
-        ("296fea2e-db4b-48d2-b111-223694a5a64b", False),
+        ("f67bd9b6-581a-4ca4-9fcd-d6eb4a6bd5f3", True),
+        ("032b0c8b-80a9-4f35-bd02-30c1c765d8d9", False),
     ]
     for job_id, pv_result in expected_job_ids:
         assert job_id in pv_results.index
