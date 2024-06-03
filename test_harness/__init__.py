@@ -792,4 +792,4 @@ class TestHarnessProgessManager:
 
 if __name__ == "__main__":
     # run the app
-    create_app().run(debug=True)
+    create_app().run()
