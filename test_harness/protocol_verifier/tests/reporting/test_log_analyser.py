@@ -35,7 +35,7 @@ reception_json_validity = test_resources / "Reception_json_validity_test.log"
 # svdc_job_failed logs file
 svdc_job_failed_logs_file = test_resources / "svdc_job_failed_test.log"
 
-# NOTE PASSING
+
 def test_parse_log_string_to_pv_results_dataframe() -> None:
     """Tests `parse_log_string_to_pv_results_dataframe`"""
     pv_results = parse_log_string_to_pv_results_dataframe(
