@@ -465,8 +465,9 @@ def create_app(
         tags:
             - Upload
         parameters:
-            - name: profile file
-              in: multipart/form
+            - name: file1
+              in: formData
+              description: file to upload
               type: file
               required: true
         responses:
