@@ -463,7 +463,7 @@ def create_app(
         how many test files are sent within that second
         ---
         tags:
-            - Upload
+            - Optional
         parameters:
             - name: file1
               in: formData
@@ -495,6 +495,31 @@ def create_app(
 
     @app.route("/upload/named-zip-files", methods=["POST"])
     def upload_named_zip_files() -> None:
+        """Endpoint to handle the upload of a Test Case zip file
+        This is the recommed way of gettingTest Case zip files may be uploaded\
+        to the Test Harness. These can include all the test data required to\
+        run the specific test.
+        ---
+        tags:
+            - Upload
+        parameters:
+            - name: File
+              in: formData
+              description: zip file to upload
+              type: file
+              required: true
+            - name: Test Name
+              in: string
+              description: name of test to be used in /startTest
+              type: string
+              required: true
+        responses:
+            200:
+                description: Files uploaded successfully
+            400:
+                description: Files failed to upload - mime-type must be \
+                multipart/form-data OR File is not a zip file
+        """
         return app.upload_named_zip_files()
 
     @app.route("/stopTest", methods=["POST"])
