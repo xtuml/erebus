@@ -13,4 +13,4 @@ report_output/*
 test_harness/report_output/*
 
 ansible/hosts.yml
-.flake8
+config/*

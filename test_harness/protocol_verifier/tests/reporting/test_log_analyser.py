@@ -78,7 +78,6 @@ def test_parse_log_string_to_pv_results_dataframe_reception_log_file() -> None:
         assert all(pv_results.loc[job_id, "PVResult"]) == pv_result
 
 
-# NOTE PASSING
 def test_parse_log_string_to_pv_results_dataframe_svdc_failures() -> None:
     """Tests `parse_log_string_to_pv_results_dataframe` with SVDC failures"""
     pv_results = parse_log_string_to_pv_results_dataframe(
