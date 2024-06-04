@@ -472,9 +472,9 @@ def create_app(
               required: true
         responses:
             200:
-                description: File uploaded successfully
+                description: Files uploaded successfully
             400:
-                description: File failed to upload - mime-type must be \
+                description: Files failed to upload - mime-type must be \
                 multipart/form-data
         """
         return app.upload_profile()
