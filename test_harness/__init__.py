@@ -465,7 +465,7 @@ def create_app(
         tags:
             - Optional
         parameters:
-            - name: file1
+            - name: File
               in: formData
               description: file to upload
               type: file
