@@ -430,7 +430,21 @@ def create_app(
         "version": "v0.01-beta",
         "termsOfService": None,
         "servers": {"url": "http://127.0.0.1:8800"},
-        "components": {"schemas": {"Test"}},
+        "definitions": {
+            "JSONTestConfig": {
+                "type": "object",
+                "properties": {
+                    "num_files_per_sec": {
+                        "type": "integer",
+                        "format": "int64",
+                    },
+                    "num_workers": {"type": "integer", "format": "int64"},
+                    "aggregate_during": {"type": "boolean"},
+                    "sample_rate": {"type": "integer", "format": "int64"},
+                    "low_memory": {"type": "boolean"},
+                },
+            },
+        },
     }
 
     Swagger(app)
@@ -464,6 +478,7 @@ def create_app(
         how many test files are sent within that second
         ---
         tags:
+            - Upload
             - Optional
         parameters:
             - name: File
@@ -494,37 +509,30 @@ def create_app(
         run the specific test.
         ---
         tags:
-            - Run test
+            - Test
+            - Start test
         consumes:
              - application/json
-        produces:
-            application/json
         parameters:
-            - name: TestName
+            - name: TestJSONRequestBody
               in: body
-              description: name of test to run
+              required: true
+              description: Name and optional config of test to run
               schema:
                 type: object
-                required: true
-            - name: TestConfig
-              in: dict
-              description: a JSON object that provides test configuration\
-              details
-              type: dict
-              required: false
+                required:
+                    - TestName
+                properties:
+                    TestName:
+                        type: string
+                    TestConfig:
+                        type: object
         responses:
             200:
                 description: Test started successfully
-            400:
-                description: Files failed to upload - mime-type must be \
-                multipart/form-data OR File is not a zip file
-        requestBody:
-            description: JSON object of test to run
-            required: true
-            content:
-                application/json:
-                    schema:
-                        type: integer
+            415:
+                description: Bad Request - Unsupported Media Type. \
+                Must include 'Content-Type application/json'
         """
         return app.start_test()
 
@@ -563,6 +571,27 @@ def create_app(
 
     @app.route("/stopTest", methods=["POST"])
     def stop_test() -> None:
+        """Endpoint to handle gracefully stopping a specified test
+        To stop a test gracefully once it is running. Currently the JSON\
+        accepted is empty.
+        ---
+        tags:
+            - Test
+            - Stop test
+        consumes:
+             - application/json
+        parameters:
+            - name: StopTestJSONRequestBody
+              in: body
+              description: Currently accepts empty JSON body
+              schema:
+                type: object
+        responses:
+            200:
+                description: Request to stop test successful
+            400:
+                description: Failed to stop test
+        """
         return app.stop_test()
 
     @app.route("/getTestOutputFolder", methods=["POST"])
