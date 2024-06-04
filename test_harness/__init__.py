@@ -430,6 +430,7 @@ def create_app(
         "version": "v0.01-beta",
         "termsOfService": None,
         "servers": {"url": "http://127.0.0.1:8800"},
+        "components": {"schemas": {"Test"}},
     }
 
     Swagger(app)
@@ -487,6 +488,44 @@ def create_app(
     # route to start
     @app.route("/startTest", methods=["POST"])
     def start_test() -> None:
+        """Endpoint to handle the starting of a specified test
+        This is the recommed way of gettingTest Case zip files may be uploaded\
+        to the Test Harness. These can include all the test data required to\
+        run the specific test.
+        ---
+        tags:
+            - Run test
+        consumes:
+             - application/json
+        produces:
+            application/json
+        parameters:
+            - name: TestName
+              in: body
+              description: name of test to run
+              schema:
+                type: object
+                required: true
+            - name: TestConfig
+              in: dict
+              description: a JSON object that provides test configuration\
+              details
+              type: dict
+              required: false
+        responses:
+            200:
+                description: Test started successfully
+            400:
+                description: Files failed to upload - mime-type must be \
+                multipart/form-data OR File is not a zip file
+        requestBody:
+            description: JSON object of test to run
+            required: true
+            content:
+                application/json:
+                    schema:
+                        type: integer
+        """
         return app.start_test()
 
     @app.route("/isTestRunning", methods=["GET"])
