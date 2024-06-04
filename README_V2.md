@@ -57,11 +57,16 @@ At its core, Erebus is an extensible testing framework that empowers developers 
 Erebus isn't just a tool; it's a test harness that adapts to your needs, ensuring your software not only works but excels under real-world conditions.
 
 # Quickstart
+1. Clone the repo
 ```sh
 git clone https://github.com/xtuml/erebus.git
 cd erebus
+```
+2. Run with docker compose
+```sh
 docker compose up --build
 ```
+
 This assumes you have docker installed on your machine (https://www.docker.com/products/docker-desktop/)
 
 # Installation Guide
@@ -84,16 +89,18 @@ cd erebus
 2. (Optional) Customise settings:
 * Configure Erebus by copying the `./test_harness/config/default_config.config` file to `./config/config.config`
 ```sh
-cp ./test_harness/config/default_config.config ./config/config.config
+cp ./test_harness/config/default_config.config ./config/config.config # MacOS, Linux
+
+copy .\test_harness\config\default_config.config .\config\config.config # Windows
 ```
-* Override settings by including the setting under `[non-default]`. Eg
+* Override settings by copying the setting under `[non-default]`. Eg.
 ```sh
 [DEFAULT]
 requests_max_retries = 5
 requests_timeout = 10
 
 [non-default]
-requests_max_retries = 10
+requests_max_retries = 10 # This will override the default setting
 ```
 3. Build and run using Docker Compose:
 ```sh
@@ -120,3 +127,6 @@ pip install -r requirements.txt
 ```
 
 ## Deployment
+It is recommended to deploy the test harness in the same VPC (or private network) as the machine containing the system to be tested to avoid exposure to the public internet. 
+
+![](./docs/diagrams/deployment/deployment.png)
