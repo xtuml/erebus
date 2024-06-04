@@ -422,6 +422,14 @@ def create_app(
         instance_relative_config=True,
     )
     app.config.from_mapping()
+    app.config["SWAGGER"] = {
+        "title": "Test Harness",
+        "description": "Package that runs a test harness for arbitrary system \
+        functional and performance testing. Provides base functionality to \
+        set up tests and send test files.",
+        "version": "v0.01-beta",
+        "termsOfService": None,
+    }
 
     Swagger(app)
 
@@ -443,8 +451,32 @@ def create_app(
 
     # route to upload profile
     @app.route("/upload/profile", methods=["POST"])
-    @swag_from("api.yml")
+    # @swag_from("api.yml")
     def upload_profile() -> None:
+        """Endpoint to handle the upload of a profile file
+        This is using docstrings for specifications.
+        ---
+        parameters:
+            - name: profile file
+              in: path
+              type: file
+              required: true
+        definitions:
+            Palette:
+                type: object
+                properties:
+                    palette_name:
+                        type: array
+                    items:
+                        $ref: '#/definitions/Color'
+            Color:
+                type: string
+        responses:
+            200:
+                description: File uploaded successfully
+            400:
+                description: File failed to upload
+        """
         return app.upload_profile()
 
     # route to upload profile
