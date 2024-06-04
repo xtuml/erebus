@@ -18,7 +18,7 @@ from configparser import ConfigParser
 
 from flask import Flask, request, make_response, Response, jsonify, send_file
 
-from flasgger import Swagger, swag_from
+from flasgger import Swagger
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from tqdm import tqdm
@@ -429,6 +429,7 @@ def create_app(
         set up tests and send test files.",
         "version": "v0.01-beta",
         "termsOfService": None,
+        "servers": {"url": "http://127.0.0.1:8800"},
     }
 
     Swagger(app)
@@ -451,31 +452,29 @@ def create_app(
 
     # route to upload profile
     @app.route("/upload/profile", methods=["POST"])
-    # @swag_from("api.yml")
     def upload_profile() -> None:
         """Endpoint to handle the upload of a profile file
-        This is using docstrings for specifications.
+        A profile for a performance test can be uploaded in the form \
+        of a CSV file. The profile provides specific points (given in seconds)\
+        in simulation time where the number of test files sent per second is \
+        described. The csv must have the following headers in the following \
+        order: "Time", "Number". The Test Harness will linearly interpolate \
+        between these times to a discretisation of 1 second and will calculate\
+        how many test files are sent within that second
         ---
+        tags:
+            - Upload
         parameters:
             - name: profile file
-              in: path
+              in: multipart/form
               type: file
               required: true
-        definitions:
-            Palette:
-                type: object
-                properties:
-                    palette_name:
-                        type: array
-                    items:
-                        $ref: '#/definitions/Color'
-            Color:
-                type: string
         responses:
             200:
                 description: File uploaded successfully
             400:
-                description: File failed to upload
+                description: File failed to upload - mime-type must be \
+                multipart/form-data
         """
         return app.upload_profile()
 
