@@ -431,17 +431,42 @@ def create_app(
         "termsOfService": None,
         "servers": {"url": "http://127.0.0.1:8800"},
         "definitions": {
-            "JSONTestConfig": {
+            "TestJSONRequestBody": {
                 "type": "object",
+                "required": ["TestName"],
                 "properties": {
-                    "num_files_per_sec": {
-                        "type": "integer",
-                        "format": "int64",
+                    "TestName": {
+                        "type": "string",
+                        "example": "Name of Test Here",
                     },
-                    "num_workers": {"type": "integer", "format": "int64"},
-                    "aggregate_during": {"type": "boolean"},
-                    "sample_rate": {"type": "integer", "format": "int64"},
-                    "low_memory": {"type": "boolean"},
+                    "TestConfig": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "example": "Performance",
+                            },
+                            "performance_options": {
+                                "type": "object",
+                                "properties": {
+                                    "num_files_per_sec": {
+                                        "type": "number",
+                                        "example": 10,
+                                    },
+                                },
+                            },
+                            "num_workers": {"type": "number", "example": 0},
+                            "aggregate_during": {
+                                "type": "boolean",
+                                "example": False,
+                            },
+                            "sample_rate": {"type": "number", "example": 0},
+                            "low_memory": {
+                                "type": "boolean",
+                                "example": False,
+                            },
+                        },
+                    },
                 },
             },
         },
@@ -519,14 +544,7 @@ def create_app(
               required: true
               description: Name and optional config of test to run
               schema:
-                type: object
-                required:
-                    - TestName
-                properties:
-                    TestName:
-                        type: string
-                    TestConfig:
-                        type: object
+                $ref: '#/definitions/TestJSONRequestBody'
         responses:
             200:
                 description: Test started successfully
