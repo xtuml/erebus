@@ -469,6 +469,10 @@ def create_app(
                     },
                 },
             },
+            "StopTestJSONRequestBody": {
+                "type": "object",
+                "description": "Currently an empty object",
+            },
         },
     }
 
@@ -575,7 +579,7 @@ def create_app(
               required: true
             - name: Test Name
               in: string
-              description: name of test to be used in /startTest
+              description: name of test for /startTest endpoint
               type: string
               required: true
         responses:
@@ -603,7 +607,7 @@ def create_app(
               in: body
               description: Currently accepts empty JSON body
               schema:
-                type: object
+                $ref: '#/definitions/StopTestJSONRequestBody'
         responses:
             200:
                 description: Request to stop test successful
