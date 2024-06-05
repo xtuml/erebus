@@ -473,6 +473,16 @@ def create_app(
                 "type": "object",
                 "description": "Currently an empty object",
             },
+            "OutputData": {
+                "type": "object",
+                "required": ["TestName"],
+                "properties": {
+                    "TestName": {
+                        "type": "string",
+                        "example": "Name of Test here",
+                    }
+                },
+            },
         },
     }
 
@@ -618,6 +628,28 @@ def create_app(
 
     @app.route("/getTestOutputFolder", methods=["POST"])
     def get_test_output_folder() -> None:
+        """Endpoint to retrieve output data from a finished test.
+        The JSON body should specify the TestName given in the /startTest\
+        endpoint requets used to start the test.
+        ---
+        tags:
+            - Test
+            - Get Output Data
+        consumes:
+             - application/json
+        parameters:
+            - name: TestName
+              in: body
+              required: true
+              description: Name of Test to retrieve output data from
+              schema:
+                $ref: '#/definitions/OutputData'
+        responses:
+            200:
+                description: Output data fetched successfully
+            400:
+                description: Test with name Name of Test here does not exist
+        """
         return app.get_test_output_folder()
 
     return app
