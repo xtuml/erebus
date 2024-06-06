@@ -426,63 +426,89 @@ def create_app(
         "openapi": "3.0.2",
         "title": "Test Harness",
         "uiversion": 3,
-        "description": "Package that runs a test harness for arbitrary system \
-        functional and performance testing. Provides base functionality to \
-        set up tests and send test files.",
+        "description": "Package that runs a test harness for arbitrary\
+            system functional and performance testing. Provides base\
+            functionality to set up tests and send test files.",
         "version": "v0.01-beta",
         "termsOfService": None,
         "servers": [{"url": "http://127.0.0.1:8800"}],
-        "definitions": {
-            "TestJSONRequestBody": {
-                "type": "object",
-                "required": ["TestName"],
-                "properties": {
-                    "TestName": {
-                        "type": "string",
-                        "example": "Name of Test Here",
-                    },
-                    "TestConfig": {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "type": "string",
-                                "example": "Performance",
-                            },
-                            "performance_options": {
-                                "type": "object",
-                                "properties": {
-                                    "num_files_per_sec": {
-                                        "type": "number",
-                                        "example": 10,
+        "components": {
+            "schemas": {
+                "StartTest": {
+                    "type": "object",
+                    "required": ["TestName"],
+                    "properties": {
+                        "TestName": {
+                            "type": "string",
+                            "example": "Name of Test Here",
+                        },
+                        "TestConfig": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "example": "Performance",
+                                },
+                                "performance_options": {
+                                    "type": "object",
+                                    "properties": {
+                                        "num_files_per_sec": {
+                                            "type": "number",
+                                            "example": 10,
+                                        },
                                     },
                                 },
-                            },
-                            "num_workers": {"type": "number", "example": 0},
-                            "aggregate_during": {
-                                "type": "boolean",
-                                "example": False,
-                            },
-                            "sample_rate": {"type": "number", "example": 0},
-                            "low_memory": {
-                                "type": "boolean",
-                                "example": False,
+                                "num_workers": {
+                                    "type": "number",
+                                    "example": 0,
+                                },
+                                "aggregate_during": {
+                                    "type": "boolean",
+                                    "example": False,
+                                },
+                                "sample_rate": {
+                                    "type": "number",
+                                    "example": 0,
+                                },
+                                "low_memory": {
+                                    "type": "boolean",
+                                    "example": False,
+                                },
                             },
                         },
                     },
                 },
-            },
-            "StopTestJSONRequestBody": {
-                "type": "object",
-                "description": "Currently an empty object",
-            },
-            "OutputData": {
-                "type": "object",
-                "required": ["TestName"],
-                "properties": {
-                    "TestName": {
-                        "type": "string",
-                        "example": "Name of Test here",
-                    }
+                "StopTest": {
+                    "type": "object",
+                    "description": "Currently an empty object",
+                },
+                "OutputData": {
+                    "type": "object",
+                    "required": ["TestName"],
+                    "properties": {
+                        "TestName": {
+                            "type": "string",
+                            "example": "Name of Test here",
+                        }
+                    },
+                },
+                "TestRunning": {
+                    "type": "object",
+                    "properties": {
+                        "details": {
+                            "type": "object",
+                            "properties": {
+                                "percent_done": {
+                                    "type": "string",
+                                    "example": "50%",
+                                },
+                                "running": {
+                                    "type": "boolean",
+                                    "example": True,
+                                },
+                            },
+                        },
+                    },
                 },
             },
         },
@@ -521,12 +547,17 @@ def create_app(
         tags:
             - Upload
             - Optional
-        parameters:
-            - name: File
-              in: formData
-              description: file to upload
-              type: file
-              required: true
+        requestBody:
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: ["file"]
+                        description: file to upload
+                        properties:
+                            file:
+                                type: string
+                                format: binary
         responses:
             200:
                 description: Files uploaded successfully
@@ -586,7 +617,7 @@ def create_app(
               required: true
               description: Name and optional config of test to run
               schema:
-                $ref: '#/definitions/TestJSONRequestBody'
+                $ref: '#/components/schemas/TestJSONRequestBody'
         responses:
             200:
                 description: Test started successfully
@@ -598,6 +629,25 @@ def create_app(
 
     @app.route("/isTestRunning", methods=["GET"])
     def test_is_running() -> None:
+        """Endpoint to fetch currently running test progress
+        ---
+        tags:
+            - Test
+        parameters:
+            - name: TestName
+              in: query
+              type: string
+              required: true
+              description: name of test to view progress
+        responses:
+            200:
+                description: returns % done only if running is true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TestRunning'
+
+        """
         return app.test_is_running()
 
     # route to upload zip-files
@@ -647,7 +697,7 @@ def create_app(
               in: body
               description: Currently accepts empty JSON body
               schema:
-                $ref: '#/definitions/StopTestJSONRequestBody'
+                $ref: '#/components/schemas/StopTestJSONRequestBody'
         responses:
             200:
                 description: Request to stop test successful
@@ -674,7 +724,7 @@ def create_app(
               required: true
               description: Name of Test to retrieve output data from
               schema:
-                $ref: '#/definitions/OutputData'
+                $ref: '#/components/schemas/OutputData'
         responses:
             200:
                 description: Output data fetched successfully
