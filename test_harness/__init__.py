@@ -425,7 +425,6 @@ def create_app(
     app.config["SWAGGER"] = {
         "openapi": "3.0.2",
         "title": "Test Harness",
-        "uiversion": 3,
         "description": "Package that runs a test harness for arbitrary\
             system functional and performance testing. Provides base\
             functionality to set up tests and send test files.",
@@ -611,18 +610,20 @@ def create_app(
             - Start test
         consumes:
              - application/json
-        parameters:
-            - name: TestJSONRequestBody
-              in: body
-              required: true
-              description: Name and optional config of test to run
-              schema:
-                $ref: '#/components/schemas/TestJSONRequestBody'
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/StartTest'
+            description: Name and optional config of test to run
         responses:
             200:
                 description: Test started successfully
+            400:
+                description: Bad Request
             415:
-                description: Bad Request - Unsupported Media Type. \
+                description: Unsupported Media Type. \
                 Must include 'Content-Type application/json'
         """
         return app.start_test()
@@ -692,12 +693,13 @@ def create_app(
             - Stop test
         consumes:
              - application/json
-        parameters:
-            - name: StopTestJSONRequestBody
-              in: body
-              description: Currently accepts empty JSON body
-              schema:
-                $ref: '#/components/schemas/StopTestJSONRequestBody'
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/StopTest'
+            description: Currently accepts empty JSON body
         responses:
             200:
                 description: Request to stop test successful
