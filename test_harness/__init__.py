@@ -561,7 +561,7 @@ def create_app(
         responses:
             200:
                 description: Files uploaded successfully
-            400:
+            415:
                 description: Files failed to upload - mime-type must be \
                 multipart/form-data
         """
@@ -610,17 +610,17 @@ def create_app(
         ---
         tags:
             - Upload
-        parameters:
-            - name: File
-              in: formData
-              description: zip file to upload
-              type: file
-              required: true
-            - name: Test Name
-              in: string
-              description: name of test for /startTest endpoint
-              type: string
-              required: true
+        requestBody:
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: ["file", "TestName"]
+                        properties:
+                            file:
+                                type: file
+                            TestName:
+                                type: string
         responses:
             200:
                 description: Files uploaded successfully
