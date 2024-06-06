@@ -423,13 +423,15 @@ def create_app(
     )
     app.config.from_mapping()
     app.config["SWAGGER"] = {
+        "openapi": "3.0.2",
         "title": "Test Harness",
+        "uiversion": 3,
         "description": "Package that runs a test harness for arbitrary system \
         functional and performance testing. Provides base functionality to \
         set up tests and send test files.",
         "version": "v0.01-beta",
         "termsOfService": None,
-        "servers": {"url": "http://127.0.0.1:8800"},
+        "servers": [{"url": "http://127.0.0.1:8800"}],
         "definitions": {
             "TestJSONRequestBody": {
                 "type": "object",
@@ -534,12 +536,38 @@ def create_app(
         """
         return app.upload_profile()
 
-    # route to upload profile
+    # route to upload test-files
     @app.route("/upload/test-files", methods=["POST"])
     def upload_test_files() -> None:
+        """Test job files can be uploaded that suit the specific system\
+        being tested. This endpoint allows the upload of multiple test\
+        files and is of mime type multipart/form.
+        ---
+        tags:
+            - Upload
+            - Optional
+        requestBody:
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: ["file"]
+                        properties:
+                            file:
+                                type: array
+                                items:
+                                    type: string
+                                    format: binary
+        responses:
+            200:
+                description: Files uploaded successfully
+            400:
+                description: Files failed to upload - mime-type must be \
+                multipart/form-data
+        """
         return app.upload_test_files()
 
-    # route to start
+    # route to start test
     @app.route("/startTest", methods=["POST"])
     def start_test() -> None:
         """Endpoint to handle the starting of a specified test
@@ -572,6 +600,7 @@ def create_app(
     def test_is_running() -> None:
         return app.test_is_running()
 
+    # route to upload zip-files
     @app.route("/upload/named-zip-files", methods=["POST"])
     def upload_named_zip_files() -> None:
         """Endpoint to handle the upload of a Test Case zip file
@@ -601,6 +630,7 @@ def create_app(
         """
         return app.upload_named_zip_files()
 
+    # route to stop test
     @app.route("/stopTest", methods=["POST"])
     def stop_test() -> None:
         """Endpoint to handle gracefully stopping a specified test
@@ -626,6 +656,7 @@ def create_app(
         """
         return app.stop_test()
 
+    # route to retrieve test output folder
     @app.route("/getTestOutputFolder", methods=["POST"])
     def get_test_output_folder() -> None:
         """Endpoint to retrieve output data from a finished test.
