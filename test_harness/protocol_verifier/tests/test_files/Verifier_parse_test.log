@@ -1,73 +1,50 @@
-2023-10-26T15:01:46.086256Z 1 aeordering_job_processed : JobId = 13021f1d-0854-4948-ab55-c9f5b5977d23
-2023-10-26T15:01:46.088837Z 1 aeordering_events_processed : JobId = 13021f1d-0854-4948-ab55-c9f5b5977d23 : EventId = 2532069d-438d-4d3f-94c6-f3e0636c5b04 : EventType = A
-2023-10-26T15:01:46.092553Z 1 svdc_event_received : EventId = 2532069d-438d-4d3f-94c6-f3e0636c5b04
-2023-10-26T15:01:46.104433Z 1 svdc_new_job_started : JobId = 13021f1d-0854-4948-ab55-c9f5b5977d23 : EventId = 2532069d-438d-4d3f-94c6-f3e0636c5b04 : EventType = A
-2023-10-26T15:01:46.106349Z 1 aeordering_events_processed : JobId = 13021f1d-0854-4948-ab55-c9f5b5977d23 : EventId = aab9ba18-557d-4200-abfc-b8e032b1b258 : EventType = B
-2023-10-26T15:01:46.107488Z 1 svdc_event_received : EventId = aab9ba18-557d-4200-abfc-b8e032b1b258
-2023-10-26T15:01:46.136180Z 1 aeordering_job_processed : JobId = 564b76ed-9a96-462b-8718-3fe93a094a76
-2023-10-26T15:01:46.136467Z 1 aeordering_events_processed : JobId = 564b76ed-9a96-462b-8718-3fe93a094a76 : EventId = 8f41a6f7-9019-467d-8354-8114a8f8374e : EventType = A
-2023-10-26T15:01:46.136903Z 1 svdc_event_received : EventId = 8f41a6f7-9019-467d-8354-8114a8f8374e
-2023-10-26T15:01:46.137273Z 1 svdc_new_job_started : JobId = 564b76ed-9a96-462b-8718-3fe93a094a76 : EventId = 8f41a6f7-9019-467d-8354-8114a8f8374e : EventType = A
-2023-10-26T15:01:46.147713Z 1 aeordering_job_processed : JobId = 854ca735-d000-49d9-941e-947d2728848e
-2023-10-26T15:01:46.147926Z 1 aeordering_events_processed : JobId = 854ca735-d000-49d9-941e-947d2728848e : EventId = 24a012a0-17e7-4367-922f-b2ff87eddd7b : EventType = A
-2023-10-26T15:01:46.148307Z 1 svdc_event_received : EventId = 24a012a0-17e7-4367-922f-b2ff87eddd7b
-2023-10-26T15:01:46.148648Z 1 svdc_new_job_started : JobId = 854ca735-d000-49d9-941e-947d2728848e : EventId = 24a012a0-17e7-4367-922f-b2ff87eddd7b : EventType = A
-2023-10-26T15:01:46.148985Z 1 aeordering_events_processed : JobId = 854ca735-d000-49d9-941e-947d2728848e : EventId = ac2e39e0-c5e9-4ec6-a1dd-4d292788e9d4 : EventType = B
-2023-10-26T15:01:46.149367Z 1 svdc_event_received : EventId = ac2e39e0-c5e9-4ec6-a1dd-4d292788e9d4
-2023-10-26T15:01:46.154341Z 1 svdc_job_failed : FailureReason = An event starting a new sequence has been received but there is no matching start event definition for Job = 854ca735-d000-49d9-941e-947d2728848e, with audit event type = B : JobId = 854ca735-d000-49d9-941e-947d2728848e
-2023-10-26T15:01:46.154756Z 1 svdc_event_processed : EventId = ac2e39e0-c5e9-4ec6-a1dd-4d292788e9d4
-2023-10-26T15:01:46.154978Z 1 svdc_event_processed : EventId = 24a012a0-17e7-4367-922f-b2ff87eddd7b
-2023-10-26T15:01:46.159629Z 1 aeordering_job_processed : JobId = 899be5ba-d1ab-4586-b768-9ee1a326f19b
-2023-10-26T15:01:46.159925Z 1 aeordering_events_processed : JobId = 899be5ba-d1ab-4586-b768-9ee1a326f19b : EventId = 20652c3b-fb41-4671-a7d0-f48dd3c18aa9 : EventType = B
-2023-10-26T15:01:46.160432Z 1 aeordering_events_blocked : JobId = 899be5ba-d1ab-4586-b768-9ee1a326f19b : EventId = 20652c3b-fb41-4671-a7d0-f48dd3c18aa9 : EventType = B
-2023-10-26T15:01:47.078002Z 1 aeordering_job_processed : JobId = 07e991c7-2d12-4304-a51f-734fb5d97e1e
-2023-10-26T15:01:47.078373Z 1 aeordering_events_processed : JobId = 07e991c7-2d12-4304-a51f-734fb5d97e1e : EventId = 0566d6e5-41e3-4665-919d-f230549adaf0 : EventType = A
-2023-10-26T15:01:47.079041Z 1 svdc_event_received : EventId = 0566d6e5-41e3-4665-919d-f230549adaf0
-2023-10-26T15:01:47.079725Z 1 svdc_new_job_started : JobId = 07e991c7-2d12-4304-a51f-734fb5d97e1e : EventId = 0566d6e5-41e3-4665-919d-f230549adaf0 : EventType = A
-2023-10-26T15:01:47.083950Z 1 aeordering_events_processed : JobId = 07e991c7-2d12-4304-a51f-734fb5d97e1e : EventId = 39ce4c48-353a-4dfd-8676-7a930ddf2a62 : EventType = B
-2023-10-26T15:01:47.084721Z 1 aeordering_events_blocked : JobId = 07e991c7-2d12-4304-a51f-734fb5d97e1e : EventId = 39ce4c48-353a-4dfd-8676-7a930ddf2a62 : EventType = B
-2023-10-26T15:01:47.115679Z 1 svdc_job_success : JobId = 13021f1d-0854-4948-ab55-c9f5b5977d23 : JobName = test_uml_1
-2023-10-26T15:01:47.115962Z 1 svdc_event_processed : EventId = aab9ba18-557d-4200-abfc-b8e032b1b258
-2023-10-26T15:01:47.116324Z 1 svdc_event_processed : EventId = 2532069d-438d-4d3f-94c6-f3e0636c5b04
-2023-10-26T15:01:47.134523Z 1 aeordering_job_processed : JobId = b5498ed4-a532-48c9-885f-d01671f95d60
-2023-10-26T15:01:47.134821Z 1 aeordering_events_processed : JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : EventId = af6c5989-3837-478c-a02d-a5c155934198 : EventType = A
-2023-10-26T15:01:47.135296Z 1 svdc_event_received : EventId = af6c5989-3837-478c-a02d-a5c155934198
-2023-10-26T15:01:47.135929Z 1 svdc_new_job_started : JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : EventId = af6c5989-3837-478c-a02d-a5c155934198 : EventType = A
-2023-10-26T15:01:47.136451Z 1 aeordering_events_processed : JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : EventId = 6033b82a-ede7-42ae-8132-65b90e9e12ce : EventType = SpyEvent
-2023-10-26T15:01:47.138448Z 1 aeordering_events_failed : JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : EventId = 6033b82a-ede7-42ae-8132-65b90e9e12ce : EventType = SpyEvent : FailureReason = JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : ApplicationName = default_application_name : EventType = SpyEvent : FailureReason = Event type is not allowed to be reported for application
-2023-10-26T15:01:47.139220Z 1 aeordering_job_failed : JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : ApplicationName = default_application_name : EventType = SpyEvent : FailureReason = Event type is not allowed to be reported for application
-2023-10-26T15:01:47.139883Z 1 aeordering_events_processed : JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : EventId = a4fd64f0-70e3-4d3b-866a-66422ec1aea1 : EventType = B
-2023-10-26T15:01:47.140545Z 1 aeordering_events_failed : JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : EventId = a4fd64f0-70e3-4d3b-866a-66422ec1aea1 : EventType = B : FailureReason = 
-2023-10-26T15:01:47.141138Z 1 aeordering_job_failed : JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : FailureReason = Job has failed
-2023-10-26T15:01:47.148184Z 1 svdc_job_failed : FailureReason = JobId = b5498ed4-a532-48c9-885f-d01671f95d60 : ApplicationName = default_application_name : EventType = SpyEvent : FailureReason = Event type is not allowed to be reported for application : JobId = b5498ed4-a532-48c9-885f-d01671f95d60
-2023-10-26T15:01:47.148466Z 1 svdc_event_processed : EventId = af6c5989-3837-478c-a02d-a5c155934198
-2023-10-26T15:01:47.158015Z 1 aeordering_job_processed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c
-2023-10-26T15:01:47.158260Z 1 aeordering_events_processed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : EventId = 7eebe078-e6ed-458a-bca2-cdee6e1ce646 : EventType = SpyEvent
-2023-10-26T15:01:47.158863Z 1 aeordering_events_failed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : EventId = 7eebe078-e6ed-458a-bca2-cdee6e1ce646 : EventType = SpyEvent : FailureReason = JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : ApplicationName = default_application_name : EventType = SpyEvent : FailureReason = Event type is not allowed to be reported for application
-2023-10-26T15:01:47.160133Z 1 aeordering_job_failed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : ApplicationName = default_application_name : EventType = SpyEvent : FailureReason = Event type is not allowed to be reported for application
-2023-10-26T15:01:47.160508Z 1 aeordering_events_processed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : EventId = b945fb62-4027-4373-8e95-2f2719bd74a8 : EventType = A
-2023-10-26T15:01:47.160997Z 1 aeordering_events_failed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : EventId = b945fb62-4027-4373-8e95-2f2719bd74a8 : EventType = A : FailureReason = 
-2023-10-26T15:01:47.161539Z 1 aeordering_job_failed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : FailureReason = Job has failed
-2023-10-26T15:01:47.161892Z 1 aeordering_events_processed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : EventId = 6e6202fc-9c82-407f-8ef3-b86b03428576 : EventType = B
-2023-10-26T15:01:47.162499Z 1 aeordering_events_failed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : EventId = 6e6202fc-9c82-407f-8ef3-b86b03428576 : EventType = B : FailureReason = 
-2023-10-26T15:01:47.163469Z 1 aeordering_job_failed : JobId = f5e96c8b-9bc1-4882-a482-72c36d4e767c : FailureReason = Job has failed
-2023-10-26T15:01:47.184527Z 1 aeordering_job_processed : JobId = 2f3ee31b-6ed1-4f0a-a3ef-c1e09081bebe
-2023-10-26T15:01:47.184799Z 1 aeordering_events_processed : JobId = 2f3ee31b-6ed1-4f0a-a3ef-c1e09081bebe : EventId = 9dc65d26-a5af-4281-bdf3-208dadd137bd : EventType = A
-2023-10-26T15:01:47.185475Z 1 aeordering_events_blocked : JobId = 2f3ee31b-6ed1-4f0a-a3ef-c1e09081bebe : EventId = 9dc65d26-a5af-4281-bdf3-208dadd137bd : EventType = A
-2023-10-26T15:01:47.185831Z 1 aeordering_events_processed : JobId = 2f3ee31b-6ed1-4f0a-a3ef-c1e09081bebe : EventId = 53b06dca-b5ba-48f4-a265-3ad5918863c9 : EventType = B
-2023-10-26T15:01:47.186263Z 1 aeordering_events_blocked : JobId = 2f3ee31b-6ed1-4f0a-a3ef-c1e09081bebe : EventId = 53b06dca-b5ba-48f4-a265-3ad5918863c9 : EventType = B
-2023-10-26T15:01:47.208041Z 1 aeordering_job_processed : JobId = 91adcba7-05ff-4361-9be7-c0de8e22b9f7
-2023-10-26T15:01:47.208341Z 1 aeordering_events_processed : JobId = 91adcba7-05ff-4361-9be7-c0de8e22b9f7 : EventId = 4868b774-d5a0-4fc8-9799-7ac9b5d58874 : EventType = A
-2023-10-26T15:01:47.208872Z 1 svdc_event_received : EventId = 4868b774-d5a0-4fc8-9799-7ac9b5d58874
-2023-10-26T15:01:47.210674Z 1 svdc_new_job_started : JobId = 91adcba7-05ff-4361-9be7-c0de8e22b9f7 : EventId = 4868b774-d5a0-4fc8-9799-7ac9b5d58874 : EventType = A
-2023-10-26T15:01:47.211075Z 1 aeordering_events_processed : JobId = 91adcba7-05ff-4361-9be7-c0de8e22b9f7 : EventId = 6ec6e95e-cded-4e03-83e1-c10dce70e0a7 : EventType = A
-2023-10-26T15:01:47.211400Z 1 svdc_event_received : EventId = 6ec6e95e-cded-4e03-83e1-c10dce70e0a7
-2023-10-26T15:01:47.211766Z 1 aeordering_events_processed : JobId = 91adcba7-05ff-4361-9be7-c0de8e22b9f7 : EventId = c4d08bbb-ce68-4b23-b568-5178b19c46d1 : EventType = B
-2023-10-26T15:01:47.212198Z 1 svdc_event_received : EventId = c4d08bbb-ce68-4b23-b568-5178b19c46d1
-2023-10-26T15:01:47.212538Z 1 aeordering_events_processed : JobId = 91adcba7-05ff-4361-9be7-c0de8e22b9f7 : EventId = 4c3bcda1-5972-422b-8ebb-8f8dd129beda : EventType = B
-2023-10-26T15:01:47.212898Z 1 svdc_event_received : EventId = 4c3bcda1-5972-422b-8ebb-8f8dd129beda
-2023-10-26T15:01:48.217539Z 1 svdc_job_success : JobId = 91adcba7-05ff-4361-9be7-c0de8e22b9f7 : JobName = test_uml_1
-2023-10-26T15:01:48.217864Z 1 svdc_event_processed : EventId = 4c3bcda1-5972-422b-8ebb-8f8dd129beda
-2023-10-26T15:01:48.218092Z 1 svdc_event_processed : EventId = c4d08bbb-ce68-4b23-b568-5178b19c46d1
-2023-10-26T15:01:48.218404Z 1 svdc_event_processed : EventId = 6ec6e95e-cded-4e03-83e1-c10dce70e0a7
-2023-10-26T15:01:48.218680Z 1 svdc_event_processed : EventId = 4868b774-d5a0-4fc8-9799-7ac9b5d58874
+2024-05-31T13:20:17.349Z - {"eventId":"d7b2ce4a-b489-4d3f-a2e8-e4d5e69486b9","eventName":"F","jobId":"49572465-2a8b-41b6-9e47-5b3c4e29c024","jobName":"simple_XOR_job","message":"events blocked","tag":"aeordering_events_blocked"}
+2024-05-31T13:20:17.349Z - {"eventId":"d7b2ce4a-b489-4d3f-a2e8-e4d5e69486b9","eventName":"F","jobId":"49572465-2a8b-41b6-9e47-5b3c4e29c024","jobName":"simple_XOR_job","message":"events blocked","tag":"aeordering_events_blocked"}
+2024-05-31T13:20:17.350Z - {"eventId":"61a3edba-5b6b-4f5b-9769-cd7c4e1fcf65","eventType":"SVDC_PVSequencingStart","jobId":"2b108557-574a-4041-ba84-029080512d78","jobName":"ProtocolVerifier","previousEventIds":["55c49b2b-225b-4fb6-bb8e-8bc4b174e288"],"timestamp":"2024-05-31T13:20:17.350309Z"}
+2024-05-31T13:20:17.350Z - {"eventId":"ea50610d-e4c9-44cf-96ab-ac738fac8566","eventType":"B","jobId":"49572465-2a8b-41b6-9e47-5b3c4e29c024","jobName":"simple_XOR_job","message":"Follow on event for existing job has previous event Id","prevIdCount":"1","tag":"svdc_previous_event_ids"}
+2024-05-31T13:20:17.350Z - {"jobId":"","jobName":"","message":"checking received event data against definition","tag":"svdc_event_data_check"}
+2024-05-31T13:20:17.350Z - {"eventId":"1e90e699-6fff-413a-992c-3ccb6861f471","eventType":"D","jobId":"49572465-2a8b-41b6-9e47-5b3c4e29c024","jobName":"simple_XOR_job","message":"Follow on event for existing job has previous event Id","prevIdCount":"1","tag":"svdc_previous_event_ids"}
+2024-05-31T13:20:17.350Z - {"jobId":"","jobName":"","message":"checking received event data against definition","tag":"svdc_event_data_check"}
+2024-05-31T13:20:17.697Z - {"jobId":"f67bd9b6-581a-4ca4-9fcd-d6eb4a6bd5f3","jobName":"simple_XOR_job","message":"Constraint and dynamic control checks passed","tag":"svdc_constraints_pass"}
+2024-05-31T13:20:17.697Z - {"eventId":"2fa52747-4d62-46d1-8be6-527a734d12a2","eventType":"SVDC_PVEventProcessingComplete","jobId":"8af416af-8ae3-42f8-bc85-d77c0491f7a6","jobName":"ProtocolVerifier","previousEventIds":["247fcc6a-d603-4686-b6fb-ecd02b81221e"],"timestamp":"2024-05-31T13:20:17.697840Z"}
+2024-05-31T13:20:17.697Z - {"jobId":"f67bd9b6-581a-4ca4-9fcd-d6eb4a6bd5f3","jobName":"simple_XOR_job","message":"Intra-Job Invariant check passed","tag":"svdc_iji_check"}
+2024-05-31T13:20:17.698Z - {"eventId":"bab469fe-7ed6-45a1-a9d3-d654fdc50182","eventType":"SVDC_PVConstraintCheckPassed","jobId":"8af416af-8ae3-42f8-bc85-d77c0491f7a6","jobName":"ProtocolVerifier","previousEventIds":["2fa52747-4d62-46d1-8be6-527a734d12a2"],"timestamp":"2024-05-31T13:20:17.697993Z"}
+2024-05-31T13:20:17.698Z - {"jobId":"f67bd9b6-581a-4ca4-9fcd-d6eb4a6bd5f3","jobName":"simple_XOR_job","message":"Extra-Job Invariant check passed","tag":"svdc_eji_check_passed"}
+2024-05-31T13:20:17.698Z - {"jobId":"f67bd9b6-581a-4ca4-9fcd-d6eb4a6bd5f3","jobName":"simple_XOR_job","message":"happy success","tag":"svdc_job_success"}
+2024-05-31T13:20:18.062Z - {"eventId":"ab25330f-b499-4cc2-a5ed-6bc6bfeb5574","eventName":"F","jobId":"16270b26-dbd1-4711-a64c-1b5050886b96","jobName":"simple_XOR_job","message":"reporting event","previousEventId":"Sequence size 2","tag":"aeordering_report_event"}
+2024-05-31T13:20:18.062Z - {"eventId":"ab25330f-b499-4cc2-a5ed-6bc6bfeb5574","eventType":"F","jobId":"16270b26-dbd1-4711-a64c-1b5050886b96","jobName":"simple_XOR_job","message":"initial receipt","tag":"svdc_event_received"}
+2024-05-31T13:20:18.063Z - {"eventId":"4ff3744d-52e8-4db7-9b1a-42248b412bd4","eventType":"SVDC_PVSequencingStart","jobId":"1471893f-ce3b-4ce9-80ab-a0c6796a3070","jobName":"ProtocolVerifier","previousEventIds":["692784ff-f721-4256-9de8-12ccacf624f0"],"timestamp":"2024-05-31T13:20:18.063282Z"}
+2024-05-31T13:20:18.063Z - {"eventId":"376b7624-60b7-4cbe-9813-6a4dad37a234","eventType":"B","jobId":"16270b26-dbd1-4711-a64c-1b5050886b96","jobName":"simple_XOR_job","message":"Follow on event for existing job has previous event Id","prevIdCount":"1","tag":"svdc_previous_event_ids"}
+2024-05-31T13:20:18.063Z - {"jobId":"","jobName":"","message":"checking received event data against definition","tag":"svdc_event_data_check"}
+2024-05-31T13:20:18.063Z - {"eventId":"28181971-66c4-4fb4-ba86-6193705d409a","eventType":"C","jobId":"16270b26-dbd1-4711-a64c-1b5050886b96","jobName":"simple_XOR_job","message":"Follow on event for existing job has previous event Id","prevIdCount":"1","tag":"svdc_previous_event_ids"}
+2024-05-31T13:20:18.063Z - {"jobId":"","jobName":"","message":"checking received event data against definition","tag":"svdc_event_data_check"}
+2024-05-31T13:20:18.063Z - {"eventId":"60a41bc4-9cf5-4ce7-8ef4-1a1ba9a92bd0","eventType":"D","jobId":"16270b26-dbd1-4711-a64c-1b5050886b96","jobName":"simple_XOR_job","message":"Follow on event for existing job has previous event Id","prevIdCount":"1","tag":"svdc_previous_event_ids"}
+2024-05-31T13:20:18.063Z - {"jobId":"","jobName":"","message":"checking received event data against definition","tag":"svdc_event_data_check"}
+2024-05-31T13:20:18.063Z - {"eventId":"ab25330f-b499-4cc2-a5ed-6bc6bfeb5574","eventType":"F","jobId":"16270b26-dbd1-4711-a64c-1b5050886b96","jobName":"simple_XOR_job","message":"Follow on event for existing job has previous event Id","prevIdCount":"2","tag":"svdc_previous_event_ids"}
+2024-05-31T13:20:18.063Z - {"jobId":"","jobName":"","message":"checking received event data against definition","tag":"svdc_event_data_check"}
+2024-05-31T13:20:18.063Z - {"branchExtent":"1","jobId":"16270b26-dbd1-4711-a64c-1b5050886b96","jobName":"simple_XOR_job","message":"Checking for completion of a Sequence or Job","sequenceId":"14","tag":"svdc_sequence_complete"}
+2024-05-31T13:20:18.069Z - {"branchCount":"2","eventType":"B","jobId":"8def8c2a-2a86-485d-aac1-df1a4d27667a","jobName":"simple_XOR_job","message":"XOR Constraint violated for job","tag":"svdc_xor_constraint"}
+2024-05-31T13:20:18.069Z - {"branchCount":"2","eventType":"B","jobId":"8def8c2a-2a86-485d-aac1-df1a4d27667a","jobName":"simple_XOR_job","message":"XOR Constraint violated for job","tag":"svdc_xor_constraint"}
+2024-05-31T13:20:18.070Z - {"eventId":"62dfb15a-8519-4f93-8f5f-7c8be7e0e44a","eventType":"SVDC_PVEventProcessingComplete","jobId":"2ca04e00-79ec-43cf-829a-82b956a19128","jobName":"ProtocolVerifier","previousEventIds":["14591f4a-bfa7-4f9f-8439-c3ed1f8c68b6"],"timestamp":"2024-05-31T13:20:18.069963Z"}
+2024-05-31T13:20:18.070Z - {"eventList":[{"eventID":"0c93f537-fae1-4513-a1d0-27e7bc70bc72","eventType":"B"},{"eventID":"59abd4a3-c69e-4cef-9929-625105b14a3b","eventType":"D"},{"eventID":"b7c325aa-555d-4c66-8de0-80eda20cfb56","eventType":"E"},{"eventID":"0d93d572-4194-41b5-b3b4-a447ec25d2de","eventType":"F"},{"eventID":"17963084-7c13-473c-a030-43f3ff9c5a0c","eventType":"A"}],"jobId":"8def8c2a-2a86-485d-aac1-df1a4d27667a","jobName":"simple_XOR_job","message":"one or more constraint checks have failed","tag":"svdc_job_failed"}
+2024-05-31T13:20:19.917Z - {"eventId":"","eventName":"","jobId":"131137f6-968a-443f-b468-99e725cb3e3e","jobName":"simple_XOR_job","message":"event type is not allowed for job name","tag":"aeordering_set_event_state"}
+2024-05-31T13:20:19.917Z - {"eventId":"","eventName":"","jobId":"131137f6-968a-443f-b468-99e725cb3e3e","jobName":"simple_XOR_job","message":"event type is not allowed for job name","tag":"aeordering_set_event_state"}
+2024-05-31T13:20:19.917Z - {"eventId":"4ce5ed04-2cba-4d0f-813a-105f6c0c1556","eventName":"SpyEvent","jobId":"131137f6-968a-443f-b468-99e725cb3e3e","jobName":"simple_XOR_job","message":"event type is not allowed for job name","tag":"aeordering_events_failed"}
+2024-05-31T13:20:19.917Z - {"eventId":"4ce5ed04-2cba-4d0f-813a-105f6c0c1556","eventName":"SpyEvent","jobId":"131137f6-968a-443f-b468-99e725cb3e3e","jobName":"simple_XOR_job","message":"event type is not allowed for job name","tag":"aeordering_events_failed"}
+2024-05-31T13:20:19.917Z - {"eventId":"","eventName":"","jobId":"131137f6-968a-443f-b468-99e725cb3e3e","jobName":"simple_XOR_job","message":"event type is not allowed for job name","tag":"aeordering_job_failed"}
+2024-05-31T13:20:19.917Z - {"eventId":"","eventName":"","jobId":"131137f6-968a-443f-b468-99e725cb3e3e","jobName":"simple_XOR_job","message":"event type is not allowed for job name","tag":"aeordering_job_failed"}
+2024-05-31T14:45:59.079Z - {"eventId":"f1894da3-95f0-476a-9442-adc307fecd08","eventType":"UH_1","jobId":"032b0c8b-80a9-4f35-bd02-30c1c765d8d9","jobName":"XOR_one_crit_two_unhappy","message":"Follow on event seen in Unhappy Job","prevCount":"1","tag":"svdc_follow_in_unhappy"}
+2024-05-31T14:45:59.079Z - {"eventId":"7aa2186c-9891-44b2-9fc3-6b4548cb0fff","eventType":"UH_2","jobId":"032b0c8b-80a9-4f35-bd02-30c1c765d8d9","jobName":"XOR_one_crit_two_unhappy","message":"Unhappy event seen in Unhappy Job","prevCount":"1","tag":"svdc_unhappy_in_unhappy"}
+2024-05-31T14:45:59.079Z - {"eventId":"7aa2186c-9891-44b2-9fc3-6b4548cb0fff","eventType":"UH_2","jobId":"032b0c8b-80a9-4f35-bd02-30c1c765d8d9","jobName":"XOR_one_crit_two_unhappy","message":"Follow on event seen in Unhappy Job","prevCount":"1","tag":"svdc_follow_in_unhappy"}
+2024-05-31T14:46:14.080Z - {"jobId":"032b0c8b-80a9-4f35-bd02-30c1c765d8d9","jobName":"XOR_one_crit_two_unhappy","message":"Unhappy Job has been reported having timed out","tag":"svdc_unhappy_timeout"}
+2024-05-31T14:46:14.080Z - {"jobId":"032b0c8b-80a9-4f35-bd02-30c1c765d8d9","jobName":"XOR_one_crit_two_unhappy","message":"Assessing for Job","tag":"svdc_assessing_unhappy"}
+2024-05-31T14:46:14.080Z - {"D":"4a97c393-fec3-4326-882a-8898c491e2bd","jobId":"032b0c8b-80a9-4f35-bd02-30c1c765d8d9","jobName":"XOR_one_crit_two_unhappy","message":"critical events are in the scope of the unhappy event","tag":"svdc_critical_events"}
+2024-05-31T14:46:14.080Z - {"eventList":[{"eventID":"4a97c393-fec3-4326-882a-8898c491e2bd","eventType":"D"},{"eventID":"357b5527-27a9-463a-afd8-205605236db6","eventType":"A"},{"eventID":"db5a7dc2-b94a-4b11-9f3b-f79d517b40ac","eventType":"C"},{"eventID":"f1894da3-95f0-476a-9442-adc307fecd08","eventType":"UH_1"},{"eventID":"7aa2186c-9891-44b2-9fc3-6b4548cb0fff","eventType":"UH_2"}],"jobId":"032b0c8b-80a9-4f35-bd02-30c1c765d8d9","jobName":"XOR_one_crit_two_unhappy","message":"ALARM: Unhappy event seen within the scope of a Critical event","tag":"svdc_job_alarm"}
+2024-05-31T13:20:24.979Z - {"jobId":"ca244bcd-254b-446f-82b2-aaf6dddc76cd","jobName":"simple_XOR_job","message":"job has been deleted","tag":"svdc_job_deleted"}
+2024-05-31T13:20:24.979Z - {"eventId":"ec404360-82d6-406e-90cc-8165ae8c112e","eventType":"SVDC_PVJobDeleted","jobId":"0f146567-8b20-46a3-892f-a0188618b979","jobName":"ProtocolVerifier","previousEventIds":["4697beea-bbb7-4b21-a6a4-5975d27f01bd"],"timestamp":"2024-05-31T13:20:24.979270Z"}
+2024-05-31T13:20:25.379Z - {"jobId":"1efbea67-04cb-4f10-863f-d4025c48af23","jobName":"simple_XOR_job","message":"Constraint and dynamic control checks passed","tag":"svdc_constraints_pass"}
+2024-05-31T13:20:25.379Z - {"eventId":"f976b0b0-ad76-4c63-a4f9-d909d0660cca","eventType":"SVDC_PVEventProcessingComplete","jobId":"e4bff1c2-14e8-4679-86ad-dd4d2e17a16c","jobName":"ProtocolVerifier","previousEventIds":["fc973409-72bd-4285-b366-42aeaf4a3003"],"timestamp":"2024-05-31T13:20:25.379933Z"}
+2024-05-31T13:20:25.380Z - {"jobId":"1efbea67-04cb-4f10-863f-d4025c48af23","jobName":"simple_XOR_job","message":"Intra-Job Invariant check passed","tag":"svdc_iji_check"}
+2024-05-31T13:20:25.380Z - {"eventId":"5b77d327-79c4-464d-8dd0-14ad1c6afe72","eventType":"SVDC_PVConstraintCheckPassed","jobId":"e4bff1c2-14e8-4679-86ad-dd4d2e17a16c","jobName":"ProtocolVerifier","previousEventIds":["f976b0b0-ad76-4c63-a4f9-d909d0660cca"],"timestamp":"2024-05-31T13:20:25.380040Z"}
+2024-05-31T13:20:25.380Z - {"jobId":"1efbea67-04cb-4f10-863f-d4025c48af23","jobName":"simple_XOR_job","message":"Extra-Job Invariant check passed","tag":"svdc_eji_check_passed"}
+2024-05-31T13:20:25.380Z - {"jobId":"1efbea67-04cb-4f10-863f-d4025c48af23","jobName":"simple_XOR_job","message":"happy success","tag":"svdc_job_success"}
