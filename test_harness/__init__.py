@@ -612,10 +612,7 @@ def create_app(
     # route to start test
     @app.route("/startTest", methods=["POST"])
     def start_test() -> None:
-        """Endpoint to handle the starting of a specified test
-        This is the recommed way of gettingTest Case zip files may be uploaded\
-        to the Test Harness. These can include all the test data required to\
-        run the specific test.
+        """Endpoint to handle starting an uploaded test
         ---
         tags:
             - Test
@@ -649,7 +646,7 @@ def create_app(
               in: query
               type: string
               required: true
-              description: name of test to view progress
+              description: Name of test to view progress
         responses:
             200:
                 description: returns % done only if running is true
@@ -664,8 +661,8 @@ def create_app(
     # route to upload zip-files
     @app.route("/upload/named-zip-files", methods=["POST"])
     def upload_named_zip_files() -> None:
-        """Endpoint to handle the upload of a Test Case zip file
-        This is the recommed way of gettingTest Case zip files may be uploaded\
+        """Endpoint to handle the starting of a specified test
+        This is the recommended way of uploading Test Case zip files \
         to the Test Harness. These can include all the test data required to\
         run the specific test.
         ---
@@ -697,7 +694,7 @@ def create_app(
     def stop_test() -> None:
         """Endpoint to handle gracefully stopping a specified test
         To stop a test gracefully once it is running. Currently the JSON\
-        accepted is empty.
+        body accepted is empty.
         ---
         tags:
             - Test
@@ -722,7 +719,7 @@ def create_app(
     def get_test_output_folder() -> None:
         """Endpoint to retrieve output data from a finished test.
         The JSON body should specify the TestName given in the /startTest\
-        endpoint requets used to start the test.
+        endpoint requests used to start the test.
         ---
         tags:
             - Test
