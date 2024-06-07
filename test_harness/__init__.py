@@ -658,6 +658,11 @@ def create_app(
         responses:
             200:
                 description: Files uploaded successfully
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            example: Files uploaded successfully
             400:
                 description: Files failed to upload - mime-type must be\
                 multipart/form-data
@@ -689,6 +694,11 @@ def create_app(
         responses:
             200:
                 description: Files uploaded successfully
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            example: Files uploaded successfully
             415:
                 description: Files failed to upload - mime-type must be\
                 multipart/form-data
@@ -775,6 +785,11 @@ def create_app(
         responses:
             200:
                 description: Files uploaded successfully
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            example: Zip archives uploaded successfully
             400:
                 description: Files failed to upload - mime-type must be\
                 multipart/form-data OR File is not a zip file
@@ -801,6 +816,11 @@ def create_app(
         responses:
             200:
                 description: Request to stop test successful
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            example: Request to stop test successful
             400:
                 description: Failed to stop test
         """
@@ -826,14 +846,14 @@ def create_app(
         responses:
             200:
                 description: Output data fetched successfully
-            400:
-                description: Test does not exist
                 content:
                     application/json:
                         schema:
                             type: string
                             format: binary
                             example: FileName.zip
+            400:
+                description: Test does not exist
         """
         return app.get_test_output_folder()
 
