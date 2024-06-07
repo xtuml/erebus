@@ -128,10 +128,16 @@ class HarnessApp(Flask):
                 "mime-type must be multipart/form-data\n", 400
             )
         # get files
-        uploaded_files: list[FileStorage] = [
-            request.files[uploaded_file_identifier]
-            for uploaded_file_identifier in request.files
-        ]
+        # If using swagger api, get the array of files
+        files = request.files.getlist("file")
+        if files:
+            uploaded_files = files
+        else:
+            uploaded_files: list[FileStorage] = [
+                request.files[uploaded_file_identifier]
+                for uploaded_file_identifier in request.files
+            ]
+
         # get filenames
         uploaded_files_names = list(map(lambda x: x.filename, uploaded_files))
 
@@ -293,9 +299,15 @@ class HarnessApp(Flask):
             return make_response(
                 "mime-type must be multipart/form-data\n", 400
             )
-        # handle zip files
+        # handle zip files; swagger can't combine testName and file
+        # into 1 argument like the curl command does so swagger passes
+        # both TestName and file as separate entities. We check here if
+        # TestName exits and if so set it to upload_file_identifier for
+        # swagger api call to work correctly
         try:
             for uploaded_file_identifier, file in request.files.items():
+                if "TestName" in request.form:
+                    uploaded_file_identifier = request.form["TestName"]
                 handle_uploaded_zip_file(
                     file_storage=file,
                     name=uploaded_file_identifier,
@@ -608,8 +620,6 @@ def create_app(
         tags:
             - Test
             - Start test
-        consumes:
-             - application/json
         requestBody:
             required: true
             content:
@@ -662,6 +672,7 @@ def create_app(
         tags:
             - Upload
         requestBody:
+            required: true
             content:
                 multipart/form-data:
                     schema:
@@ -691,8 +702,6 @@ def create_app(
         tags:
             - Test
             - Stop test
-        consumes:
-             - application/json
         requestBody:
             required: true
             content:
@@ -718,8 +727,6 @@ def create_app(
         tags:
             - Test
             - Get Output Data
-        consumes:
-             - application/json
         parameters:
             - name: TestName
               in: body
