@@ -727,18 +727,18 @@ def create_app(
         tags:
             - Test
             - Get Output Data
-        parameters:
-            - name: TestName
-              in: body
-              required: true
-              description: Name of Test to retrieve output data from
-              schema:
-                $ref: '#/components/schemas/OutputData'
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/OutputData'
+            description: Name of Test to retrieve output data from
         responses:
             200:
                 description: Output data fetched successfully
             400:
-                description: Test with name Name of Test here does not exist
+                description: Test does not exist
         """
         return app.get_test_output_folder()
 
