@@ -437,9 +437,9 @@ def create_app(
     app.config["SWAGGER"] = {
         "openapi": "3.0.2",
         "title": "Test Harness",
-        "description": "Package that runs a test harness for arbitrary\
-            system functional and performance testing. Provides base\
-            functionality to set up tests and send test files.",
+        "description": "Package that runs a test harness for arbitrary "
+        "system functional and performance testing. Provides base "
+        "functionality to set up tests and send test files.",
         "version": "v0.01-beta",
         "termsOfService": None,
         "servers": [{"url": "http://127.0.0.1:8800"}],
@@ -486,6 +486,92 @@ def create_app(
                                     "example": False,
                                 },
                             },
+                        },
+                    },
+                },
+                "StartTestResponse": {
+                    "type": "object",
+                    "properties": {
+                        "TestConfig": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "example": "Performance",
+                                },
+                                "performance_options": {
+                                    "type": "object",
+                                    "properties": {
+                                        "job_event_gap": {
+                                            "type": "number",
+                                            "example": 1,
+                                        },
+                                        "num_files_per_sec": {
+                                            "type": "number",
+                                            "example": 10,
+                                        },
+                                        "round_robin": {
+                                            "type": "boolean",
+                                            "example": False,
+                                        },
+                                        "save_logs": {
+                                            "type": "boolean",
+                                            "example": True,
+                                        },
+                                        "shard": {
+                                            "type": "boolean",
+                                            "example": False,
+                                        },
+                                        "total_jobs": {
+                                            "type": "number",
+                                            "example": 10000,
+                                        },
+                                    },
+                                },
+                                "num_workers": {
+                                    "type": "number",
+                                    "example": 0,
+                                },
+                                "aggregate_during": {
+                                    "type": "boolean",
+                                    "example": False,
+                                },
+                                "sample_rate": {
+                                    "type": "number",
+                                    "example": 0,
+                                },
+                                "low_memory": {
+                                    "type": "boolean",
+                                    "example": False,
+                                },
+                                "event_gen_options": {
+                                    "type": "object",
+                                    "properties": {
+                                        "invalid": {
+                                            "type": "boolean",
+                                            "example": True,
+                                        },
+                                        "max_sol_time": {
+                                            "type": "number",
+                                            "example": 120,
+                                        },
+                                        "solutions_limit": {
+                                            "type": "number",
+                                            "example": 100,
+                                        },
+                                    },
+                                },
+                                "max_different_sequences": {
+                                    "type": "number",
+                                    "example": 200,
+                                },
+                            },
+                        },
+                        "TestOutputFolder": {
+                            "type": "string",
+                            "example": "Tests under name <TestName> in the"
+                            "directory /<path>/erebus/test_harness/"
+                            "report_ouput/<TestName>",
                         },
                     },
                 },
@@ -547,12 +633,12 @@ def create_app(
     @app.route("/upload/profile", methods=["POST"])
     def upload_profile() -> None:
         """Endpoint to handle the upload of a profile file
-        A profile for a performance test can be uploaded in the form \
-        of a CSV file. The profile provides specific points (given in seconds)\
-        in simulation time where the number of test files sent per second is \
-        described. The csv must have the following headers in the following \
-        order: "Time", "Number". The Test Harness will linearly interpolate \
-        between these times to a discretisation of 1 second and will calculate\
+        A profile for a performance test can be uploaded in the form
+        of a CSV file. The profile provides specific points (given in seconds)
+        in simulation time where the number of test files sent per second is
+        described. The csv must have the following headers in the following
+        order: "Time", "Number". The Test Harness will linearly interpolate
+        between these times to a discretisation of 1 second and will calculate
         how many test files are sent within that second
         ---
         tags:
@@ -573,7 +659,7 @@ def create_app(
             200:
                 description: Files uploaded successfully
             400:
-                description: Files failed to upload - mime-type must be \
+                description: Files failed to upload - mime-type must be\
                 multipart/form-data
         """
         return app.upload_profile()
@@ -581,8 +667,8 @@ def create_app(
     # route to upload test-files
     @app.route("/upload/test-files", methods=["POST"])
     def upload_test_files() -> None:
-        """Test job files can be uploaded that suit the specific system\
-        being tested. This endpoint allows the upload of multiple test\
+        """Test job files can be uploaded that suit the specific system
+        being tested. This endpoint allows the upload of multiple test
         files and is of mime type multipart/form.
         ---
         tags:
@@ -604,7 +690,7 @@ def create_app(
             200:
                 description: Files uploaded successfully
             415:
-                description: Files failed to upload - mime-type must be \
+                description: Files failed to upload - mime-type must be\
                 multipart/form-data
         """
         return app.upload_test_files()
@@ -627,10 +713,15 @@ def create_app(
         responses:
             200:
                 description: Test started successfully
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StartTestResponse'
+
             400:
                 description: Bad Request
             415:
-                description: Unsupported Media Type. \
+                description: Unsupported Media Type.\
                 Must include 'Content-Type application/json'
         """
         return app.start_test()
@@ -662,8 +753,8 @@ def create_app(
     @app.route("/upload/named-zip-files", methods=["POST"])
     def upload_named_zip_files() -> None:
         """Endpoint to handle the starting of a specified test
-        This is the recommended way of uploading Test Case zip files \
-        to the Test Harness. These can include all the test data required to\
+        This is the recommended way of uploading Test Case zip files
+        to the Test Harness. These can include all the test data required to
         run the specific test.
         ---
         tags:
@@ -677,14 +768,15 @@ def create_app(
                         required: ["file", "TestName"]
                         properties:
                             file:
-                                type: file
+                                type: string
+                                format: binary
                             TestName:
                                 type: string
         responses:
             200:
                 description: Files uploaded successfully
             400:
-                description: Files failed to upload - mime-type must be \
+                description: Files failed to upload - mime-type must be\
                 multipart/form-data OR File is not a zip file
         """
         return app.upload_named_zip_files()
@@ -693,7 +785,7 @@ def create_app(
     @app.route("/stopTest", methods=["POST"])
     def stop_test() -> None:
         """Endpoint to handle gracefully stopping a specified test
-        To stop a test gracefully once it is running. Currently the JSON\
+        To stop a test gracefully once it is running. Currently the JSON
         body accepted is empty.
         ---
         tags:
@@ -718,7 +810,7 @@ def create_app(
     @app.route("/getTestOutputFolder", methods=["POST"])
     def get_test_output_folder() -> None:
         """Endpoint to retrieve output data from a finished test.
-        The JSON body should specify the TestName given in the /startTest\
+        The JSON body should specify the TestName given in the /startTest
         endpoint requests used to start the test.
         ---
         tags:
@@ -736,6 +828,12 @@ def create_app(
                 description: Output data fetched successfully
             400:
                 description: Test does not exist
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            format: binary
+                            example: FileName.zip
         """
         return app.get_test_output_folder()
 
