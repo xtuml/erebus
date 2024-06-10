@@ -332,6 +332,9 @@ The flask service can be run in two ways:
     INFO:werkzeug:Press CTRL+C to quit
     ```
 
+#### <b>Serving the SwaggerUI</b>
+Once the server is running locally, the SwaggerUI can be accessed from http://127.0.0.1:8800/apidocs in any browser. This is a simple UI page designed using Swagger/OpenAPI3 to execute Test-Harness commands without needing the terminal or curl commands as detailed below.
+
 ### Running a Test
 
 #### Preparation Stages Before `/startTest`
