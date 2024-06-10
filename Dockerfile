@@ -12,11 +12,15 @@ RUN pip install git+https://github.com/xtuml/janus.git
 
 WORKDIR /test_harness_app
 
+# Caches packages installed by pip
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . /test_harness_app/
 
 RUN chmod +x /test_harness_app/scripts/install_repositories.sh && \
-    /test_harness_app/scripts/install_repositories.sh && \
-    pip install -r requirements.txt
+    /test_harness_app/scripts/install_repositories.sh
 
 EXPOSE 8800
 
