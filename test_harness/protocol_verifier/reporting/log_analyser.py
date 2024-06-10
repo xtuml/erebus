@@ -1,6 +1,5 @@
 # pylint: disable=R0911
-"""Methods to analyse logs
-"""
+"""Methods to analyse logs"""
 from typing import TextIO, Any, Generator
 import logging
 import os
@@ -13,48 +12,39 @@ logger = logging.getLogger(__name__)
 # Grok patterns for functional tests log scraping
 pv_success_groks = (
     Grok(
-        "svdc_job_success :"
-        " JobId = %{UUID:JobId} : JobName = %{WORD:JobName}"
+        '{"jobId":"%{UUID:JobId}","jobName":"%{WORD:JobName}"'
+        ',"message":"%{DATA:message}","tag":"svdc_job_success"}'
     ),
-    Grok(
-        "reception_event_valid : EventId = %{UUID:EventId}"
-    )
+    Grok("reception_event_valid : EventId = %{UUID:EventId}"),
 )
 
 pv_failure_groks = (
     Grok(
-        "svdc_job_failed"
-        " : FailureReason = %{FAILURE_REASON:FailureReason}"
-        " : JobId = %{UUID:JobId}",
-        custom_patterns={
-            "FAILURE_REASON": ".*"
-        }
+        "%{TIMESTAMP_ISO8601:timestamp} - "
+        r'{"eventList":\[%{GREEDYDATA:eventList}\],'
+        '"jobId":"%{UUID:JobId}","jobName":"%{WORD:JobName}",'
+        '"message":"%{DATA:FailureReason}","tag":"svdc_job_failed"}'
     ),
     Grok(
-        "aeordering_job_failed"
-        " : JobId = %{UUID:JobId}"
-        " : FailureReason = %{FAILURE_REASON:FailureReason}",
-        custom_patterns={
-            "FAILURE_REASON": "[a-zA-Z ]+"
-        }
+        "%{TIMESTAMP_ISO8601:timestamp} - "
+        '{"eventId":"%{DATA:eventId}","eventName":"%{DATA:eventName}",'
+        '"jobId":"%{UUID:JobId}","jobName":"%{WORD:JobName}",'
+        '"message":"%{DATA:FailureReason}","tag":"aeordering_job_failed"}'
     ),
     Grok(
-        "svdc_job_alarm"
-        " : Alarm Condition = ALARM: %{FAILURE_REASON:Alarm}"
-        " : JobId = %{UUID:JobId} with Job Name = %{FAILURE_REASON:JobName}",
-        custom_patterns={
-            "FAILURE_REASON": "[a-zA-Z ]+"
-        }
+        "%{TIMESTAMP_ISO8601:timestamp} - "
+        r'{"eventList":\[%{GREEDYDATA:eventList}\],'
+        '"jobId":"%{UUID:JobId}","jobName":"%{WORD:JobName}",'
+        '"message":"ALARM: %{DATA:Alarm}","tag":"svdc_job_alarm"}'
     ),
-    Grok(
-        "reception_event_invalid : EventId = %{UUID:EventId}"
-    )
+    Grok("reception_event_invalid : EventId = %{UUID:EventId}"),
 )
 
 
 def logs_validity_df_to_results(
-    log_string: str, validity_df: pd.DataFrame,
-    event_id_job_id_map: dict[str, str] | None = None
+    log_string: str,
+    validity_df: pd.DataFrame,
+    event_id_job_id_map: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """Method to obtain a test results dataframe from a string representing
     the Protocol Verifier "Verifier.log"
@@ -114,13 +104,13 @@ def parse_log_string_to_pv_results_dataframe(
         if failure_grok:
             job_failed.append(failure_grok)
     # create dataframes for success and failures
-    job_success_df = pd.DataFrame.from_records(
-        job_success
-    ).drop_duplicates(ignore_index=True)
+    job_success_df = pd.DataFrame.from_records(job_success).drop_duplicates(
+        ignore_index=True
+    )
     job_success_df["PVResult"] = True
-    job_failed_df = pd.DataFrame.from_records(
-        job_failed
-    ).drop_duplicates(ignore_index=True)
+    job_failed_df = pd.DataFrame.from_records(job_failed).drop_duplicates(
+        ignore_index=True
+    )
     job_failed_df["PVResult"] = False
     # concatenate datframes
     results_df = pd.concat(
@@ -139,8 +129,9 @@ def parse_log_string_to_pv_results_dataframe(
 
 
 def get_grok_result_from_line(
-    line: str, groks: list[Grok],
-    event_id_job_id_map: dict[str, str] | None = None
+    line: str,
+    groks: list[Grok],
+    event_id_job_id_map: dict[str, str] | None = None,
 ) -> dict[str, str | Any] | None:
     """Method to get a grok match (if there is one) from a line given a list
 
