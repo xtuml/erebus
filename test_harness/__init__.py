@@ -17,6 +17,8 @@ from tempfile import TemporaryDirectory
 from configparser import ConfigParser
 
 from flask import Flask, request, make_response, Response, jsonify, send_file
+
+from flasgger import Swagger
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from tqdm import tqdm
@@ -27,7 +29,7 @@ from test_harness.utils import AsyncTestStopper
 
 try:
     from test_harness.protocol_verifier.config.config import (
-        ProtocolVerifierConfig
+        ProtocolVerifierConfig,
     )
 except Exception as error:
     print(f"Error loading in ProtocolVerifierConfig: {error}")
@@ -126,10 +128,16 @@ class HarnessApp(Flask):
                 "mime-type must be multipart/form-data\n", 400
             )
         # get files
-        uploaded_files: list[FileStorage] = [
-            request.files[uploaded_file_identifier]
-            for uploaded_file_identifier in request.files
-        ]
+        # If using swagger api, get the array of files
+        files = request.files.getlist("file")
+        if files:
+            uploaded_files = files
+        else:
+            uploaded_files: list[FileStorage] = [
+                request.files[uploaded_file_identifier]
+                for uploaded_file_identifier in request.files
+            ]
+
         # get filenames
         uploaded_files_names = list(map(lambda x: x.filename, uploaded_files))
 
@@ -291,9 +299,15 @@ class HarnessApp(Flask):
             return make_response(
                 "mime-type must be multipart/form-data\n", 400
             )
-        # handle zip files
+        # handle zip files; swagger can't combine testName and file
+        # into 1 argument like the curl command does so swagger passes
+        # both TestName and file as separate entities. We check here if
+        # TestName exits and if so set it to upload_file_identifier for
+        # swagger api call to work correctly
         try:
             for uploaded_file_identifier, file in request.files.items():
+                if "TestName" in request.form:
+                    uploaded_file_identifier = request.form["TestName"]
                 handle_uploaded_zip_file(
                     file_storage=file,
                     name=uploaded_file_identifier,
@@ -420,6 +434,184 @@ def create_app(
         instance_relative_config=True,
     )
     app.config.from_mapping()
+    app.config["SWAGGER"] = {
+        "openapi": "3.0.2",
+        "title": "Test Harness",
+        "description": "Package that runs a test harness for arbitrary "
+        "system functional and performance testing. Provides base "
+        "functionality to set up tests and send test files.",
+        "version": "v0.01-beta",
+        "termsOfService": None,
+        "servers": [{"url": "http://127.0.0.1:8800"}],
+        "components": {
+            "schemas": {
+                "StartTest": {
+                    "type": "object",
+                    "required": ["TestName"],
+                    "properties": {
+                        "TestName": {
+                            "type": "string",
+                            "example": "Name of Test Here",
+                        },
+                        "TestConfig": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "example": "Performance",
+                                },
+                                "performance_options": {
+                                    "type": "object",
+                                    "properties": {
+                                        "num_files_per_sec": {
+                                            "type": "number",
+                                            "example": 10,
+                                        },
+                                    },
+                                },
+                                "num_workers": {
+                                    "type": "number",
+                                    "example": 0,
+                                },
+                                "aggregate_during": {
+                                    "type": "boolean",
+                                    "example": False,
+                                },
+                                "sample_rate": {
+                                    "type": "number",
+                                    "example": 0,
+                                },
+                                "low_memory": {
+                                    "type": "boolean",
+                                    "example": False,
+                                },
+                            },
+                        },
+                    },
+                },
+                "StartTestResponse": {
+                    "type": "object",
+                    "properties": {
+                        "TestConfig": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "example": "Performance",
+                                },
+                                "performance_options": {
+                                    "type": "object",
+                                    "properties": {
+                                        "job_event_gap": {
+                                            "type": "number",
+                                            "example": 1,
+                                        },
+                                        "num_files_per_sec": {
+                                            "type": "number",
+                                            "example": 10,
+                                        },
+                                        "round_robin": {
+                                            "type": "boolean",
+                                            "example": False,
+                                        },
+                                        "save_logs": {
+                                            "type": "boolean",
+                                            "example": True,
+                                        },
+                                        "shard": {
+                                            "type": "boolean",
+                                            "example": False,
+                                        },
+                                        "total_jobs": {
+                                            "type": "number",
+                                            "example": 10000,
+                                        },
+                                    },
+                                },
+                                "num_workers": {
+                                    "type": "number",
+                                    "example": 0,
+                                },
+                                "aggregate_during": {
+                                    "type": "boolean",
+                                    "example": False,
+                                },
+                                "sample_rate": {
+                                    "type": "number",
+                                    "example": 0,
+                                },
+                                "low_memory": {
+                                    "type": "boolean",
+                                    "example": False,
+                                },
+                                "event_gen_options": {
+                                    "type": "object",
+                                    "properties": {
+                                        "invalid": {
+                                            "type": "boolean",
+                                            "example": True,
+                                        },
+                                        "max_sol_time": {
+                                            "type": "number",
+                                            "example": 120,
+                                        },
+                                        "solutions_limit": {
+                                            "type": "number",
+                                            "example": 100,
+                                        },
+                                    },
+                                },
+                                "max_different_sequences": {
+                                    "type": "number",
+                                    "example": 200,
+                                },
+                            },
+                        },
+                        "TestOutputFolder": {
+                            "type": "string",
+                            "example": "Tests under name <TestName> in the"
+                            "directory /<path>/erebus/test_harness/"
+                            "report_ouput/<TestName>",
+                        },
+                    },
+                },
+                "StopTest": {
+                    "type": "object",
+                    "description": "Currently an empty object",
+                },
+                "OutputData": {
+                    "type": "object",
+                    "required": ["TestName"],
+                    "properties": {
+                        "TestName": {
+                            "type": "string",
+                            "example": "Name of Test here",
+                        }
+                    },
+                },
+                "TestRunning": {
+                    "type": "object",
+                    "properties": {
+                        "details": {
+                            "type": "object",
+                            "properties": {
+                                "percent_done": {
+                                    "type": "string",
+                                    "example": "50%",
+                                },
+                                "running": {
+                                    "type": "boolean",
+                                    "example": True,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    }
+
+    Swagger(app)
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -440,32 +632,230 @@ def create_app(
     # route to upload profile
     @app.route("/upload/profile", methods=["POST"])
     def upload_profile() -> None:
+        """Endpoint to handle the upload of a profile file
+        A profile for a performance test can be uploaded in the form
+        of a CSV file. The profile provides specific points (given in seconds)
+        in simulation time where the number of test files sent per second is
+        described. The csv must have the following headers in the following
+        order: "Time", "Number". The Test Harness will linearly interpolate
+        between these times to a discretisation of 1 second and will calculate
+        how many test files are sent within that second
+        ---
+        tags:
+            - Upload
+            - Optional
+        requestBody:
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: ["file"]
+                        description: file to upload
+                        properties:
+                            file:
+                                type: string
+                                format: binary
+        responses:
+            200:
+                description: Files uploaded successfully
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            example: Files uploaded successfully
+            400:
+                description: Files failed to upload - mime-type must be\
+                multipart/form-data
+        """
         return app.upload_profile()
 
-    # route to upload profile
+    # route to upload test-files
     @app.route("/upload/test-files", methods=["POST"])
     def upload_test_files() -> None:
+        """Test job files can be uploaded that suit the specific system
+        being tested. This endpoint allows the upload of multiple test
+        files and is of mime type multipart/form.
+        ---
+        tags:
+            - Upload
+            - Optional
+        requestBody:
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: ["file"]
+                        properties:
+                            file:
+                                type: array
+                                items:
+                                    type: string
+                                    format: binary
+        responses:
+            200:
+                description: Files uploaded successfully
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            example: Files uploaded successfully
+            415:
+                description: Files failed to upload - mime-type must be\
+                multipart/form-data
+        """
         return app.upload_test_files()
 
-    # route to start
+    # route to start test
     @app.route("/startTest", methods=["POST"])
     def start_test() -> None:
+        """Endpoint to handle starting an uploaded test
+        ---
+        tags:
+            - Test
+            - Start test
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/StartTest'
+            description: Name and optional config of test to run
+        responses:
+            200:
+                description: Test started successfully
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StartTestResponse'
+
+            400:
+                description: Bad Request
+            415:
+                description: Unsupported Media Type.\
+                Must include 'Content-Type application/json'
+        """
         return app.start_test()
 
     @app.route("/isTestRunning", methods=["GET"])
     def test_is_running() -> None:
+        """Endpoint to fetch currently running test progress
+        ---
+        tags:
+            - Test
+        parameters:
+            - name: TestName
+              in: query
+              type: string
+              required: true
+              description: Name of test to view progress
+        responses:
+            200:
+                description: returns % done only if running is true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TestRunning'
+
+        """
         return app.test_is_running()
 
+    # route to upload zip-files
     @app.route("/upload/named-zip-files", methods=["POST"])
     def upload_named_zip_files() -> None:
+        """Endpoint to handle the starting of a specified test
+        This is the recommended way of uploading Test Case zip files
+        to the Test Harness. These can include all the test data required to
+        run the specific test.
+        ---
+        tags:
+            - Upload
+            - Test
+        requestBody:
+            required: true
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: ["file", "TestName"]
+                        properties:
+                            file:
+                                type: string
+                                format: binary
+                            TestName:
+                                type: string
+        responses:
+            200:
+                description: Files uploaded successfully
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            example: Zip archives uploaded successfully
+            400:
+                description: Files failed to upload - mime-type must be\
+                multipart/form-data OR File is not a zip file
+        """
         return app.upload_named_zip_files()
 
+    # route to stop test
     @app.route("/stopTest", methods=["POST"])
     def stop_test() -> None:
+        """Endpoint to handle gracefully stopping a specified test
+        To stop a test gracefully once it is running. Currently the JSON
+        body accepted is empty.
+        ---
+        tags:
+            - Test
+            - Stop test
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/StopTest'
+            description: Currently accepts empty JSON body
+        responses:
+            200:
+                description: Request to stop test successful
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            example: Request to stop test successful
+            400:
+                description: Failed to stop test
+        """
         return app.stop_test()
 
+    # route to retrieve test output folder
     @app.route("/getTestOutputFolder", methods=["POST"])
     def get_test_output_folder() -> None:
+        """Endpoint to retrieve output data from a finished test.
+        The JSON body should specify the TestName given in the /startTest
+        endpoint requests used to start the test.
+        ---
+        tags:
+            - Test
+            - Get Output Data
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/OutputData'
+            description: Name of Test to retrieve output data from
+        responses:
+            200:
+                description: Output data fetched successfully
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            format: binary
+                            example: FileName.zip
+            400:
+                description: Test does not exist
+        """
         return app.get_test_output_folder()
 
     return app
