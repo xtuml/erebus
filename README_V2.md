@@ -133,11 +133,19 @@ docker compose up --build
 
 ## Manual Installation (For Development)
 If you're contributing to Erebus or need a custom setup:
+1. **Reopen IDE in dev container**:
+
 ```sh
 # Clone and navigate
 git clone https://github.com/yourusername/erebus.git
 cd erebus
+```
+To ensure consistency in the working environment, it is recommended that the dev container provided in `.devcontainer/devcontainer.json` is used. 
 
+
+2. **Setup virtual environment and install packages:**
+
+```sh
 # Run install script for test-event-generator (Janus)
 # https://github.com/xtuml/janus
 ./scripts/install_repositories.sh
@@ -148,6 +156,14 @@ source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 
 # Install dependencies (make sure requirements.txt exists)
 pip install -r requirements.txt
+```
+**Troubleshooting**
+
+* If `./scripts/install_repositories.sh` does not work, ensure the script is executable.
+```sh
+cd scripts
+chmod u+x install_repositories.sh
+cd ..
 ```
 ***
 # Deployment
