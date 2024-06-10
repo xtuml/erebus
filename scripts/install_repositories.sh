@@ -10,7 +10,7 @@ if git clone https://github.com/xtuml/janus.git; then
 else
     ERROR="$(git clone https://github.com/xtuml/janus.git 2>&1 1>/dev/null)"
 fi
-
+ 
 # check if clone was successful
 if [ -z "$ERROR" ]; then
     echo "janus (test-event-generator) cloned successfully"
