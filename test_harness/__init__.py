@@ -769,6 +769,7 @@ def create_app(
         ---
         tags:
             - Upload
+            - Test
         requestBody:
             required: true
             content:
