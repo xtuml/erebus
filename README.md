@@ -162,6 +162,9 @@ The flask service can be run in two ways:
      * Running on http://172.17.0.3:8800
     INFO:werkzeug:Press CTRL+C to quit
     ```
+#### <b>Serving the SwaggerUI</b>
+Once the server is running locally, the SwaggerUI can be accessed from http://127.0.0.1:8800/apidocs in any browser. This is a simple UI page designed using Swagger/OpenAPI3 to execute Test-Harness commands without needing the terminal or curl commands as detailed below.
+
 #### <b>Running a Test</b>
 An arbitrary test can be run with the any of the three following stages before running the `/startTest` endpoint,  once the Flask service is running:
 * (OPTIONAL) A profile for a performance test can be uploaded as well in the form of a CSV file. The profile provides specific points (given in seconds) in simulation time where the number of test files sent per second is described. The csv must have the following headers in the following order: "Time", "Number". The Test Harness will linearly interpolate between these times to a discretisation of 1 second and will calculate how many test files are sent within that second (more info can be found in `docs/TestProfiles.md`). The end-point is called `/upload/profile` and is of mime type `multipart/form`. However only one file can be uploaded toherwise the Test Harness will raise an error and not run. An example usage is shown below:
