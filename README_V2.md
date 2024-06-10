@@ -59,7 +59,7 @@
         <li><a href="#flask-service">Flask Service</a>
           <ul><li><a href="#running-a-test">Running a Test</a></li></ul>
         </li>
-        <li><a href="#command-line-interface-cli">Command Line Interface (CLI)</a></li>
+        <li><a href="#command-line-interface-cli">Command Line Interface (CLI) - not working currently</a></li>
         <li><a href="#test-reports">Test Reports</a></li>
       </ul>
     </li>
@@ -231,7 +231,7 @@ To override defaults, copy the parameter under `[non-default]` heading and set a
 # Usage
 Currently there are two main ways to use the Test Harness:
 * Flask Service - A flask service that serves http requests to run the test harness
-* Command Line Interface (CLI) Tool
+* Command Line Interface (CLI) Tool - not currently working
 
 ## Test Configuration
 For each method, a custom test configuration can be passed at runtime in the form of JSON (Flask) or YAML (CLI).
@@ -389,7 +389,6 @@ To check if a test is running:
 curl 'http://127.0.0.1:8800/isTestRunning'
 ```
 
-
 #### Stopping a Test
 
 To stop a test gracefully, send a POST request with an empty JSON body to the `/stopTest` endpoint. Use the header `'Content-Type: application/json'`. A successful response returns `200 OK`, and a failure returns `400`.
@@ -416,11 +415,11 @@ Example:
 ```sh
 curl -X POST -d '{"TestName": "test_1"}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/getTestOutputFolder' --output <file_name>.zip
 ```
-
 ***
 
 ## Command Line Interface (CLI)
 
+Work In Progress
 ***
 
 ## Test Reports
