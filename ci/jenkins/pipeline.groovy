@@ -11,7 +11,7 @@ pipeline {
                     env.OUTPUTS           = "$JENKINS_HOME/workspace/test-harness-pipeline-test"
                     env.PV_BOX            = "172.16.0.21"
                     env.TH_BOX            = "172.16.0.16:8800"
-                    env.PV_DEPLOY_PATH    = "/home/itoperations/munin_1.3.1-midstage2/deploy"
+                    env.PV_DEPLOY_PATH    = "/home/itoperations/munin_1.3.1-midstage3/deploy"
                     env.WAIT_INTERVAL     = "10"
                     env.CONFIG_FILE_NAME  = "test_config.yaml"
 
@@ -23,6 +23,8 @@ pipeline {
                         regex:/[\w\W]*/,
                         description:"""Please add any additional flags that need to be provided to the /startTest invocation."""
                     )
+                    
+                    externalFunctions = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy")
                     
                     TEST_CATEGORIES=[:]
                     TEST_PATHS_RAW=sh(
@@ -44,13 +46,13 @@ pipeline {
                         
                         if(customTestContent.size() < 1){
                             
-                            TEST_PATHS = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").parseTestPaths(
+                            TEST_PATHS = externalFunctions.parseTestPaths(
                                 TEST_PATHS_RAW
                             )
                             
                             results = [:]
                             TEST_PATHS.each{
-                                results = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").putInNestedMap(
+                                results = externalFunctions.putInNestedMap(
                                     results,
                                     it, 
                                     0, 
@@ -60,7 +62,7 @@ pipeline {
                             
                             
                             ITEM_LIST = []
-                            ITEM_LIST = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").convertToDecisionTree(
+                            ITEM_LIST = externalFunctions.convertToDecisionTree(
                                 results,
                                 ITEM_LIST,
                                 0,
@@ -125,17 +127,17 @@ pipeline {
                             ]
 
                             prefixes = ["${fileSelectionName}=","${testCaseName}=","Container quantity selection={containerQuantity="]
-                            filesToSelect = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").extractFromStringUsingPrefixes(
+                            filesToSelect = externalFunctions.extractFromStringUsingPrefixes(
                                 env.SELECTION_QUANTITIES,
                                 prefixes[0],
                                 prefixes
                             ).toInteger()
-                            testCaseNames = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").extractFromStringUsingPrefixes(
+                            testCaseNames = externalFunctions.extractFromStringUsingPrefixes(
                                 env.SELECTION_QUANTITIES,
                                 prefixes[1],
                                 prefixes
                             ).replaceAll(" ", "")
-                            containerQuantity = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").extractFromStringUsingPrefixes(
+                            containerQuantity = externalFunctions.extractFromStringUsingPrefixes(
                                 env.SELECTION_QUANTITIES,
                                 prefixes[2],
                                 prefixes
@@ -173,14 +175,14 @@ pipeline {
                                 parameters:selections
                             )
 
-                            fileDetails = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").getFileDetails(
+                            fileDetails = externalFunctions.getFileDetails(
                                 filesToSelect,
                                 containerQuantity,
                                 FILE_SELECT,
                                 fileNames
                             )
                             
-                            load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").executeTestFiles(
+                            externalFunctions.executeTestFiles(
                                 fileDetails,
                                 containerQuantity,
                                 env,
@@ -226,17 +228,17 @@ pipeline {
                             fileName="."
 
                             prefixes = ["Container quantity selection={containerQuantity=", "Test Case Name=", "Additional Information="]
-                            containerQuantity = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").extractFromStringUsingPrefixes(
+                            containerQuantity = externalFunctions.extractFromStringUsingPrefixes(
                                 env.TEST_DATA,
                                 prefixes[0],
                                 prefixes
                             ).replaceAll(" ","")
-                            fileName = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").extractFromStringUsingPrefixes(
+                            fileName = externalFunctions.extractFromStringUsingPrefixes(
                                 env.SELECTION_QUANTITIES,
                                 prefixes[1],
                                 prefixes
                             ).trim()
-                            addInfo = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").extractFromStringUsingPrefixes(
+                            addInfo = externalFunctions.extractFromStringUsingPrefixes(
                                 env.SELECTION_QUANTITIES,
                                 prefixes[2],
                                 prefixes
@@ -255,21 +257,21 @@ pipeline {
                             configFilePath=configFileLoc.split("/")
                             selectedTestFolder=configFilePath[0..configFilePath.size()-2].join("/")
                             
-                            is_performance = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").testIsPerformance(
+                            is_performance = externalFunctions.testIsPerformance(
                                 selectedTestFolder
                             )
-                            load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").executeTest(
+                            externalFunctions.executeTest(
                                 selectedTestFolder, 
                                 containerQuantity, 
                                 fileName, 
                                 is_performance, 
                                 addInfo
                             )
-                            load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").queryTest(
+                            externalFunctions.queryTest(
                                 containerQuantity, 
                                 is_performance
                             )
-                            load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").tearDown(
+                            externalFunctions.tearDown(
                                 is_performance, 
                                 env.PV_BOX, 
                                 containerQuantity, 

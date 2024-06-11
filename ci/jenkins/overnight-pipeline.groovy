@@ -13,12 +13,14 @@ pipeline {
                     env.OUTPUTS           = "$JENKINS_HOME/workspace/overnight-pipeline"
                     env.PV_BOX            = "172.16.0.21"
                     env.TH_BOX            = "172.16.0.16:8800"
-                    env.PV_DEPLOY_PATH    = "/home/itoperations/munin_1.3.1-midstage2/deploy"
+                    env.PV_DEPLOY_PATH    = "/home/itoperations/munin_1.3.1-midstage3/deploy"
                     env.WAIT_INTERVAL     = "10"
                     env.CONFIG_FILE_NAME  = "test_config.yaml"
 
                     // getting around scoping issues
                     addInfo = ""
+
+                    externalFunctions = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy")
 
                     TEST_CATEGORIES=[:]
                     TEST_PATHS_RAW=sh(
@@ -30,13 +32,13 @@ pipeline {
                         """
                     ).split("\n") as List
                     
-                    TEST_PATHS = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").parseTestPaths(
+                    TEST_PATHS = externalFunctions.parseTestPaths(
                         TEST_PATHS_RAW
                     )
                     
                     results = [:]
                     TEST_PATHS.each{
-                        results = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").putInNestedMap(
+                        results = externalFunctions.putInNestedMap(
                             results,
                             it, 
                             0, 
@@ -45,7 +47,7 @@ pipeline {
                     }
                     
                     ITEM_LIST = []
-                    ITEM_LIST = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").convertToDecisionTree(
+                    ITEM_LIST = externalFunctions.convertToDecisionTree(
                         results,
                         ITEM_LIST,
                         0,
@@ -61,14 +63,14 @@ pipeline {
                     
                     env.FILE_SELECT = "{Additional Information=, ${testCaseNames}={selection_3=all, selection_1=functional, selection_2=smoke_tests, selection_0=protocol_verifier}}"
 
-                    fileDetails = load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").getFileDetails(
+                    fileDetails = externalFunctions.getFileDetails(
                         filesToSelect,
                         containerQuantity,
                         FILE_SELECT,
                         fileNames
                     )
 
-                    load("$JENKINS_HOME/groovy-scripts/pipeline-functions.groovy").executeTestFiles(
+                    externalFunctions.executeTestFiles(
                         fileDetails,
                         containerQuantity,
                         env,
