@@ -45,8 +45,11 @@ jobs:
           # Replace munin/deploy/config/log-pv-kafka.properties with ./end_to_end_test_files/log-pv-kafka.properties
           cp ./end_to_end_test_files/log-pv-kafka.properties ./munin/deploy/config/log-pv-kafka.properties
 
+          # Replace munin/deploy/docker-compose.prod.yml
+          cp ./end_to_end_test_files/docker-compose.prod.yml ./munin/deploy/docker-compose.prod.yml
+
           # Run docker compose up -f docker-compose.prod.yml up
-          docker compose -f ./munin/deploy/docker-compose.yml up -d
+          docker compose -f ./munin/deploy/docker-compose.prod.yml up -d
 
           mkdir -p config
           cp ./test_harness/config/default_config.config ./config/config.config
