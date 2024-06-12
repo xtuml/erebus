@@ -53,7 +53,7 @@ jobs:
 
           mkdir -p config
           cp ./test_harness/config/default_config.config ./config/config.config
-          sed -i 's/host\.docker\.internal/172.19.0.1/g' ./config/config.config
+          sed -i 's/host\.docker\.internal/http_server/g' ./config/config.config
 
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
 
