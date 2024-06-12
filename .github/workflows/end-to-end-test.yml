@@ -36,6 +36,9 @@ jobs:
           cd munin
           git checkout tags/1.3.1-midstage3
 
+          # Change to root directory
+          cd ..
+
           # Replace munin/deploy/config/log-pv-files.properties with ./end_to_end_test_files/log-pv-files.properties
           cp ./end_to_end_test_files/log-pv-files.properties ./munin/deploy/config/log-pv-files.properties
 
