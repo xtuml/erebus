@@ -1,5 +1,6 @@
 version: "3.9"
 services:
+
   jm_proc:
     image: ghcr.io/xtuml/protocol_verifier:latest
     deploy:
@@ -64,6 +65,8 @@ services:
     ports:
       - 9000:9000
     command: "-path=/data"
+    networks:
+      - my-network
 
   zookeeper:
     image: levistarrett/zookeeper:3.4.6
@@ -106,3 +109,7 @@ services:
     volumes:
       - "./config:/root/config"
     command: /root/config/configure-kafka.sh
+
+networks:
+  my-network:
+    driver: bridge
