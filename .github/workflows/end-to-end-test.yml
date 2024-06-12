@@ -11,21 +11,13 @@ on:
 jobs:
   build-and-test:
     if: |
-        github.repository == 'SmartDCSITlimited/test-harness'
+        github.repository == 'xtuml/erebus'
             && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    env:
-      SSH_AUTH_SOCK: $SSH_AUTH_SOCK
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Login to GitLab Docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.gitlab.com
-          username: ${{ secrets.GITLAB_USERNAME }}
-          password: ${{ secrets.GITLAB_PASSWORD }}
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -34,28 +26,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Build and run containers
-      #   uses: adambirds/docker-compose-action@v1.3.0
-      #   with:
-      #     compose-file: ./docker-compose-end-to-end-test.yml
-
-      # - name: sort out SSH keys
-      #   uses: shimataro/ssh-key-action@v2
-      #   with:
-      #     key: ${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}
-      #     # This is unnecessary because github is always added to known_hosts automatically
-      #     known_hosts: unnecessary
-          
-
-      - name: Set up SSH key
-        run: |
-          mkdir -p ~/.ssh
-          ssh-agent -a ${SSH_AUTH_SOCK} > /dev/null
-          ssh-add - <<< "${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}"
-          echo "${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
 
       - name: Do test
         run: |
@@ -63,13 +33,13 @@ jobs:
           cp ./test_harness/config/default_config.config ./config/config.config
           sed -i 's/host\.docker\.internal/httpserver/g' ./config/config.config
 
-          mkdir -p aerconfig
-          cp ./end_to_end_test_configs/aer_config.json ./aerconfig/config.json
-          cp ./end_to_end_test_configs/log-config-reception.xml ./aerconfig/
+          # mkdir -p aerconfig
+          # cp ./end_to_end_test_configs/aer_config.json ./aerconfig/config.json
+          # cp ./end_to_end_test_configs/log-config-reception.xml ./aerconfig/
 
-          mkdir -p aeo_svdc_config
-          cp ./end_to_end_test_configs/aeosvdc_config.json ./aeo_svdc_config/config.json
-          cp ./end_to_end_test_configs/log-config-verifier.xml ./aeo_svdc_config/
+          # mkdir -p aeo_svdc_config
+          # cp ./end_to_end_test_configs/aeosvdc_config.json ./aeo_svdc_config/config.json
+          # cp ./end_to_end_test_configs/log-config-verifier.xml ./aeo_svdc_config/
 
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
 
@@ -79,7 +49,7 @@ jobs:
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           # actual tests are set to run
-          timeout 1m ./end-to-end-curl-commands.sh
+          timeout 1m ./scripts/end-to-end-curl-commands.sh
 
           # this should return true as tests are running
           echo "Testing that tests are running"

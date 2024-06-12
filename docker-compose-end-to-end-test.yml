@@ -1,78 +1,15 @@
-# How to log into the docker repo on github actions: https://stackoverflow.com/a/69049623/2060855
-version: "3"
-name: protocol-verifier-stack
+version: "3.9"
 services:
-  aereception:
-    ## AMD64 built gitlab pipeline 
-    image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-image-builder/prod/aereception:v1.0.0"
-    ## ARM built gitlab pipeline 
-    #image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-image-builder/prod/aereception-arm:v1.0.0"
-    volumes:
-      - "./aerconfig:/root/config"
-      - "./aerincoming:/root/incoming"
-      - "./verifier-incoming:/root/outgoing"
-      - "./logs/reception:/var/log/reception"
-    restart: on-failure
-    command: "-configPath config/ -log-config config/log-config-reception.xml -log-level trace -preinit schedule/startup.sch -util Inspector -inspector-port 0"
-  aeo_svdc:
-    ## AMD64 built gitlab pipeline 
-    image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-image-builder/prod/aeo_svdc:v1.0.0"
-    ## ARM built gitlab pipeline 
-    #image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-image-builder/prod/aeo_svdc-arm:v1.0.0"
-    volumes:
-      - "./aeo_svdc_config:/root/config"
-      - "./InvariantStore:/root/InvariantStore"
-      - "./verifier-incoming:/root/incoming"
-      - "./verifier-processed:/root/processed"
-      - "./logs/verifier:/var/log/verifier"
-      - "./JobIdStore:/root/JobIdStore"
-    restart: on-failure
-    command: "-configPath config/ -log-config config/log-config-verifier.xml -log-param instance_index=1 -log-level trace -preinit schedule/startup.sch -startJobGroup 00 -endJobGroup FF -util Inspector -inspector-port 0"
-  httpserver:
-    # image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-http-server:v1.0.0"
-    image: "ghcr.io/smartdcsitlimited/protocol-verifier-http-server:latest"
-    environment:
-      - GIN_MODE=release
-    volumes:
-      - "./aeo_svdc_config:/data/aeo_svdc_config"
-      - "./aeo_svdc_config/job_definitions:/data/aeo_svdc_config/job_definitions"
-      - "./aerconfig:/data/aerconfig"
-      - "./aerincoming:/data/events"
-      - "./logs/verifier:/data/logs/verifier"
-      - "./logs/reception:/data/logs/reception"
-      - "./verifier-processed:/data/verifier_processed"
-      - "./verifier-incoming:/data/verifier_incoming"
-      - "./JobIdStore:/data/job_id_store"
-      - "./InvariantStore:/data/invariant_store"
-    ports:
-      - 9000:9000
-    command: "-path=/data"
-  grokexporter:
-    image: "registry.gitlab.com/smartdcs1/cdsdt/protocol-verifier-image-builder/prod/grok-exporter:v1.0.0"
-    build:
-      context: grok_exporter
-    container_name: grok_exporter
-    ports:
-      - 9144:9144
-    volumes:
-      - ./grok_exporter:/etc/grok_exporter
-      - "./logs/reception:/var/log/reception"
-      - "./logs/verifier:/var/log/verifier"
-    restart: unless-stopped
-    labels:
-      org.label-schema.group: "monitoring"
   test-harness:
     build: 
       context: .
-      ssh:
-        - default
-    environment:
-     - PYTHONUNBUFFERED=1
     volumes:
-     - "./config:/config"
-     - "./report_output:/test_harness_app/test_harness/report_output"
-     - "./uml_file_store:/test_harness_app/test_harness/uml_file_store"
-     - "./test_file_store:/test_harness_app/test_harness/test_file_store"
-     - "./profile_store:/test_harness_app/test_harness/profile_store"
+      - "./config:/config"
+      - "./report_output:/test_harness_app/test_harness/report_output"
+      - "./uml_file_store:/test_harness_app/test_harness/uml_file_store"
+      - "./test_file_store:/test_harness_app/test_harness/test_file_store"
+      - "./profile_store:/test_harness_app/test_harness/profile_store"
     ports:
-     - 8800:8800
+      - 8800:8800
+    environment:
+      - PYTHONUNBUFFERED=1
