@@ -4,8 +4,6 @@ services:
   test-harness:
     build: 
       dockerfile: ./Dockerfile
-      ssh: 
-        - default
     volumes:
       - "./config:/config"
       - "./report_output:/test_harness_app/test_harness/report_output"
