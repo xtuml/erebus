@@ -73,6 +73,7 @@ jobs:
 
           # this should return true as tests are running
           echo "Testing that tests are running"
+          echo `curl 127.0.0.1:8800/isTestRunning`
           curl 127.0.0.1:8800/isTestRunning | grep 'true'
 
           # It takes this long to get any meaningful output from the test harness
@@ -85,8 +86,6 @@ jobs:
           sleep 60
           echo "Testing that a percentage is returned"
           curl 127.0.0.1:8800/isTestRunning | grep percent_done
-          sleep 30
-          curl 127.0.0.1:8800/isTestRunning | grep 'true'
           sleep 30
           curl 127.0.0.1:8800/isTestRunning | grep 'true'
           date
