@@ -11,9 +11,3 @@ services:
     - 8800:8800
     environment:
      - PYTHONUNBUFFERED=1
-    networks:
-      - my-network
-
-networks:
-  my-network:
-    external: true

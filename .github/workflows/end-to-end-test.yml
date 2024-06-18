@@ -26,46 +26,37 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
         
-      - name: Create Docker network
-        run: docker network create my-network
+      - name: Set up environment
+        run: sudo apt-get install -y libxml2-utils
 
-      - name: Do test
+      - name: Run tests
         run: |
-          # Pull munin repo from https://github.com/xtuml/munin.git
           git clone https://github.com/xtuml/munin.git
 
-          # Checkout to tags/1.3.1-midstage3
           cd munin
           git checkout tags/1.3.1-midstage3
 
-          # Change to root directory
+          # Copy over necessary files to get tests to pass
           cd ..
-
-          # Replace munin/deploy/config/log-pv-files.properties with ./end_to_end_test_files/log-pv-files.properties
           cp ./end_to_end_test_files/log-pv-files.properties ./munin/deploy/config/log-pv-files.properties
-
-          # Replace munin/deploy/config/log-pv-kafka.properties with ./end_to_end_test_files/log-pv-kafka.properties
           cp ./end_to_end_test_files/log-pv-kafka.properties ./munin/deploy/config/log-pv-kafka.properties
-
-          # Replace munin/deploy/docker-compose.prod.yml
           cp ./end_to_end_test_files/docker-compose.prod.yml ./munin/deploy/docker-compose.prod.yml
 
-          # Run docker compose up -f docker-compose.prod.yml up
           docker compose -f ./munin/deploy/docker-compose.prod.yml up -d
 
-          # Copy config.config file
+          # copy over config file that allows docker containers to work within Github Actions
           mkdir -p config
           cp ./end_to_end_test_files/config.config ./config/config.config
 
+          # Start the test harness
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
 
-          # this should return false as no tests are running
           sleep 10
           echo "Testing that no tests are running"
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           # actual tests are set to run
-          echo "Running end to end script"
+          echo "Running a performance test"
           timeout 1m ./scripts/end-to-end-curl-commands.sh
 
           # this should return true as tests are running
@@ -80,7 +71,13 @@ jobs:
           echo "Sleeping to give the test harness time to work"
           date
           sleep 120
+          date
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
+
+          # Inspect report output for failures
+          xmllint --xpath 'string(//testsuites/@failures)' ./report_output/performance_test/Results.xml
+
+          docker compose -f ./munin/deploy/docker-compose.prod.yml down
           docker compose -f ./docker-compose-end-to-end-test.yml down
