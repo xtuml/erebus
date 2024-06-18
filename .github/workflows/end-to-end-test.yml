@@ -25,7 +25,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+        
+      - name: Create Docker network
+        run: docker network create my-network
 
       - name: Do test
         run: |
@@ -51,8 +53,9 @@ jobs:
           # Run docker compose up -f docker-compose.prod.yml up
           docker compose -f ./munin/deploy/docker-compose.prod.yml up -d
 
+          # Copy config.config file
           mkdir -p config
-          cp ./test_harness/config/default_config.config ./config/config.config
+          cp ./end_to_end_test_files/config.config ./config/config.config
           sed -i 's/host\.docker\.internal/http_server/g' ./config/config.config
 
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
