@@ -56,7 +56,6 @@ jobs:
           # Copy config.config file
           mkdir -p config
           cp ./end_to_end_test_files/config.config ./config/config.config
-          # sed -i 's/host\.docker\.internal/http_server/g' ./config/config.config
 
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
 
@@ -66,19 +65,11 @@ jobs:
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           # actual tests are set to run
-          # timeout 2m ./scripts/end-to-end-curl-commands.sh
+          echo "Running end to end script"
           timeout 1m ./scripts/end-to-end-curl-commands.sh
 
           # this should return true as tests are running
           echo "Testing that tests are running"
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
           curl 127.0.0.1:8800/isTestRunning | grep 'true'
 
           # It takes this long to get any meaningful output from the test harness
@@ -89,28 +80,8 @@ jobs:
           echo "Sleeping to give the test harness time to work"
           date
           sleep 60
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
-          sleep 30
-          echo `curl 127.0.0.1:8800/isTestRunning`
+          curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
           docker compose -f ./docker-compose-end-to-end-test.yml down
-
-
-      # - name: Save the whole repo to know exactly what happened in there
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: whole-repo
-      #     path: |
-      #       **/*
-      #       !/home/runner/work/test-harness/test-harness/$SSH_AUTH_SOCK
+          
