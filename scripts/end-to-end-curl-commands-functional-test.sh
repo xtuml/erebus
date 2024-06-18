@@ -11,6 +11,6 @@ while ! curl --location --request POST 'http://127.0.0.1:8800/upload/named-zip-f
     sleep 1
 done
 echo "Uploading test config"
-curl -X POST -d '{"TestName": "functional_test", "TestConfig":{"type":"Functional"}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
+curl -X POST -d '{"TestName": "functional_test", "TestConfig":{"type":"Functional"}}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/startTest'
 echo "Waiting for functional test to start"
 sleep 1

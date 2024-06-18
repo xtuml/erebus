@@ -83,7 +83,7 @@ jobs:
           failures=$(xmllint --xpath 'string(//testsuites/@failures)' ./report_output/performance_test/Report.xml)
 
           # Print the result
-          echo "Failures: $failures"
+          echo "Performance test failures: $failures"
 
           # Check if failures is not zero
           if [ "$failures" -ne 0 ]; then
@@ -115,6 +115,23 @@ jobs:
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
+
+      - name: Check for functional test failures
+        run: |
+          # Inspect report output for failures of functional test
+          failures=$(xmllint --xpath 'string(//testsuites/@failures)' ./report_output/functional_test/Results.xml)
+
+          # Print the result
+          echo "Functional test failures: $failures"
+
+          # Check if failures is not zero
+          if [ "$failures" -ne 0 ]; then
+            echo "There are test failures!"
+            exit 1
+          else
+            echo "No test failures."
+            exit 0
+          fi
       
       - name: Run tear down procedure
         run: |
