@@ -77,9 +77,19 @@ jobs:
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
 
           # Inspect report output for failures of performance test
+          failures=$(xmllint --xpath 'string(//testsuites/@failures)' ./report_output/performance_test/Report.xml)
 
-          echo `cat ./report_output/performance_test/Report.xml`
-          xmllint --xpath 'string(//testsuites/@failures)' ./report_output/performance_test/Report.xml
+          # Print the result
+          echo "Failures: $failures"
+
+          # Check if failures is not zero
+          if [ "$failures" -ne 0 ]; then
+            echo "There are test failures!"
+            exit 1
+          else
+            echo "No test failures."
+            exit 0
+          fi
 
           docker compose -f ./munin/deploy/docker-compose.prod.yml down
           docker compose -f ./docker-compose-end-to-end-test.yml down
