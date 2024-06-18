@@ -82,7 +82,10 @@ jobs:
           sleep 60
           echo "Testing that a percentage is returned"
           curl 127.0.0.1:8800/isTestRunning | grep percent_done
-          sleep 160
+          sleep 30
+          curl 127.0.0.1:8800/isTestRunning | grep 'true'
+          sleep 30
+          curl 127.0.0.1:8800/isTestRunning | grep 'true'
           date
           sleep 10
 
