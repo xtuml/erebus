@@ -1,4 +1,3 @@
-version: "1"
 name: test-harness-dev
 services:
   test-harness:
