@@ -128,7 +128,8 @@ jobs:
           non_stacked_solution_failures=$(($failures - $stacked_solution_failures))
 
           # Print the result
-          echo "Functional test failures: $failures"
+          echo "Known stacked solution failures: $stacked_solution_failures"
+          echo "Non stacked solution failures: $non_stacked_solution_failures"
 
           # Check if failures is less than 4 (there are 4 known errors)
           if [ "$non_stacked_solution_failures" -ne 0 ]; then
