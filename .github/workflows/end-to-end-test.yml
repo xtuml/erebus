@@ -69,11 +69,16 @@ jobs:
           # timeout 2m ./scripts/end-to-end-curl-commands.sh
           timeout 1m ./scripts/end-to-end-curl-commands.sh
 
-          sleep 30
-
           # this should return true as tests are running
           echo "Testing that tests are running"
           echo `curl 127.0.0.1:8800/isTestRunning`
+          sleep 30
+          echo `curl 127.0.0.1:8800/isTestRunning`
+          sleep 30
+          echo `curl 127.0.0.1:8800/isTestRunning`
+          sleep 30
+          echo `curl 127.0.0.1:8800/isTestRunning`
+          sleep 30
           curl 127.0.0.1:8800/isTestRunning | grep 'true'
 
           # It takes this long to get any meaningful output from the test harness
