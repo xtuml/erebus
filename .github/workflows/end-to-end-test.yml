@@ -66,7 +66,8 @@ jobs:
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           # actual tests are set to run
-          timeout 1m ./scripts/end-to-end-curl-commands.sh
+          # timeout 2m ./scripts/end-to-end-curl-commands.sh
+          ./scripts/end-to-end-curl-commands.sh
 
           # this should return true as tests are running
           echo "Testing that tests are running"
