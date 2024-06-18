@@ -110,8 +110,18 @@ jobs:
           # ... and another 50 seconds for grace time in starting up/waiting for logs/waiting for calculations
           echo "Sleeping to give the test harness time to work"
           date
-          sleep 90
+          sleep 120
           date
+          sleep 10
+          echo `curl 127.0.0.1:8800/isTestRunning`
+          sleep 10
+          echo `curl 127.0.0.1:8800/isTestRunning`
+          sleep 10
+          echo `curl 127.0.0.1:8800/isTestRunning`
+          sleep 10
+          echo `curl 127.0.0.1:8800/isTestRunning`
+          sleep 10
+          echo `curl 127.0.0.1:8800/isTestRunning`
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
