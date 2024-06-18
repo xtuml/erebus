@@ -78,8 +78,8 @@ jobs:
 
           # Inspect report output for failures of performance test
 
-          echo `ls ./report_output/performance_test`
-          xmllint --xpath 'string(//testsuites/@failures)' ./report_output/performance_test/Results.xml
+          echo `cat ./report_output/performance_test/Report.xml`
+          xmllint --xpath 'string(//testsuites/@failures)' ./report_output/performance_test/Report.xml
 
           docker compose -f ./munin/deploy/docker-compose.prod.yml down
           docker compose -f ./docker-compose-end-to-end-test.yml down
