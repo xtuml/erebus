@@ -21,8 +21,7 @@ services:
       driver: local
     working_dir: /root
     command: JM_PROC_transient -configFile ${CONFIG_FILE:-pv-config.json} -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
-    environment:
-      <<: *common-env
+    environment: *common-env
 
   istore_proc:
     image: ghcr.io/xtuml/protocol_verifier:${MUNIN_IMAGE_TAG}
@@ -40,8 +39,7 @@ services:
       driver: local
     working_dir: /root
     command: ISTORE_PROC_sqlite -db ./InvariantStore/InvariantStore.db -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
-    environment:
-      <<: *common-env
+    environment: *common-env
 
   aeo_svdc_proc:
     image: ghcr.io/xtuml/protocol_verifier:${MUNIN_IMAGE_TAG}
@@ -60,8 +58,7 @@ services:
       driver: local
     working_dir: /root
     command: AEO_SVDC_PROC_transient -configFile ${CONFIG_FILE:-pv-config.json} -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
-    environment:
-      <<: *common-env
+    environment: *common-env
 
   http_server:
     image: ghcr.io/xtuml/charon:${CHARON_IMAGE_TAG}
