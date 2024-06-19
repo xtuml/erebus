@@ -22,7 +22,7 @@ services:
     working_dir: /root
     command: JM_PROC_transient -configFile ${CONFIG_FILE:-pv-config.json} -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
     environment:
-      - MUNIN_IMAGE_TAG=${MUNIN_IMAGE_TAG}
+      <<: *common-env
 
   istore_proc:
     image: ghcr.io/xtuml/protocol_verifier:${MUNIN_IMAGE_TAG}
@@ -41,7 +41,7 @@ services:
     working_dir: /root
     command: ISTORE_PROC_sqlite -db ./InvariantStore/InvariantStore.db -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
     environment:
-      - MUNIN_IMAGE_TAG=${MUNIN_IMAGE_TAG}
+      <<: *common-env
 
   aeo_svdc_proc:
     image: ghcr.io/xtuml/protocol_verifier:${MUNIN_IMAGE_TAG}
@@ -61,13 +61,13 @@ services:
     working_dir: /root
     command: AEO_SVDC_PROC_transient -configFile ${CONFIG_FILE:-pv-config.json} -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
     environment:
-      - MUNIN_IMAGE_TAG=${MUNIN_IMAGE_TAG}
+      <<: *common-env
 
   http_server:
     image: ghcr.io/xtuml/charon:${CHARON_IMAGE_TAG}
     environment:
-      - CHARON_IMAGE_TAG=${CHARON_IMAGE_TAG}
-      - GIN_MODE=release
+      <<: *common-env
+      GIN_MODE: "release"
     volumes:
       - "./config/job_definitions:/data/aeo_svdc_config/job_definitions"
       - "./logs/protocol_verifier:/data/logs/verifier"
