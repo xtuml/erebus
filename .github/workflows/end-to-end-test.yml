@@ -44,7 +44,7 @@ jobs:
 
           docker compose -f ./munin/deploy/docker-compose.prod.yml up -d
 
-          # copy over config file that allows docker containers to work within Github Actions
+          # copy over config file that allows tests to run within Github Actions
           mkdir -p config
           cp ./end_to_end_test_files/config.config ./config/config.config
 
@@ -87,7 +87,7 @@ jobs:
 
           # Check if failures is not zero
           if [ "$failures" -ne 0 ]; then
-            echo "There are test failures!"
+            echo "There are performance test failures!"
             exit 1
           else
             echo "No test failures."
@@ -131,9 +131,9 @@ jobs:
           echo "Known stacked solution failures: $stacked_solution_failures"
           echo "Non stacked solution failures: $non_stacked_solution_failures"
 
-          # Check if failures is less than 4 (there are 4 known errors)
+          # Check if non stacked solution failures is greater than 0
           if [ "$non_stacked_solution_failures" -ne 0 ]; then
-            echo "There are test failures!"
+            echo "There are functional test failures!"
             exit 1
           else
             echo "No test failures."
@@ -144,3 +144,4 @@ jobs:
         run: |
           docker compose -f ./munin/deploy/docker-compose.prod.yml down
           docker compose -f ./docker-compose-end-to-end-test.yml down
+ 
