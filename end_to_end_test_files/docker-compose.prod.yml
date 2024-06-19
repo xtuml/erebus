@@ -1,11 +1,6 @@
-# Define global variables
-x-common-env: &common-env
-  MUNIN_IMAGE_TAG: 1.3.1-midstage3
-  CHARON_IMAGE_TAG: v0.1.0
-
 services:
   jm_proc:
-    image: ghcr.io/xtuml/protocol_verifier:${MUNIN_IMAGE_TAG}
+    image: ghcr.io/xtuml/protocol_verifier:1.3.1-midstage3
     deploy:
       replicas: 1
     depends_on:
@@ -21,10 +16,9 @@ services:
       driver: local
     working_dir: /root
     command: JM_PROC_transient -configFile ${CONFIG_FILE:-pv-config.json} -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
-    environment: *common-env
 
   istore_proc:
-    image: ghcr.io/xtuml/protocol_verifier:${MUNIN_IMAGE_TAG}
+    image: ghcr.io/xtuml/protocol_verifier:1.3.1-midstage3
     depends_on:
       kafka:
         condition: service_healthy
@@ -39,10 +33,9 @@ services:
       driver: local
     working_dir: /root
     command: ISTORE_PROC_sqlite -db ./InvariantStore/InvariantStore.db -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
-    environment: *common-env
 
   aeo_svdc_proc:
-    image: ghcr.io/xtuml/protocol_verifier:${MUNIN_IMAGE_TAG}
+    image: ghcr.io/xtuml/protocol_verifier:1.3.1-midstage3
     deploy:
       replicas: 4
     depends_on:
@@ -58,13 +51,11 @@ services:
       driver: local
     working_dir: /root
     command: AEO_SVDC_PROC_transient -configFile ${CONFIG_FILE:-pv-config.json} -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
-    environment: *common-env
 
   http_server:
-    image: ghcr.io/xtuml/charon:${CHARON_IMAGE_TAG}
+    image: ghcr.io/xtuml/charon:v0.1.0
     environment:
-      <<: *common-env
-      GIN_MODE: "release"
+      - GIN_MODE=release
     volumes:
       - "./config/job_definitions:/data/aeo_svdc_config/job_definitions"
       - "./logs/protocol_verifier:/data/logs/verifier"
