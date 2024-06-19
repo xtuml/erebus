@@ -1,7 +1,6 @@
 services:
-
   jm_proc:
-    image: ghcr.io/xtuml/protocol_verifier:latest
+    image: ghcr.io/xtuml/protocol_verifier:1.3.1-midstage3
     deploy:
       replicas: 1
     depends_on:
@@ -19,7 +18,7 @@ services:
     command: JM_PROC_transient -configFile ${CONFIG_FILE:-pv-config.json} -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
 
   istore_proc:
-    image: ghcr.io/xtuml/protocol_verifier:latest
+    image: ghcr.io/xtuml/protocol_verifier:1.3.1-midstage3
     depends_on:
       kafka:
         condition: service_healthy
@@ -36,7 +35,7 @@ services:
     command: ISTORE_PROC_sqlite -db ./InvariantStore/InvariantStore.db -util Kafka -kafka-broker-list kafka:9093 -util MetaData -log-config config/log-pv-kafka.properties
 
   aeo_svdc_proc:
-    image: ghcr.io/xtuml/protocol_verifier:latest
+    image: ghcr.io/xtuml/protocol_verifier:1.3.1-midstage3
     deploy:
       replicas: 4
     depends_on:
