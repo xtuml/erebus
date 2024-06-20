@@ -167,12 +167,18 @@ chmod +x ./scripts/install_repositories.sh
 ```sh
 # Create and activate a virtual environment
 python3.11 -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 ***
+
+3. **Run Tests**
+```sh
+pytest
+```
+
 # Deployment
 It is recommended to deploy the test harness in the same VPC (or private network) as the machine containing the system to be tested to avoid exposure to the public internet. 
 
