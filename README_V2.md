@@ -356,17 +356,32 @@ Once the server is running locally, the SwaggerUI can be accessed from http://12
    * CSV headers: "Time", "Number".
    * Endpoint: `/upload/profile`, MIME type: `multipart/form`.
    * Example:
+
+    MacOS/Linux:
      ```sh
      curl --location --request POST 'http://127.0.0.1:8800/upload/profile' --form 'file1=@"test_profile.csv"'
      ```
+    
+    Windows:
+    ```sh
+     curl --location --request POST http://127.0.0.1:8800/upload/profile --form "file1=@test_profile.csv"
+    ```
+
 
 2. **(Optional) Upload Test Job Files**: 
    * Upload multiple test files suitable for the system.
    * Endpoint: `/upload/test-files`, MIME type: `multipart/form`.
    * Example:
+
+    MacOS/Linux:
      ```sh
      curl --location --request POST 'http://127.0.0.1:8800/upload/test-files' --form 'file1=@"test_file"'
      ```
+    Windows:
+    ```sh 
+    curl --location --request POST http://127.0.0.1:8800/upload/test-files --form "file1=@test_file"
+    ```
+
 
 3. **(Recommended) Upload Test Case Zip Files**: 
    * Include all necessary test data in a zip file.
@@ -383,9 +398,17 @@ Once the server is running locally, the SwaggerUI can be accessed from http://12
    * Endpoint: `/upload/named-zip-files`, MIME type: `multipart/form`.
    * The zip file's form name creates the `TestName` for the JSON body in `/startTest`.
    * Example:
+
+    MacOS/Linux:
      ```sh
      curl --location --request POST 'http://127.0.0.1:8800/upload/named-zip-files' --form '<TestName>=@"<Test zip file path>"'
      ```
+    Windows:
+    ```sh
+     curl --location --request POST http://127.0.0.1:8800/upload/named-zip-files --form "<TestName>=@<Test zip file path>"
+    ```
+
+
 
 #### Start Test
 
