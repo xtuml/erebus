@@ -146,11 +146,25 @@ To ensure consistency in the working environment, it is recommended that the dev
 
 2. **Setup virtual environment and install packages:**
 
+***Make install script executable***
+
+MacOS/Linux:
 ```sh
 # Run install script for test-event-generator (Janus)
 # https://github.com/xtuml/janus
 chmod +x ./scripts/install_repositories.sh && ./scripts/install_repositories.sh
-
+```
+Windows: (these steps are required to convert Windows line endings to unix format)
+```sh
+cd scripts
+tr -d '\r' < install_repositories.sh > install_repositories_unix.sh
+mv install_repositories_unix.sh install_repositories.sh
+cd ..
+chmod +x ./scripts/install_repositories.sh
+./scripts/install_repositories.sh
+```
+***Setup virtual environment***
+```sh
 # Create and activate a virtual environment
 python3.11 -m venv venv
 source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
