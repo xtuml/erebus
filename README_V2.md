@@ -15,7 +15,7 @@
     <br />
     <a href="https://github.com/github_username/repo_name">View Demo</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/xtuml/erebus/issues/new">Report Bug</a>
     ·
     <a href="https://github.com/github_username/repo_name/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
@@ -113,9 +113,10 @@ cd erebus
 2. **(Optional) Customise settings**:
 * Configure Erebus by copying the `./test_harness/config/default_config.config` file to `./config/config.config`
 ```sh
-cp ./test_harness/config/default_config.config ./config/config.config # MacOS, Linux
+mkdir -p config && cp ./test_harness/config/default_config.config ./config/config.config # MacOS, Linux
 
-copy .\test_harness\config\default_config.config .\config\config.config # Windows
+New-Item -ItemType Directory -Name "config"
+Copy-Item -Path ".\test_harness\config\default_config.config" -Destination ".\config\config.config" # Windows Powershell
 ```
 * Override settings by copying the setting under `[non-default]`. Eg.
 ```sh
@@ -148,22 +149,14 @@ To ensure consistency in the working environment, it is recommended that the dev
 ```sh
 # Run install script for test-event-generator (Janus)
 # https://github.com/xtuml/janus
-./scripts/install_repositories.sh
+chmod +x ./scripts/install_repositories.sh && ./scripts/install_repositories.sh
 
 # Create and activate a virtual environment
 python3.11 -m venv venv
 source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 
-# Install dependencies (make sure requirements.txt exists)
+# Install dependencies
 pip install -r requirements.txt
-```
-**Troubleshooting**
-
-* If `./scripts/install_repositories.sh` does not work, ensure the script is executable.
-```sh
-cd scripts
-chmod u+x install_repositories.sh
-cd ..
 ```
 ***
 # Deployment
