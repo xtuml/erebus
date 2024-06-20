@@ -293,19 +293,18 @@ The flask service can be run in two ways:
 #### Run with Docker:
 * Following the instructions in <b>Deployment</b>:<b>Building Docker Image and Running Container</b> above. The following should then appear in stdout:
     ```sh
-    [+] Building 0.0s (0/0)                                                             
-    [+] Running 2/2
-     ✔ Network test-harness_default           Cr...                                0.1s 
-     ✔ Container test-harness-test-harness-1  Created                              0.0s 
-    Attaching to test-harness-test-harness-1
-    test-harness-test-harness-1  | INFO:root:Test Harness Listener started
-    test-harness-test-harness-1  |  * Serving Flask app 'test_harness'
-    test-harness-test-harness-1  |  * Debug mode: off
-    test-harness-test-harness-1  | INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
-    test-harness-test-harness-1  |  * Running on all addresses (0.0.0.0)
-    test-harness-test-harness-1  |  * Running on http://127.0.0.1:8800
-    test-harness-test-harness-1  |  * Running on http://172.24.0.2:8800
-    test-harness-test-harness-1  | INFO:werkzeug:Press CTRL+C to quit
+    [+] Running 1/0
+    ✔ Container test-harness-dev-test-harness-1 Created 0.0s
+    Attaching to test-harness-1
+    test-harness-1 | INFO:root:Test Harness Listener started
+    test-harness-1 | _ Serving Flask app 'test_harness'
+    test-harness-1 | _ Debug mode: off
+    test-harness-1 | INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+    test-harness-1 | _ Running on all addresses (0.0.0.0)
+    test-harness-1 | _ Running on http://127.0.0.1:8800
+    test-harness-1 | \* Running on http://172.20.0.2:8800
+    test-harness-1 | INFO:werkzeug:Press CTRL+C to quit
+
     ```
 
 #### Run as a Python Script:
