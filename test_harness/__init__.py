@@ -3,15 +3,16 @@
 Creates the test harness app
 """
 import os
-from typing import Mapping, Optional, Callable, Union, Any, Generator
-from uuid import uuid4
-from ctypes import c_int, c_bool
-from contextlib import contextmanager
-import traceback
-import shutil
-from zipfile import ZipFile
 import glob
+import shutil
+import traceback
+from uuid import uuid4
+from zipfile import ZipFile
+from ctypes import c_int, c_bool
 from multiprocessing import Value
+from contextlib import contextmanager
+from typing import Mapping, Optional, Callable, Union, Any, Generator
+from flask_cors import CORS
 
 from tempfile import TemporaryDirectory
 from configparser import ConfigParser
@@ -433,6 +434,7 @@ def create_app(
         config_parser=config_parser,
         instance_relative_config=True,
     )
+    CORS(app)
     app.config.from_mapping()
     app.config["SWAGGER"] = {
         "openapi": "3.0.2",
