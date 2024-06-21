@@ -39,7 +39,7 @@ echo "Copying config file"
 cp ./test_harness/config/default_config.config ./config/config.config
 
 # Update config file with host network IP address
-sed -i "s/172.17.0.1/$host_network/g" ./config/config.config
+sed -i "s/host.docker.internal/$host_network/g" ./config/config.config
 
 # Update IP address for KAFKA_ADVERTISED_LISTENERS within copied docker-compose
 sed -i "s/172.17.0.1/$host_network/g" ./munin/deploy/docker-compose.yml
