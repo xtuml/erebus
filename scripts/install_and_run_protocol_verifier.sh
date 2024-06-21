@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# This script pulls the latest tagged version of protocol verifier,
-# updates necessary files to run protocol verifier using docker compose and receive
-# passing tests
+# This script automates the process of pulling the latest tagged version of the protocol verifier,
+# updating necessary files, and running the protocol verifier using Docker Compose. It ensures
+# that the setup is configured correctly to pass functional and performance tests.
+
+# If using the test harness and protocol verifier on an external server, to access the Swagger UI
+# you must port forward when gaining ssh access
+# ssh -L 8800:localhost:8800 <user_name>@<host_ip_address>
 
 # NOTE: This script should be run within the root directory of erebus
 # ./scripts/install_and_run_protocol_verifier.sh
