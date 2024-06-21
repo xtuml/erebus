@@ -8,7 +8,7 @@
 # ./scripts/install_and_run_protocol_verifier.sh
 
 # Get user input for IP address of where protocol verifier is being hosted 
-echo "Please enter the IP address of the host network"
+echo "Please enter the IP address of the host network:"
 read host_network
 
 # Change working directory to root and pull munin repo
@@ -36,13 +36,13 @@ cp ./end_to_end_test_files/docker-compose.prod.yml ./munin/deploy/docker-compose
 mkdir -p ./config
 
 echo "Copying config file"
-cp ./test_harness/config/default_config.config ./config/
+cp ./test_harness/config/default_config.config ./config/config.config
 
 # Update config file with host network IP address
-sed -i "s/172.17.0.1/$host_network/g" ./munin/deploy/docker-compose.yml
+sed -i "s/172.17.0.1/$host_network/g" ./config/config.config
 
 # Update IP address for KAFKA_ADVERTISED_LISTENERS within copied docker-compose
-sed -i "s/host.docker.internal/$host_network/g" ./munin/deploy/docker-compose.yml
+sed -i "s/172.17.0.1/$host_network/g" ./munin/deploy/docker-compose.yml
 
 echo "Starting up the protocol verifier"
 sudo docker compose -f ./munin/deploy/docker-compose.yml up -d
