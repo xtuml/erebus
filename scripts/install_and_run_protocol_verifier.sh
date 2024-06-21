@@ -33,7 +33,7 @@ cp ./end_to_end_test_files/docker-compose.prod.yml ./munin/deploy/docker-compose
 sed -i 's/172.17.0.1/host.docker.internal/g' ./munin/deploy/docker-compose.yml
 
 echo "Starting up the protocol verifier"
-docker compose -f ./munin/deploy/docker-compose.yml up -d
+sudo docker compose -f ./munin/deploy/docker-compose.yml up -d
 
 echo "Starting up the test harness"
-docker compose -f ./docker-compose.yml up -d
+sudo docker compose -f ./docker-compose.yml up -d
