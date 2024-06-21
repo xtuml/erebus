@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This script pulls the latest tagged version of protocol verifier,
 # updates necessary files to run protocol verifier using docker compose and receive
