@@ -434,7 +434,6 @@ def create_app(
         config_parser=config_parser,
         instance_relative_config=True,
     )
-    CORS(app)
     app.config.from_mapping()
     app.config["SWAGGER"] = {
         "openapi": "3.0.2",
@@ -614,6 +613,7 @@ def create_app(
     }
 
     Swagger(app)
+    CORS(app)
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
