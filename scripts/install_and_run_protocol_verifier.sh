@@ -7,6 +7,10 @@
 # NOTE: This script should be run within the root directory of erebus
 # ./scripts/install_and_run_protocol_verifier.sh
 
+# Get user input for IP address of where protocol verifier is being hosted 
+echo "Please enter the IP address of the host network"
+read host_network
+
 # Change working directory to root and pull munin repo
 git clone https://github.com/xtuml/munin.git
 cd munin
@@ -29,8 +33,16 @@ cp ./end_to_end_test_files/log-pv-kafka.properties ./munin/deploy/config/log-pv-
 echo "Replacing docker compose file within munin /deploy"
 cp ./end_to_end_test_files/docker-compose.prod.yml ./munin/deploy/docker-compose.yml
 
+mkdir -p ./config
+
+echo "Copying config file"
+cp ./test_harness/config/default_config.config ./config/
+
+# Update config file with host network IP address
+sed -i "s/172.17.0.1/$host_network/g" ./munin/deploy/docker-compose.yml
+
 # Update IP address for KAFKA_ADVERTISED_LISTENERS within copied docker-compose
-sed -i 's/172.17.0.1/host.docker.internal/g' ./munin/deploy/docker-compose.yml
+sed -i "s/host.docker.internal/$host_network/g" ./munin/deploy/docker-compose.yml
 
 echo "Starting up the protocol verifier"
 sudo docker compose -f ./munin/deploy/docker-compose.yml up -d
