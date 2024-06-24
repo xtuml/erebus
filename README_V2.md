@@ -115,7 +115,8 @@ cd erebus
 
 * To override default settings within Erebus, first create a directory called `config` within the project's root directory, if it doesn't already exist.
 
-* Copy the default config file from `./test_harness/config/default_config.config` file to `./config`
+* Copy the default config file from `./test_harness/config/default_config.config` file to to the newly created config folder in the root directory.
+
 
 * Rename the config file from `default_config.config` to `config.config`
 * Override default values by copying the property under `[non-default]`. Eg.
