@@ -1,4 +1,3 @@
-version: "1"
 name: test-harness
 services:
   # nosemgrep: yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service

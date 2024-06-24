@@ -15,7 +15,7 @@
     <br />
     <a href="https://github.com/github_username/repo_name">View Demo</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/xtuml/erebus/issues/new">Report Bug</a>
     ·
     <a href="https://github.com/github_username/repo_name/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
@@ -110,26 +110,50 @@ We provide a Docker Compose file that sets up Erebus with the correct volumes, p
 git clone https://github.com/xtuml/erebus.git
 cd erebus
 ```
-2. **(Optional) Customise settings**:
-* Configure Erebus by copying the `./test_harness/config/default_config.config` file to `./config/config.config`
-```sh
-cp ./test_harness/config/default_config.config ./config/config.config # MacOS, Linux
+2. **(Optional) Customise default settings**:
+* If you are setting up the test harness for deployment, please go to <a href="#deployment">Deployment</a>
 
-copy .\test_harness\config\default_config.config .\config\config.config # Windows
-```
-* Override settings by copying the setting under `[non-default]`. Eg.
+* To override default settings within Erebus, first create a directory called `config` within the project's root directory, if it doesn't already exist.
+
+* Copy the default config file from `./test_harness/config/default_config.config` file to to the newly created config folder in the root directory.
+
+
+* Rename the config file from `default_config.config` to `config.config`
+* Override default values by copying the property under `[non-default]`. Eg.
 ```sh
 [DEFAULT]
 requests_max_retries = 5
 requests_timeout = 10
 
 [non-default]
-requests_max_retries = 10 # This will override the default setting
+requests_max_retries = 10 # This will override the default setting of 5
 ```
+
+* NOTE: If you do not provide a custom config file, when running the test harness, you may recieve a message `WARNING:root:Given harness config path does not exist: /config/config.config`. This is fine, the `default_config.config` file will be used instead.
+
 3. **Build and run using Docker Compose**:
+
 ```sh
-docker compose up --build
+docker compose up --build # Ensure that you are in the project's root directory
 ```
+
+After running the command, and after the build process has finished, the following output should be visibile in the terminal:
+```sh
+[+] Running 1/0
+✔ Container test-harness-dev-test-harness-1 Created 0.0s
+Attaching to test-harness-1
+test-harness-1 | INFO:root:Test Harness Listener started
+test-harness-1 | _ Serving Flask app 'test_harness'
+test-harness-1 | _ Debug mode: off
+test-harness-1 | INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+test-harness-1 | _ Running on all addresses (0.0.0.0)
+test-harness-1 | _ Running on http://127.0.0.1:8800
+test-harness-1 | \* Running on http://172.21.0.2:8800
+test-harness-1 | INFO:werkzeug:Press CTRL+C to quit
+```
+
+4. **Troubleshooting**:
+* If `docker compose up --build` does not run, try to run as administrator with `sudo docker compose up --build`
 
 ## Manual Installation (For Development)
 If you're contributing to Erebus or need a custom setup:
@@ -137,66 +161,73 @@ If you're contributing to Erebus or need a custom setup:
 
 ```sh
 # Clone and navigate
-git clone https://github.com/yourusername/erebus.git
+git clone https://github.com/xtuml/erebus.git
 cd erebus
 ```
 To ensure consistency in the working environment, it is recommended that the dev container provided in `.devcontainer/devcontainer.json` is used. 
 
+![](docs/images/reopen_dev_container.png)
+
+Using the dev container, this will automatically:
+
+* Install Python 3.11
+* Run `scripts/install_repositories.sh` (installs)
 
 2. **Setup virtual environment and install packages:**
 
+***Setup virtual environment***
 ```sh
-# Run install script for test-event-generator (Janus)
-# https://github.com/xtuml/janus
-./scripts/install_repositories.sh
-
 # Create and activate a virtual environment
 python3.11 -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+source venv/bin/activate
 
-# Install dependencies (make sure requirements.txt exists)
+# Install dependencies
 pip install -r requirements.txt
 ```
-**Troubleshooting**
-
-* If `./scripts/install_repositories.sh` does not work, ensure the script is executable.
-```sh
-cd scripts
-chmod u+x install_repositories.sh
-cd ..
-```
 ***
+
+3. **Run Tests**
+```sh
+pytest
+```
+
 # Deployment
 It is recommended to deploy the test harness in the same VPC (or private network) as the machine containing the system to be tested to avoid exposure to the public internet. 
 
 ![](./docs/diagrams/deployment/deployment.png)
 
 ## Building Docker Image and Running Container
-1. **Build Docker Image**:
-```sh
-docker build -t test-harness:latest .
-```
-2. **Run application**:
+1. **Navigate to deployment folder**:
+
 ```sh
 cd deployment
+```
+2. **Run application**:
 
+This command will pull the latest image of the test harness from the Erebus repo.
+
+```sh
 docker compose up
 ```
+
 3. **Stop application**:
 
 There are 2 ways to stop the container running (ensure you are in `/deployment`):
 
-* `Ctrl + C` 
+* `Ctrl+C` 
 
 * `docker compose stop`
 
 To destroy the container:
 
+Ensure you are in `/deployment`
+
 `docker compose down`
 
 ## Configuration
 
-Default config file: `test_harness/config/default_config.config` (project root directory). 
+Default config file: `test_harness/config/default_config.config` (from project root directory).
+
 Custom config file: Place in `deployment/config` named `config.config`.
 
 To override defaults, copy the parameter under `[non-default]` heading and set a new value. Parameters:
@@ -300,19 +331,18 @@ The flask service can be run in two ways:
 #### Run with Docker:
 * Following the instructions in <b>Deployment</b>:<b>Building Docker Image and Running Container</b> above. The following should then appear in stdout:
     ```sh
-    [+] Building 0.0s (0/0)                                                             
-    [+] Running 2/2
-     ✔ Network test-harness_default           Cr...                                0.1s 
-     ✔ Container test-harness-test-harness-1  Created                              0.0s 
-    Attaching to test-harness-test-harness-1
-    test-harness-test-harness-1  | INFO:root:Test Harness Listener started
-    test-harness-test-harness-1  |  * Serving Flask app 'test_harness'
-    test-harness-test-harness-1  |  * Debug mode: off
-    test-harness-test-harness-1  | INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
-    test-harness-test-harness-1  |  * Running on all addresses (0.0.0.0)
-    test-harness-test-harness-1  |  * Running on http://127.0.0.1:8800
-    test-harness-test-harness-1  |  * Running on http://172.24.0.2:8800
-    test-harness-test-harness-1  | INFO:werkzeug:Press CTRL+C to quit
+    [+] Running 1/0
+    ✔ Container test-harness-dev-test-harness-1 Created 0.0s
+    Attaching to test-harness-1
+    test-harness-1 | INFO:root:Test Harness Listener started
+    test-harness-1 | _ Serving Flask app 'test_harness'
+    test-harness-1 | _ Debug mode: off
+    test-harness-1 | INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+    test-harness-1 | _ Running on all addresses (0.0.0.0)
+    test-harness-1 | _ Running on http://127.0.0.1:8800
+    test-harness-1 | \* Running on http://172.20.0.2:8800
+    test-harness-1 | INFO:werkzeug:Press CTRL+C to quit
+
     ```
 
 #### Run as a Python Script:
@@ -344,17 +374,32 @@ Once the server is running locally, the SwaggerUI can be accessed from http://12
    * CSV headers: "Time", "Number".
    * Endpoint: `/upload/profile`, MIME type: `multipart/form`.
    * Example:
+
+    MacOS/Linux:
      ```sh
      curl --location --request POST 'http://127.0.0.1:8800/upload/profile' --form 'file1=@"test_profile.csv"'
      ```
+    
+    Windows:
+    ```sh
+     curl --location --request POST http://127.0.0.1:8800/upload/profile --form "file1=@test_profile.csv"
+    ```
+
 
 2. **(Optional) Upload Test Job Files**: 
    * Upload multiple test files suitable for the system.
    * Endpoint: `/upload/test-files`, MIME type: `multipart/form`.
    * Example:
+
+    MacOS/Linux:
      ```sh
      curl --location --request POST 'http://127.0.0.1:8800/upload/test-files' --form 'file1=@"test_file"'
      ```
+    Windows:
+    ```sh 
+    curl --location --request POST http://127.0.0.1:8800/upload/test-files --form "file1=@test_file"
+    ```
+
 
 3. **(Recommended) Upload Test Case Zip Files**: 
    * Include all necessary test data in a zip file.
@@ -371,9 +416,17 @@ Once the server is running locally, the SwaggerUI can be accessed from http://12
    * Endpoint: `/upload/named-zip-files`, MIME type: `multipart/form`.
    * The zip file's form name creates the `TestName` for the JSON body in `/startTest`.
    * Example:
+
+    MacOS/Linux:
      ```sh
      curl --location --request POST 'http://127.0.0.1:8800/upload/named-zip-files' --form '<TestName>=@"<Test zip file path>"'
      ```
+    Windows:
+    ```sh
+     curl --location --request POST http://127.0.0.1:8800/upload/named-zip-files --form "<TestName>=@<Test zip file path>"
+    ```
+
+
 
 #### Start Test
 
