@@ -165,6 +165,8 @@ cd erebus
 ```
 To ensure consistency in the working environment, it is recommended that the dev container provided in `.devcontainer/devcontainer.json` is used. 
 
+![](docs/images/reopen_dev_container.png)
+
 
 2. **Setup virtual environment and install packages:**
 
