@@ -1,5 +1,9 @@
 FROM python:3.11-slim-bullseye
 
+# Install dos2unix - this ensures that this script can be run on Windows
+RUN apt-get update && \
+    apt-get install -y dos2unix && \
+    rm -rf /var/lib/apt/lists/*
 
 # install pre-requisites and setup folders
 RUN apt-get update && yes "yes" | apt-get upgrade && \
@@ -19,8 +23,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /test_harness_app/
 
-RUN chmod +x /test_harness_app/scripts/install_repositories.sh && \
-    /test_harness_app/scripts/install_repositories.sh
+# Convert line endings of the script
+RUN dos2unix /test_harness_app/scripts/install_repositories.sh
+
+RUN chmod +x /test_harness_app/scripts/install_repositories.sh
+
+RUN /test_harness_app/scripts/install_repositories.sh
+
 
 EXPOSE 8800
 

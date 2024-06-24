@@ -20,19 +20,16 @@ pv_success_groks = (
 
 pv_failure_groks = (
     Grok(
-        "%{TIMESTAMP_ISO8601:timestamp} - "
         r'{"eventList":\[%{GREEDYDATA:eventList}\],'
         '"jobId":"%{UUID:JobId}","jobName":"%{WORD:JobName}",'
         '"message":"%{DATA:FailureReason}","tag":"svdc_job_failed"}'
     ),
     Grok(
-        "%{TIMESTAMP_ISO8601:timestamp} - "
         '{"eventId":"%{DATA:eventId}","eventName":"%{DATA:eventName}",'
         '"jobId":"%{UUID:JobId}","jobName":"%{WORD:JobName}",'
         '"message":"%{DATA:FailureReason}","tag":"aeordering_job_failed"}'
     ),
     Grok(
-        "%{TIMESTAMP_ISO8601:timestamp} - "
         r'{"eventList":\[%{GREEDYDATA:eventList}\],'
         '"jobId":"%{UUID:JobId}","jobName":"%{WORD:JobName}",'
         '"message":"ALARM: %{DATA:Alarm}","tag":"svdc_job_alarm"}'

@@ -11,21 +11,13 @@ on:
 jobs:
   build-and-test:
     if: |
-        github.repository == 'SmartDCSITlimited/test-harness'
+        github.repository == 'xtuml/erebus'
             && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    env:
-      SSH_AUTH_SOCK: $SSH_AUTH_SOCK
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Login to GitLab Docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.gitlab.com
-          username: ${{ secrets.GITLAB_USERNAME }}
-          password: ${{ secrets.GITLAB_PASSWORD }}
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -33,53 +25,40 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+        
+      - name: Install libraries
+        run: sudo apt-get install -y libxml2-utils
 
-      # - name: Build and run containers
-      #   uses: adambirds/docker-compose-action@v1.3.0
-      #   with:
-      #     compose-file: ./docker-compose-end-to-end-test.yml
-
-      # - name: sort out SSH keys
-      #   uses: shimataro/ssh-key-action@v2
-      #   with:
-      #     key: ${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}
-      #     # This is unnecessary because github is always added to known_hosts automatically
-      #     known_hosts: unnecessary
-          
-
-      - name: Set up SSH key
+      - name: Setup test environment
         run: |
-          mkdir -p ~/.ssh
-          ssh-agent -a ${SSH_AUTH_SOCK} > /dev/null
-          ssh-add - <<< "${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}"
-          echo "${{ secrets.TEST_EVENT_GENERATOR_DEPLOY_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git clone https://github.com/xtuml/munin.git
 
+          cd munin
+          git checkout tags/1.3.1-midstage3
 
-      - name: Do test
-        run: |
+          # Copy over necessary files to protocol verifier to get tests to pass
+          cd ..
+          cp ./end_to_end_test_files/log-pv-files.properties ./munin/deploy/config/log-pv-files.properties
+          cp ./end_to_end_test_files/log-pv-kafka.properties ./munin/deploy/config/log-pv-kafka.properties
+          cp ./end_to_end_test_files/docker-compose.prod.yml ./munin/deploy/docker-compose.prod.yml
+
+          docker compose -f ./munin/deploy/docker-compose.prod.yml up -d
+
+          # copy over config file that allows tests to run within Github Actions
           mkdir -p config
-          cp ./test_harness/config/default_config.config ./config/config.config
-          sed -i 's/host\.docker\.internal/httpserver/g' ./config/config.config
+          cp ./end_to_end_test_files/config.config ./config/config.config
 
-          mkdir -p aerconfig
-          cp ./end_to_end_test_configs/aer_config.json ./aerconfig/config.json
-          cp ./end_to_end_test_configs/log-config-reception.xml ./aerconfig/
-
-          mkdir -p aeo_svdc_config
-          cp ./end_to_end_test_configs/aeosvdc_config.json ./aeo_svdc_config/config.json
-          cp ./end_to_end_test_configs/log-config-verifier.xml ./aeo_svdc_config/
-
+          # Start the test harness
           docker compose -f ./docker-compose-end-to-end-test.yml up -d
 
-          # this should return false as no tests are running
           sleep 10
           echo "Testing that no tests are running"
           curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
-          # actual tests are set to run
-          timeout 1m ./end-to-end-curl-commands.sh
+      - name: Run performance test
+        run: |
+          echo "Running a performance test"
+          timeout 1m ./scripts/end-to-end-curl-commands-performance-test.sh
 
           # this should return true as tests are running
           echo "Testing that tests are running"
@@ -92,21 +71,77 @@ jobs:
           # ... and another 50 seconds for grace time in starting up/waiting for logs/waiting for calculations
           echo "Sleeping to give the test harness time to work"
           date
-          sleep 20
-          echo "Testing that a percentage is returned"
-          curl 127.0.0.1:8800/isTestRunning | grep percent_done
-          sleep 160
+          sleep 120
           date
-          sleep 10
+          curl 127.0.0.1:8800/isTestRunning | grep 'false'
 
           docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
+
+      - name: Check for performance test failures
+        run: |
+          # Inspect report output for failures of performance test
+          failures=$(xmllint --xpath 'string(//testsuites/@failures)' ./report_output/performance_test/Report.xml)
+
+          # Print the result
+          echo "Performance test failures: $failures"
+
+          # Check if failures is not zero
+          if [ "$failures" -ne 0 ]; then
+            echo "There are performance test failures!"
+            exit 1
+          else
+            echo "No test failures."
+            exit 0
+          fi
+
+      - name: Run functional test
+        run: |
+          echo "Running a functional test"
+          timeout 1m ./scripts/end-to-end-curl-commands-functional-test.sh
+
+          # this should return true as tests are running
+          echo "Testing that tests are running"
+          curl 127.0.0.1:8800/isTestRunning | grep 'true'
+
+          # It takes this long to get any meaningful output from the test harness
+          # It's 60 seconds for the test harness to start the job ...
+          # ... and 10 seconds to run the job ...
+          # ... and 60 seconds to ensure the test is finished ...
+          # ... and another 50 seconds for grace time in starting up/waiting for logs/waiting for calculations
+          echo "Sleeping to give the test harness time to work"
+          date
+          sleep 120
+          date
+          curl 127.0.0.1:8800/isTestRunning | grep 'false'
+
+          docker compose -f ./docker-compose-end-to-end-test.yml logs test-harness | grep -Po "Test Harness test run completed successfully"
+
+      - name: Check for functional test failures
+        run: |
+          # Inspect report output for failures of functional test
+          failures=$(xmllint --xpath 'string(//testsuites/@failures)' ./report_output/functional_test/Results.xml)
+
+          # These are known failures, so we will discount them
+          stacked_solution_failures=$(xmllint --xpath 'string(//testsuite[@name="simple_XOR_job.False.StackedSolutions"]/@failures)' ./report_output/functional_test/Results.xml)
+
+          # Calculate non stacked solution failures
+          non_stacked_solution_failures=$(($failures - $stacked_solution_failures))
+
+          # Print the result
+          echo "Known stacked solution failures: $stacked_solution_failures"
+          echo "Non stacked solution failures: $non_stacked_solution_failures"
+
+          # Check if non stacked solution failures is greater than 0
+          if [ "$non_stacked_solution_failures" -ne 0 ]; then
+            echo "There are functional test failures!"
+            exit 1
+          else
+            echo "No test failures."
+            exit 0
+          fi
+      
+      - name: Run tear down procedure
+        run: |
+          docker compose -f ./munin/deploy/docker-compose.prod.yml down
           docker compose -f ./docker-compose-end-to-end-test.yml down
-
-
-      # - name: Save the whole repo to know exactly what happened in there
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: whole-repo
-      #     path: |
-      #       **/*
-      #       !/home/runner/work/test-harness/test-harness/$SSH_AUTH_SOCK
+ 

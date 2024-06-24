@@ -59,7 +59,7 @@
         <li><a href="#flask-service">Flask Service</a>
           <ul><li><a href="#running-a-test">Running a Test</a></li></ul>
         </li>
-        <li><a href="#command-line-interface-cli">Command Line Interface (CLI)</a></li>
+        <li><a href="#command-line-interface-cli">Command Line Interface (CLI) - not working currently</a></li>
         <li><a href="#test-reports">Test Reports</a></li>
       </ul>
     </li>
@@ -133,11 +133,19 @@ docker compose up --build
 
 ## Manual Installation (For Development)
 If you're contributing to Erebus or need a custom setup:
+1. **Reopen IDE in dev container**:
+
 ```sh
 # Clone and navigate
 git clone https://github.com/yourusername/erebus.git
 cd erebus
+```
+To ensure consistency in the working environment, it is recommended that the dev container provided in `.devcontainer/devcontainer.json` is used. 
 
+
+2. **Setup virtual environment and install packages:**
+
+```sh
 # Run install script for test-event-generator (Janus)
 # https://github.com/xtuml/janus
 ./scripts/install_repositories.sh
@@ -148,6 +156,14 @@ source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 
 # Install dependencies (make sure requirements.txt exists)
 pip install -r requirements.txt
+```
+**Troubleshooting**
+
+* If `./scripts/install_repositories.sh` does not work, ensure the script is executable.
+```sh
+cd scripts
+chmod u+x install_repositories.sh
+cd ..
 ```
 ***
 # Deployment
@@ -215,7 +231,7 @@ To override defaults, copy the parameter under `[non-default]` heading and set a
 # Usage
 Currently there are two main ways to use the Test Harness:
 * Flask Service - A flask service that serves http requests to run the test harness
-* Command Line Interface (CLI) Tool
+* Command Line Interface (CLI) Tool - not currently working
 
 ## Test Configuration
 For each method, a custom test configuration can be passed at runtime in the form of JSON (Flask) or YAML (CLI).
@@ -316,6 +332,9 @@ The flask service can be run in two ways:
     INFO:werkzeug:Press CTRL+C to quit
     ```
 
+#### <b>Serving the SwaggerUI</b>
+Once the server is running locally, the SwaggerUI can be accessed from http://127.0.0.1:8800/apidocs in any browser. This is a simple UI page designed using Swagger/OpenAPI3 to execute Test-Harness commands without needing the terminal or curl commands as detailed below.
+
 ### Running a Test
 
 #### Preparation Stages Before `/startTest`
@@ -373,7 +392,6 @@ To check if a test is running:
 curl 'http://127.0.0.1:8800/isTestRunning'
 ```
 
-
 #### Stopping a Test
 
 To stop a test gracefully, send a POST request with an empty JSON body to the `/stopTest` endpoint. Use the header `'Content-Type: application/json'`. A successful response returns `200 OK`, and a failure returns `400`.
@@ -400,11 +418,11 @@ Example:
 ```sh
 curl -X POST -d '{"TestName": "test_1"}' -H 'Content-Type: application/json' 'http://127.0.0.1:8800/getTestOutputFolder' --output <file_name>.zip
 ```
-
 ***
 
 ## Command Line Interface (CLI)
 
+Work In Progress
 ***
 
 ## Test Reports

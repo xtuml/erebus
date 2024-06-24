@@ -43,11 +43,11 @@ def test_parse_log_string_to_pv_results_dataframe() -> None:
     )
     assert len(pv_results) == 5
     expected_job_ids = [
-        ("f67bd9b6-581a-4ca4-9fcd-d6eb4a6bd5f3", True),
-        ("1efbea67-04cb-4f10-863f-d4025c48af23", True),
-        ("8def8c2a-2a86-485d-aac1-df1a4d27667a", False),
-        ("131137f6-968a-443f-b468-99e725cb3e3e", False),
-        ("032b0c8b-80a9-4f35-bd02-30c1c765d8d9", False),
+        ("78a81c8e-b709-4980-a543-0ebb2de3bdc3", True),
+        ("c933719f-7eaf-49c0-83f7-b0f85a08dcbe", True),
+        ("cfb3a430-72cd-4e7d-bf3e-ceef1fa80b28", False),
+        ("3940f8cc-1df5-4bb6-8717-eb18937c1c65", False),
+        ("c3d331ed-4596-4a4a-8c6c-32681e2522c6", False),
     ]
     for job_id, pv_result in expected_job_ids:
         assert job_id in pv_results.index
@@ -85,11 +85,11 @@ def test_parse_log_string_to_pv_results_dataframe_svdc_failures() -> None:
     )
     assert len(pv_results) == 5
     expected_job_ids = [
-        ("8def8c2a-2a86-485d-aac1-df1a4d27667a", False),
-        ("5fa561e2-91c4-49f6-98ba-1e2bdfaabb05", False),
-        ("370718ec-f51e-44a2-a45c-8f7af9f05950", False),
-        ("6dab7f0c-c7b9-41d7-8105-28ac1a45a25d", False),
-        ("e329cf98-a671-4f68-bed4-1e794004fc95", False),
+        ("38cb6673-8d41-417a-966d-0431811c4a76", False),
+        ("611b1d66-692e-4138-9f7d-2b090432862a", False),
+        ("482da953-92a8-488f-ae83-dca995ff25bf", False),
+        ("cd419142-02d7-4f8a-b774-105c07e13235", False),
+        ("8b2f1401-d26a-47fc-bd9b-eb7411d11bc6", False),
     ]
     for job_id, pv_result in expected_job_ids:
         assert job_id in pv_results.index

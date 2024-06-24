@@ -3,7 +3,7 @@ test_harness/uml_file_store/*.puml
 output
 env
 .hypothesis
-
+venv
 # ignore .pyc files
 *.pyc
 .venv/*
