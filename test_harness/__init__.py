@@ -613,10 +613,10 @@ def create_app(
     }
 
     Swagger(app)
-    # Enable cross site origin requests
+    # Enable cross site origin requests from localhost
     # This allows us to run test harness on a host server, port forward
     # to our local machine and use Swagger UI to run tests
-    CORS(app)
+    CORS(app, origins=["http://localhost", "http://127.0.0.1"])
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
