@@ -111,9 +111,12 @@ git clone https://github.com/xtuml/erebus.git
 cd erebus
 ```
 2. **(Optional) Customise default settings**:
+* If you are setting up the test harness for deployment, please go to <a href="#deployment">Deployment</a>
+
 * To override default settings within Erebus, first create a directory called `config` within the project's root directory, if it doesn't already exist.
 
 * Copy the default config file from `./test_harness/config/default_config.config` file to `./config`
+
 * Rename the config file from `default_config.config` to `config.config`
 * Override default values by copying the property under `[non-default]`. Eg.
 ```sh
@@ -157,7 +160,7 @@ If you're contributing to Erebus or need a custom setup:
 
 ```sh
 # Clone and navigate
-git clone https://github.com/yourusername/erebus.git
+git clone https://github.com/xtuml/erebus.git
 cd erebus
 ```
 To ensure consistency in the working environment, it is recommended that the dev container provided in `.devcontainer/devcontainer.json` is used. 
@@ -226,6 +229,8 @@ There are 2 ways to stop the container running (ensure you are in `/deployment`)
 * `docker compose stop`
 
 To destroy the container:
+
+Ensure you are in `/deployment`
 
 `docker compose down`
 
