@@ -89,10 +89,6 @@ class PVPerformanceResults(PVResults):
             "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} %{WORD:field} :"
             " JobId = %{UUID:job_id}"
         ),
-        # Grok(
-        #     "%{TIMESTAMP_ISO8601:timestamp} %{NUMBER} "
-        #     "%{WORD:field} : File = %{WORD}"
-        # )
     ]
     reception_grok_priority_patterns = [
         Grok(

@@ -78,9 +78,6 @@ from test_harness.protocol_verifier.results.pv_performance_results import (
     PVPerformanceResults
 )
 from ..metrics_and_events.kafka_metrics import PVKafkaMetricsRetriever
-from test_harness.protocol_verifier.results.pv_results_dataframe import (
-    PVResultsDataFrame
-)
 from test_harness.protocol_verifier.results.pv_functional_results import (
     PVFunctionalResults
 )
@@ -917,8 +914,8 @@ class PerformanceTest(Test):
             test_graceful_kill_functions=test_graceful_kill_functions,
         )
 
-    def set_results_holder(self) -> PVResultsDataFrame:
-        return PVResultsDataFrame(
+    def set_results_holder(self) -> PVPerformanceResults:
+        return PVPerformanceResults(
             test_output_directory=self.test_output_directory,
             sample_rate=self.test_config.sample_rate,
             agg_during_test=self.test_config.aggregate_during,
