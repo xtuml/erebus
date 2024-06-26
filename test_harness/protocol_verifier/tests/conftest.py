@@ -14,8 +14,7 @@ from pygrok import Grok
 from typing import Generator, Literal, Callable, Any
 from test_harness.simulator.simulator import SimDatum
 from test_harness.protocol_verifier.testing_suite.base_test_classes import (
-    PVPerformanceResults,
-    PVResultsDataFrame,
+    PVPerformanceResults
 )
 from test_harness.protocol_verifier.utils.types import (
     KafkaBenchMarkProbeJSON,
@@ -590,15 +589,16 @@ def start_time() -> datetime:
 @pytest.fixture
 def pv_results(
     event_jobs: list[dict[str, str | datetime.datetime]],
-) -> PVResultsDataFrame:
-    """An instance of :class:`PVResultsDataFrame` with loaded sent events data
+) -> PVPerformanceResults:
+    """An instance of :class:`PVPerformanceResults` with loaded sent events
+    data
 
     :param event_jobs: Fixture providing sent events data
     :type event_jobs: `list`[`dict`]
-    :return: Returns the instance of :class:`PvResultsDataFrame`
-    :rtype: :class:`PVResultsDataFrame`
+    :return: Returns the instance of :class:`PVPerformanceResults`
+    :rtype: :class:`PVPerformanceResults`
     """
-    results = PVResultsDataFrame()
+    results = PVPerformanceResults()
     results.time_start = datetime.datetime.strptime(
         "2023-10-04T17:50:57.770134Z", "%Y-%m-%dT%H:%M:%S.%fZ"
     )
@@ -852,7 +852,7 @@ def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
     )
     return [
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "reception_event_received"
             ],
             event_id="1c9c37f7-b61a-4c05-a841-00c1276a22e0",
@@ -864,7 +864,7 @@ def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "reception_event_received"
             ],
             event_id="7b5f2070-0f4d-443b-875c-6ef89a2e7993",
@@ -876,7 +876,7 @@ def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "reception_event_received"
             ],
             event_id="b4696f92-da3f-4c4c-936a-1266741b1fb7",
@@ -888,7 +888,7 @@ def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "reception_event_received"
             ],
             event_id="d1c33411-fa6d-4968-ae0d-265b911faba1",
@@ -900,7 +900,7 @@ def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "reception_event_written"
             ],
             event_id="1c9c37f7-b61a-4c05-a841-00c1276a22e0",
@@ -912,7 +912,7 @@ def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "reception_event_written"
             ],
             event_id="7b5f2070-0f4d-443b-875c-6ef89a2e7993",
@@ -924,7 +924,7 @@ def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "reception_event_written"
             ],
             event_id="b4696f92-da3f-4c4c-936a-1266741b1fb7",
@@ -936,7 +936,7 @@ def expected_reception_pv_added_results() -> list[dict[str, str | float]]:
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "reception_event_written"
             ],
             event_id="d1c33411-fa6d-4968-ae0d-265b911faba1",
@@ -964,7 +964,7 @@ def expected_verifier_pv_added_results() -> (
     )
     return [
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "aeordering_events_processed"
             ],
             event_ids=set(["1c9c37f7-b61a-4c05-a841-00c1276a22e0"]),
@@ -977,7 +977,7 @@ def expected_verifier_pv_added_results() -> (
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "aeordering_events_processed"
             ],
             event_ids=set(["7b5f2070-0f4d-443b-875c-6ef89a2e7993"]),
@@ -990,7 +990,7 @@ def expected_verifier_pv_added_results() -> (
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "aeordering_events_processed"
             ],
             event_ids=set(["b4696f92-da3f-4c4c-936a-1266741b1fb7"]),
@@ -1003,7 +1003,7 @@ def expected_verifier_pv_added_results() -> (
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map[
+            pv_data_field=PVPerformanceResults.pv_grok_map[
                 "aeordering_events_processed"
             ],
             event_ids=set(["d1c33411-fa6d-4968-ae0d-265b911faba1"]),
@@ -1016,7 +1016,7 @@ def expected_verifier_pv_added_results() -> (
             ).total_seconds(),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map["svdc_job_success"],
+            pv_data_field=PVPerformanceResults.pv_grok_map["svdc_job_success"],
             job_id="b87dc318-b714-43ce-9ca0-0aac712f03e2",
             pv_time=(
                 datetime.datetime.strptime(
@@ -1032,7 +1032,7 @@ def expected_verifier_pv_added_results() -> (
             ),
         ),
         dict(
-            pv_data_field=PVResultsDataFrame.pv_grok_map["svdc_job_success"],
+            pv_data_field=PVPerformanceResults.pv_grok_map["svdc_job_success"],
             job_id="fdd29d17-79b4-4fc4-bd41-39b1a4c4a05b",
             pv_time=(
                 datetime.datetime.strptime(

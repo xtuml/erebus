@@ -41,8 +41,8 @@ from test_harness.protocol_verifier.results.pv_performance_results import (
     ProcessErrorDataDict,
     ResultsDict,
 )
-from test_harness.protocol_verifier.results.pv_results_dataframe import (
-    PVResultsDataFrame,
+from test_harness.protocol_verifier.results.pv_performance_results import (
+    PVPerformanceResults,
 )
 from test_harness.protocol_verifier.testing_suite.base_test_classes import (
     FunctionalTest,
@@ -104,19 +104,19 @@ def check_numpy_expected_vs_actual(
             assert expected == actual
 
 
-class TestPVResultsDataFrame:
-    """Group of tests for :class:`PVResultsDataFrame`"""
+class TestPVPerformanceResults:
+    """Group of tests for :class:`PVPerformanceResults`"""
 
     @staticmethod
     def test_create_results_holder() -> None:
-        """Tests :class:`PVResultsDataFrame`.`create_results_holder`"""
-        results = PVResultsDataFrame()
+        """Tests :class:`PVPerformanceResults`.`create_results_holder`"""
+        results = PVPerformanceResults()
         assert isinstance(results.results, ResultsHolder)
 
     @staticmethod
     def test_create_event_result_row() -> None:
-        """Tests :class:`PVResultsDataFrame`.`create_event_result_row`"""
-        results = PVResultsDataFrame()
+        """Tests :class:`PVPerformanceResults`.`create_event_result_row`"""
+        results = PVPerformanceResults()
         results.create_event_result_row("event_id")
         assert len(results.results) == 1
         assert "event_id" in results.results
@@ -125,9 +125,9 @@ class TestPVResultsDataFrame:
     @staticmethod
     def test_update_event_results_with_event_id() -> None:
         """Tests
-        :class:`PVResultsDataFrame`.`update_event_results_with_event_id`
+        :class:`PVPerformanceResults`.`update_event_results_with_event_id`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.create_event_result_row("event_id")
         results.update_event_results_with_event_id(
             "event_id", {"job_id": "job_id"}
@@ -138,9 +138,9 @@ class TestPVResultsDataFrame:
     @staticmethod
     def test_update_event_results_with_job_id() -> None:
         """Tests
-        :class:`PVResultsDataFrame`.`update_event_results_with_job_id`
+        :class:`PVPerformanceResults`.`update_event_results_with_job_id`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.create_event_result_row("event_id")
         results.update_event_results_with_event_id(
             "event_id", {"job_id": "job_id"}
@@ -156,7 +156,7 @@ class TestPVResultsDataFrame:
         start_time: datetime,
         event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`add_first_event_data`
+        """Tests :class:`PVPerformanceResults`.`add_first_event_data`
 
         :param start_time: Fixture providing a starttime
         :type start_time: :class:`datetime`
@@ -165,7 +165,7 @@ class TestPVResultsDataFrame:
         :type event_job_response_time_dicts: `list`[`dict`[`str`, `str`  |
         :class:`datetime`]]
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.time_start = start_time
         for event_job_response_time_dict in event_job_response_time_dicts:
             results.add_first_event_data(**event_job_response_time_dict)
@@ -185,7 +185,7 @@ class TestPVResultsDataFrame:
         start_time: datetime,
         event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`update_from_sim`
+        """Tests :class:`PVPerformanceResults`.`update_from_sim`
 
         :param start_time: Fixture providing a starttime
         :type start_time: :class:`datetime`
@@ -201,7 +201,7 @@ class TestPVResultsDataFrame:
         time_completed = event_job_response_time_dicts[2]["time_completed"]
         job_id = "job_id"
         response = "a response"
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.time_start = start_time
         results.update_from_sim(events, job_id, response, time_completed)
         assert len(results.results) == 3
@@ -221,7 +221,7 @@ class TestPVResultsDataFrame:
         start_time: datetime,
         event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`update_pv_sim_time_field`
+        """Tests :class:`PVPerformanceResults`.`update_pv_sim_time_field`
 
         :param start_time: Fixture providing a starttime
         :type start_time: :class:`datetime`
@@ -230,7 +230,7 @@ class TestPVResultsDataFrame:
         :type event_job_response_time_dicts: `list`[`dict`[`str`, `str`  |
         :class:`datetime`]]
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.time_start = start_time
         for event_job_response_time_dict in event_job_response_time_dicts:
             results.add_first_event_data(**event_job_response_time_dict)
@@ -270,7 +270,7 @@ class TestPVResultsDataFrame:
         simulation starting time for AEO processing errors
         :type aeo_processing_errors: `list`[:class:`timedelta`]
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.time_start = starting_time
         results_dicts = [
             ResultsDict(
@@ -333,7 +333,7 @@ class TestPVResultsDataFrame:
         simulation starting time for AEO processing errors
         :type aeo_processing_errors: `list`[:class:`timedelta`]
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.time_start = starting_time
         results_dicts = [
             ResultsDict(
@@ -384,7 +384,7 @@ class TestPVResultsDataFrame:
         simulation starting time for AEO processing errors
         :type aeo_processing_errors: `list`[:class:`timedelta`]
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.time_start = starting_time
         results_dicts = [
             ResultsDict(
@@ -438,7 +438,7 @@ class TestPVResultsDataFrame:
         start_time: datetime,
         event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`update_read_groked_string`
+        """Tests :class:`PVPerformanceResults`.`update_read_groked_string`
 
         :param start_time: Fixture providing a starttime
         :type start_time: :class:`datetime`
@@ -455,7 +455,7 @@ class TestPVResultsDataFrame:
             'reception_event_received{event_id="205d5d7e-4eb7-4b8a-a638-'
             '1bd0a2ae6497",timestamp="2023-09-04T10:40:37.456217Z"} 1\n'
         )
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.results = DictResultsHolder()
         results.time_start = start_time
         for event_job_response_time_dict in event_job_response_time_dicts:
@@ -476,7 +476,7 @@ class TestPVResultsDataFrame:
         start_time: datetime,
         event_job_response_time_dicts: list[dict[str, str | datetime]],
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`get_an_read_grok_metrics`
+        """Tests :class:`PVPerformanceResults`.`get_an_read_grok_metrics`
 
         :param start_time: Fixture providing a starttime
         :type start_time: :class:`datetime`
@@ -485,7 +485,7 @@ class TestPVResultsDataFrame:
         :type event_job_response_time_dicts: `list`[`dict`[`str`, `str`  |
         :class:`datetime`]]
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.time_start = start_time
         for event_job_response_time_dict in event_job_response_time_dicts:
             results.add_first_event_data(**event_job_response_time_dict)
@@ -498,13 +498,13 @@ class TestPVResultsDataFrame:
     def test_create_response_time_fields(
         results_dataframe: pd.DataFrame,
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`create_response_time_fields`
+        """Tests :class:`PVPerformanceResults`.`create_response_time_fields`
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.results = results_dataframe
         results.create_response_time_fields()
 
@@ -523,14 +523,14 @@ class TestPVResultsDataFrame:
     def test_calculate_failures_no_failures(
         results_dataframe: pd.DataFrame,
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`calculate_failures` with no
+        """Tests :class:`PVPerformanceResults`.`calculate_failures` with no
         failures
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.results = results_dataframe
         results.create_response_time_fields()
         failures = results.calculate_failures()
@@ -544,7 +544,7 @@ class TestPVResultsDataFrame:
     def test_calculate_failures_th_failures(
         results_dataframe: pd.DataFrame, num_to_change: int
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`calculate_failures` with a th
+        """Tests :class:`PVPerformanceResults`.`calculate_failures` with a th
         failure
 
         :param results_dataframe: Fixture providing a results dataframe with
@@ -554,7 +554,7 @@ class TestPVResultsDataFrame:
         in the column "response"
         :type num_to_change: `int`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         test_dataframe = deepcopy(results_dataframe)
         test_dataframe["response"].iloc[0:num_to_change] = "error response"
         results.results = test_dataframe
@@ -570,7 +570,7 @@ class TestPVResultsDataFrame:
     def test_calculate_failures_pv_failures(
         results_dataframe: pd.DataFrame, num_to_change: int
     ) -> None:
-        """Tests :class:`PVResultsDataFrame`.`calculate_failures` with a pv
+        """Tests :class:`PVPerformanceResults`.`calculate_failures` with a pv
         failure
 
         :param results_dataframe: Fixture providing a results dataframe with
@@ -580,7 +580,7 @@ class TestPVResultsDataFrame:
         column "AEOSVDC"
         :type num_to_change: `int`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         test_dataframe = deepcopy(results_dataframe)
         test_dataframe["AEOSVDC_end"].iloc[0:num_to_change] = None
         results.results = test_dataframe
@@ -592,14 +592,14 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calc_end_times_no_nans(results_dataframe: pd.DataFrame) -> None:
-        """Tests :class:`PVResultsDataFrame`.`calc_end_times` with no nan
+        """Tests :class:`PVPerformanceResults`.`calc_end_times` with no nan
         entries
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.results = results_dataframe
         results.create_response_time_fields()
         end_times = results.calc_end_times()
@@ -609,14 +609,14 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calc_end_times_nans(results_dataframe: pd.DataFrame) -> None:
-        """Tests :class:`PVResultsDataFrame`.`calc_end_times` with nan
+        """Tests :class:`PVPerformanceResults`.`calc_end_times` with nan
         entries
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results_dataframe.loc["event_9", "AEOSVDC_end"] = None
         results.results = results_dataframe
         results.create_response_time_fields()
@@ -627,13 +627,13 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calc_full_averages(results_dataframe: pd.DataFrame) -> None:
-        """Tests :class:`PVResultsDataFrame`.`calc_full_averages`
+        """Tests :class:`PVPerformanceResults`.`calc_full_averages`
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.results = results_dataframe
         results.create_response_time_fields()
         results.end_times = results.calc_end_times()
@@ -645,12 +645,12 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calc_reception_counts(results_dataframe: pd.DataFrame) -> None:
-        """Tests :class:`PVResultsDataFrame`.`calc_reception_counts`
+        """Tests :class:`PVPerformanceResults`.`calc_reception_counts`
 
         :param results_dataframe: Fixture providing a results dataframe
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.results = results_dataframe
         results.create_response_time_fields()
         reception_counts = results.calc_reception_counts()
@@ -662,13 +662,13 @@ class TestPVResultsDataFrame:
         results_dataframe: pd.DataFrame,
     ) -> None:
         """Tests
-        :class:`PVResultsDataFrame`.`calculate_aggregated_results_dataframe`
+        :class:`PVPerformanceResults`.`calculate_aggregated_results_dataframe`
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.results = results_dataframe
         results.create_response_time_fields()
         results.end_times = results.calc_end_times()
@@ -726,13 +726,13 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_calc_all_results(results_dataframe: pd.DataFrame) -> None:
-        """Tests :class:`PVResultsDataFrame`.`calc_all_results`
+        """Tests :class:`PVPerformanceResults`.`calc_all_results`
 
         :param results_dataframe: Fixture providing a results dataframe with
         pv results and th results
         :type results_dataframe: :class:`pd`.`DataFrame`
         """
-        results = PVResultsDataFrame()
+        results = PVPerformanceResults()
         results.results = DictResultsHolder()
         for event_id, row in results_dataframe.iterrows():
             results.results[event_id] = row.to_dict()
@@ -747,15 +747,15 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_add_results_from_log_files(
-        pv_results: PVResultsDataFrame,
+        pv_results: PVPerformanceResults,
         grok_priority_patterns: list[Grok],
         expected_verifier_pv_added_results: list[dict],
     ) -> None:
-        """Tests `PVResultsDataFrame`.`add_results_from_log_files`
+        """Tests `PVPerformanceResults`.`add_results_from_log_files`
 
         :param pv_results: Fixture providing a results holder instance with
         sent event data
-        :type pv_results: :class:`PVResultsDataFrame`
+        :type pv_results: :class:`PVPerformanceResults`
         :param grok_priority_patterns: Fixture providing list of grok patterns
         in priority order
         :type grok_priority_patterns: `list`[:class:`Grok`]
@@ -788,14 +788,14 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_add_verifier_results_from_log_files(
-        pv_results: PVResultsDataFrame,
+        pv_results: PVPerformanceResults,
         expected_verifier_pv_added_results: list[dict],
     ) -> None:
-        """Tests `PVResultsDataFrame`.`add_verifier_results_from_log_files`
+        """Tests `PVPerformanceResults`.`add_verifier_results_from_log_files`
 
         :param pv_results: Fixture providing a results holder instance with
         sent event data
-        :type pv_results: :class:`PVResultsDataFrame`
+        :type pv_results: :class:`PVPerformanceResults`
         :param expected_verifier_pv_added_results: Fixture providing expected
         added results for verifier logs
         :type expected_verifier_pv_added_results: `list`[`dict`]
@@ -825,14 +825,14 @@ class TestPVResultsDataFrame:
 
     @staticmethod
     def test_add_reception_results_from_log_files(
-        pv_results: PVResultsDataFrame,
+        pv_results: PVPerformanceResults,
         expected_reception_pv_added_results: list[dict],
     ) -> None:
-        """Tests `PVResultsDataFrame`.`add_reception_results_from_log_files`
+        """Tests `PVPerformanceResults`.`add_reception_results_from_log_files`
 
         :param pv_results: Fixture providing a results holder instance with
         sent event data
-        :type pv_results: :class:`PVResultsDataFrame`
+        :type pv_results: :class:`PVPerformanceResults`
         :param expected_reception_pv_added_results: Fixture providing expected
         added results for reception logs
         :type expected_reception_pv_added_results: `list`[`dict`]
@@ -851,16 +851,16 @@ class TestPVResultsDataFrame:
     @staticmethod
     @pytest.mark.skip(reason="Deep copy not working due to sqlalchemy")
     def test_add_reception_verifier_result_grok_method_equivalency(
-        pv_results: PVResultsDataFrame,
+        pv_results: PVPerformanceResults,
     ) -> None:
-        """Tests `PVResultsDataFrame`.`add_verifier_results_from_log_files`
-        and `PVResultsDataFrame`.`add_reception_results_from_log_files` and
+        """Tests `PVPerformanceResults`.`add_verifier_results_from_log_files`
+        and `PVPerformanceResults`.`add_reception_results_from_log_files` and
         the equivalency to the verified grok exporter method of parsing log
         files
 
-        :param pv_results: Fixture providing :class:`PVResultsDataFrame` with
+        :param pv_results: Fixture providing :class:`PVPerformanceResults` with
         sent events data loaded
-        :type pv_results: :class:`PVResultsDataFrame`
+        :type pv_results: :class:`PVPerformanceResults`
         """
         pv_results_1 = copy(pv_results)
         pv_results_2 = copy(pv_results)
@@ -2085,7 +2085,7 @@ def test_run_test_performance_agg_during_test(
             assert event_metrics["response"] == ""
         # mirror results holder in a new instance of PVResults with
         # agg_during_test set to False
-        mirrored_results = PVResultsDataFrame()
+        mirrored_results = PVPerformanceResults()
         mirrored_results.results = test.results.results
         test.results.calc_all_results()
         mirrored_results.calc_all_results()
