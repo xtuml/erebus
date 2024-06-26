@@ -3,15 +3,16 @@
 Creates the test harness app
 """
 import os
-from typing import Mapping, Optional, Callable, Union, Any, Generator
-from uuid import uuid4
-from ctypes import c_int, c_bool
-from contextlib import contextmanager
-import traceback
-import shutil
-from zipfile import ZipFile
 import glob
+import shutil
+import traceback
+from uuid import uuid4
+from zipfile import ZipFile
+from ctypes import c_int, c_bool
 from multiprocessing import Value
+from contextlib import contextmanager
+from typing import Mapping, Optional, Callable, Union, Any, Generator
+from flask_cors import CORS
 
 from tempfile import TemporaryDirectory
 from configparser import ConfigParser
@@ -612,6 +613,10 @@ def create_app(
     }
 
     Swagger(app)
+    # Enable cross site origin requests from localhost
+    # This allows us to run test harness on a host server, port forward
+    # to our local machine and use Swagger UI to run tests
+    CORS(app, origins=["http://localhost", "http://127.0.0.1"])
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
