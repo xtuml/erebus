@@ -17,7 +17,6 @@ setup(
         'test_harness.protocol_verifier',
         'test_harness.message_buses',
         'test_harness.config',
-        'test_harness.pv_config',
         'test_harness.metrics',
         'test_harness.async_management',
         'test_harness.reporting',
