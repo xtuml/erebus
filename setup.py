@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Setup script for installation
 """
-from setuptools import setup, find_packages
+from setuptools import setup
 
 main_packages = [
         'test_harness',
@@ -42,6 +42,6 @@ setup(
     package_dir={"test_harness": "test_harness"},
     include_package_data=True,
     extras_require={
-        "protocol_verifier": ["test_harness.protocol_verifier"]
+        "protocol_verifier": ["flask"]
     }
 )
