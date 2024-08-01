@@ -32,6 +32,8 @@ setup(
         'test_harness.protocol_verifier.requests',
         'test_harness.protocol_verifier.results',
         'test_harness.protocol_verifier.testing_suite',
+        'test_harness.protocol_verifier.tests',
+        'test_harness.protocol_verifier.utils',
     ],
     package_dir={"test_harness": "test_harness"},
     include_package_data=True,
