@@ -3,7 +3,7 @@
 """
 from setuptools import setup
 
-main_packages=[
+main_packages = [
         'test_harness',
         'test_harness.simulator',
         'test_harness.message_buses',
