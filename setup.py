@@ -17,16 +17,16 @@ main_packages = [
     ]
 protocol_verifier_packages = [
     'test_harness.protocol_verifier',
-    'test_harness.protocol_verifier.config',
-    'test_harness.protocol_verifier.metrics_and_events',
-    'test_harness.protocol_verifier.mocks',
-    'test_harness.protocol_verifier.pv_config',
-    'test_harness.protocol_verifier.reporting',
-    'test_harness.protocol_verifier.requests',
-    'test_harness.protocol_verifier.results',
-    'test_harness.protocol_verifier.testing_suite',
-    'test_harness.protocol_verifier.tests',
-    'test_harness.protocol_verifier.utils',
+    # 'test_harness.protocol_verifier.config',
+    # 'test_harness.protocol_verifier.metrics_and_events',
+    # 'test_harness.protocol_verifier.mocks',
+    # 'test_harness.protocol_verifier.pv_config',
+    # 'test_harness.protocol_verifier.reporting',
+    # 'test_harness.protocol_verifier.requests',
+    # 'test_harness.protocol_verifier.results',
+    # 'test_harness.protocol_verifier.testing_suite',
+    # 'test_harness.protocol_verifier.tests',
+    # 'test_harness.protocol_verifier.utils',
     ]
 
 setup(
