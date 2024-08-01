@@ -19,7 +19,6 @@ protocol_verifier_packages = [
     'test_harness.protocol_verifier',
     'test_harness.protocol_verifier.config',
     'test_harness.protocol_verifier.metrics_and_events',
-    'test_harness.protocol_verifier.metrics_and_events',
     'test_harness.protocol_verifier.mocks',
     'test_harness.protocol_verifier.pv_config',
     'test_harness.protocol_verifier.reporting',
