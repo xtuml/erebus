@@ -41,6 +41,6 @@ setup(
     package_dir={"test_harness": "test_harness"},
     include_package_data=True,
     extras_require={
-        'protocol_verifier': 'test_harness.protocol_verifier',
+        'pv': 'test_harness.protocol_verifier',
     },
 )
