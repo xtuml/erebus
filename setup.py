@@ -6,7 +6,6 @@ from setuptools import setup
 main_packages=[
         'test_harness',
         'test_harness.simulator',
-        'test_harness.protocol_verifier',
         'test_harness.message_buses',
         'test_harness.config',
         'test_harness.metrics',
