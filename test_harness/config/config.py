@@ -3,7 +3,7 @@ Config class for test harness
 """
 
 import os
-from typing import Optional
+from typing import Optional, Literal
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -220,6 +220,7 @@ class TestConfig:
                 "finish_interval": `int` => 0, defaults to 30;
                 "timeout": `int` => 0, defaults to 120;
             },
+            "jobdef_type": `Literal`[`"uml"`, `"json"`], defaults to `"uml"`;
         }
         :type test_config: `dict`[`str`, `str` | `dict`]
         """
@@ -255,6 +256,7 @@ class TestConfig:
         self.sample_rate = 0
         self.low_memory = False
         self.test_finish = {}
+        self.jobdef_type: Literal["uml", "json"] = "uml"
 
     def config_to_dict(self) -> dict:
         """Provide config as a dictionary"""
@@ -267,6 +269,7 @@ class TestConfig:
             "sample_rate": self.sample_rate,
             "low_memory": self.low_memory,
             "test_finish": self.test_finish,
+            "jobdef_type": self.jobdef_type,
         }
         if self.type != "Functional":
             config_dict_to_return["performance_options"] = (
