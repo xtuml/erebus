@@ -33,3 +33,5 @@ test_finish:
   metric_get_interval: 5
   finish_interval: 30
   timeout: 120
+
+jobdef_type: "uml"

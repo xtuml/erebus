@@ -1,0 +1,25 @@
+{
+    "JobDefinitionName": "test_uml_1",
+    "Events": [
+        {
+            "EventName": "A",
+            "OccurrenceId": 0,
+            "SequenceName": "test_uml_1",
+            "Application": "default_application_name",
+            "SequenceStart": true
+        },
+        {
+            "EventName": "B",
+            "OccurrenceId": 0,
+            "SequenceName": "test_uml_1",
+            "Application": "default_application_name",
+            "SequenceEnd": true,
+            "PreviousEvents": [
+                {
+                    "PreviousEventName": "A",
+                    "PreviousOccurrenceId": 0
+                }
+            ]
+        }
+    ]
+}

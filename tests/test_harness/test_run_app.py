@@ -17,6 +17,7 @@ import responses
 import requests
 import aiohttp
 import pandas as pd
+import pytest
 
 from test_harness.run_app import run_harness_app
 from test_harness.config.config import TestConfig
@@ -46,6 +47,11 @@ test_file_path = os.path.join(
 # get path of test zip file
 test_file_zip_path = os.path.join(
     Path(__file__).parent / "test_files", "test_zip_file.zip"
+)
+
+# get path of 2nd test zip file inlcuding a job def json
+test_file_zip_path_2 = os.path.join(
+    Path(__file__).parent / "test_files", "test_jobdefjson.zip"
 )
 
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
@@ -205,6 +211,8 @@ def test_run_harness_app() -> None:
 
 def run_performance_test_requests_zip_file_upload(
     results_capture: dict,
+    zip_file_path: str = test_file_zip_path,
+    zip_file_name: str = "test_zip_file.zip",
 ) -> None:
     """Function to run performance test using requests for uploaded
     zip file functionality
@@ -215,7 +223,7 @@ def run_performance_test_requests_zip_file_upload(
     # this will post the file under the name "upload"
     response = post_config_form_upload(
         file_bytes_file_names=[
-            (open(test_file_zip_path, "rb"), "test_zip_file.zip")
+            (open(zip_file_path, "rb"), zip_file_name)
         ],
         url="http://localhost:8800/upload/named-zip-files",
     )[2]
@@ -236,8 +244,15 @@ def run_performance_test_requests_zip_file_upload(
         time.sleep(1)
 
 
+@pytest.mark.parametrize("zip_file_path, zip_file_name, jobdef_file_name", [
+    (test_file_zip_path, "test_zip_file.zip", "test_uml_1.puml"),
+    (test_file_zip_path_2, "test_jobdefjson.zip", "test_uml_1_jobdef.json"),
+
+])
 @responses.activate
-def test_run_harness_app_uploaded_zip_file() -> None:
+def test_run_harness_app_uploaded_zip_file(
+    zip_file_path: str, zip_file_name: str, jobdef_file_name: str
+) -> None:
     """Test the `run_harness_app` function.
 
     This function sets up a test environment for the `run_harness_app`
@@ -299,7 +314,9 @@ def test_run_harness_app_uploaded_zip_file() -> None:
         )
         thread_2 = Thread(
             target=run_performance_test_requests_zip_file_upload,
-            args=(response_results,),
+            args=(
+                response_results, zip_file_path, zip_file_name
+            ),
         )
         thread_1.start()
         time.sleep(5)
@@ -316,7 +333,7 @@ def test_run_harness_app_uploaded_zip_file() -> None:
     )
     for folder, file in zip(
         ["uml_file_store", "test_file_store", "profile_store"],
-        ["test_uml_1.puml", "test_uml_1_events.json", "test_profile.csv"],
+        [jobdef_file_name, "test_uml_1_events.json", "test_profile.csv"],
     ):
         path = os.path.join(test_output_path, folder, file)
         assert os.path.exists(path)

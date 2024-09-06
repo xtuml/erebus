@@ -16,7 +16,7 @@ from test_harness.protocol_verifier.testing_suite.generate_test_files import (
     generate_test_events_from_puml_files,
     get_test_events_from_test_file_jsons,
 )
-from test_harness.protocol_verifier.send_job_defs import send_job_defs_from_uml
+from test_harness.protocol_verifier.send_job_defs import handle_send_job_defs
 from test_harness.protocol_verifier.testing_suite.base_test_classes import (
     FunctionalTest,
     PerformanceTest,
@@ -126,11 +126,12 @@ def puml_files_test(
             )
 
     # send job definitions to pv
-    send_job_defs_from_uml(
-        url=harness_config.pv_send_job_defs_url,
-        uml_file_paths=puml_file_paths,
+    handle_send_job_defs(
+        file_paths=puml_file_paths,
         harness_config=harness_config,
+        file_type=test_config.jobdef_type,
     )
+
     logging.getLogger().info(
         "Waiting %ds for job defs to load",
         harness_config.pv_config_update_time,
