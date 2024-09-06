@@ -103,95 +103,113 @@ def test_send_job_defs_from_uml() -> None:
         harness_config=harness_config,
     )
 
+
 class TestSendJobDefsFromJson:
+    """Tests for send_job_defs_from_json"""
     @staticmethod
     def json_string() -> str:
+        """Returns a json string"""
         return (
-            '{\n'
+            "{\n"
             '    "JobDefinitionName": "test_uml_1",\n'
             '    "Events": [\n'
-            '        {\n'
+            "        {\n"
             '            "EventName": "A",\n'
             '            "OccurrenceId": 0,\n'
             '            "SequenceName": "test_uml_1",\n'
             '            "Application": "default_application_name",\n'
             '            "SequenceStart": true\n'
-            '        },\n'
-            '        {\n'
+            "        },\n"
+            "        {\n"
             '            "EventName": "B",\n'
             '            "OccurrenceId": 0,\n'
             '            "SequenceName": "test_uml_1",\n'
             '            "Application": "default_application_name",\n'
             '            "SequenceEnd": true,\n'
             '            "PreviousEvents": [\n'
-            '                {\n'
+            "                {\n"
             '                    "PreviousEventName": "A",\n'
             '                    "PreviousOccurrenceId": 0\n'
-            '                }\n'
-            '            ]\n'
-            '        }\n'
-            '    ]\n'
-            '}\n'
+            "                }\n"
+            "            ]\n"
+            "        }\n"
+            "    ]\n"
+            "}\n"
         )
-    
 
     def test_get_job_defs_from_jsons(self) -> None:
         """Tests get_job_defs_from_jsons"""
-        test_json_file_path_1 = os.path.join(test_file_resources, "test_uml_1_jobdef.json")
-        test_json_file_path_2 = os.path.join(test_file_resources, "test_uml_1_jobdef.json")
+        test_json_file_path_1 = os.path.join(
+            test_file_resources, "test_uml_1_jobdef.json"
+        )
+        test_json_file_path_2 = os.path.join(
+            test_file_resources, "test_uml_1_jobdef.json"
+        )
         job_defs = get_job_defs_from_jsons(
             json_file_paths=[test_json_file_path_1, test_json_file_path_2]
         )
-        json_string = self.json_string
+        json_string = self.json_string()
         assert all(json_string == job_def for job_def in job_defs)
 
     @responses.activate
     def test_send_job_defs_from_jsons(self) -> None:
+        """Tests send_job_defs_from_jsons"""
         url = "http://mockserver.com/job-definitions"
         responses.post(
-            url, status=200,
-            match=[multipart_matcher(
-                files={
-                    "upload": (
-                        "test_uml_1_jobdef.json",
-                        self.json_string().encode("utf-8"),
-                        "application/octet-stream"
-                    )
-                }
-            )]
+            url,
+            status=200,
+            match=[
+                multipart_matcher(
+                    files={
+                        "upload": (
+                            "test_uml_1_jobdef.json",
+                            self.json_string().encode("utf-8"),
+                            "application/octet-stream",
+                        )
+                    }
+                )
+            ],
         )
         harness_config = HarnessConfig(config_parser)
-        test_json_file_path_1 = os.path.join(test_file_resources, "test_uml_1_jobdef.json")
+        test_json_file_path_1 = os.path.join(
+            test_file_resources, "test_uml_1_jobdef.json"
+        )
         send_job_defs_from_json(
             url=url,
             json_file_paths=[test_json_file_path_1],
-            harness_config=harness_config
+            harness_config=harness_config,
         )
 
 
 def test_handle_send_job_defs() -> None:
     """Tests handle_send_job_defs"""
     harness_config = ProtocolVerifierConfig(config_parser)
-    test_json_file_path_1 = os.path.join(test_file_resources, "test_uml_1_jobdef.json")
+    test_json_file_path_1 = os.path.join(
+        test_file_resources, "test_uml_1_jobdef.json"
+    )
     test_uml_file_path_1 = os.path.join(test_file_resources, "test_uml_1.puml")
-    with patch("test_harness.protocol_verifier.send_job_defs.send_job_defs_from_json") as mock:
+    with patch(
+        "test_harness.protocol_verifier.send_job_defs.send_job_defs_from_json"
+    ) as mock:
         handle_send_job_defs(
             file_paths=[test_json_file_path_1, test_uml_file_path_1],
             harness_config=harness_config,
-            file_type="json"
+            file_type="json",
         )
         mock.assert_called_once()
-    with patch("test_harness.protocol_verifier.send_job_defs.send_job_defs_from_uml") as mock:
+    with patch(
+        "test_harness.protocol_verifier.send_job_defs.send_job_defs_from_uml"
+    ) as mock:
         handle_send_job_defs(
             file_paths=[test_json_file_path_1, test_uml_file_path_1],
             harness_config=harness_config,
-            file_type="uml"
+            file_type="uml",
         )
         mock.assert_called_once()
     with pytest.raises(ValueError) as e_info:
         handle_send_job_defs(
             file_paths=[test_json_file_path_1, test_uml_file_path_1],
             harness_config=harness_config,
-            file_type="invalid"
+            file_type="invalid",
         )
     assert e_info.value.args[0] == "Invalid file type: invalid"

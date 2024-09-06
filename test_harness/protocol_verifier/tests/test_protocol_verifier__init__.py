@@ -108,12 +108,16 @@ invalid_test_file_json_validity_path = os.path.join(
 uuid4hex = re.compile("[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\\Z", re.I)
 
 
+@pytest.mark.parametrize("jobdef_type", ["json", "uml"])
 @responses.activate
-def test_puml_files_test() -> None:
+def test_puml_files_test(jobdef_type: Literal["json", "uml"]) -> None:
     """Tests method `puml_test_files`"""
     harness_config = ProtocolVerifierConfig(config_parser)
     test_config = TestConfig()
-    test_config.parse_from_dict({"event_gen_options": {"invalid": False}})
+    test_config.parse_from_dict({
+        "event_gen_options": {"invalid": False},
+        "jobdef_type": jobdef_type,
+    })
     with mock_pv_http_interface(harness_config):
         puml_files_test(
             puml_file_paths=[test_file_path],
